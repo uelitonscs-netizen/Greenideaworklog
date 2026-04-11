@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260411233713 -->
+<!-- WorkLog GreenIdea v20260411235415 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -574,8 +574,8 @@ function refreshView(){
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
-function goLanding(){stopLiveClock(); currentHelper=null; showScreen('landing');}
-function goAdmin(){showScreen('admin'); currentAdminTab='dashboard'; renderDashboard();}
+function goLanding(){localStorage.removeItem('wl_session'); stopLiveClock(); currentHelper=null; showScreen('landing');}
+function goAdmin(){localStorage.setItem('wl_session','admin'); showScreen('admin'); currentAdminTab='dashboard'; renderDashboard();}
 window.goLanding=goLanding; window.goAdmin=goAdmin;
 
 function aTab(name,btn){
@@ -630,6 +630,7 @@ window.closeModal=closeModal;
 
 // ── HELPER VIEW ────────────────────────────────────────
 function openHelperView(hid){
+  localStorage.setItem('wl_session','helper:'+hid);
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
   document.getElementById('helper-name-display').textContent=h.name;
@@ -1193,8 +1194,32 @@ function checkRoute(){
 
 document.getElementById('loading').style.display='none';
 if(!checkRoute()){
-  showScreen('landing');
-  startListeners();
+  var _session = localStorage.getItem('wl_session');
+  if(_session === 'admin'){
+    startListeners();
+    showScreen('admin');
+    currentAdminTab='dashboard';
+    renderDashboard();
+  } else if(_session && _session.indexOf('helper:') === 0){
+    var _hid = _session.replace('helper:','');
+    startListeners();
+    // Wait for helpers to load then restore
+    var _done = false;
+    var _wait = setInterval(function(){
+      if(helpers.length > 0){
+        clearInterval(_wait);
+        if(!_done){ _done=true;
+          var _h = hById(_hid);
+          if(_h) openHelperView(_hid);
+          else { localStorage.removeItem('wl_session'); showScreen('landing'); }
+        }
+      }
+    },300);
+    setTimeout(function(){ clearInterval(_wait); if(!_done){ _done=true; localStorage.removeItem('wl_session'); showScreen('landing'); } },5000);
+  } else {
+    showScreen('landing');
+    startListeners();
+  }
 }
 </script>
 <script>
