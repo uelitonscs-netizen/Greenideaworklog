@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412222613 -->
+<!-- WorkLog GreenIdea v20260412223459 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -237,11 +237,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
         <div class="section-title" style="margin:0">All Entries</div>
         <div class="range-btns" style="margin-left:auto">
-          <button class="range-btn active" onclick="setRange('week',this)">Week</button>
+          <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
           <button class="range-btn" onclick="setRange('month',this)">Month</button>
           <button class="range-btn" onclick="setRange('all',this)">All</button>
         </div>
       </div>
+      <div id="entries-week-lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--font-m)"></div>
       <div id="entries-list"></div>
     </div>
 
@@ -511,7 +512,7 @@ var DAILY_OVERHEAD = (MONTHLY_OVERHEAD / WORKING_DAYS) / NUM_TEAMS; // $484.88/t
 var DEPOT_LNG = -71.8356176;
 var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
-var currentHelper=null, liveInterval=null, adminRange='week', sumPeriod='week';
+var currentHelper=null, liveInterval=null, adminRange='current-week', sumPeriod='week';
 var pendingDeleteId=null, editingProjId=null, quickHoursHelperId=null, currentAdminTab='dashboard';
 
 // ── UTILS ──────────────────────────────────────────────
@@ -881,17 +882,87 @@ window.confirmDeleteHelper=confirmDeleteHelper;
 function setRange(r,btn){adminRange=r; document.querySelectorAll('.range-btn').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); renderEntriesList();}
 window.setRange=setRange;
 
+function getEntriesDateRange(){
+  var now=new Date();
+  var start, end=new Date(2099,0,1);
+  var lbl='';
+  if(adminRange==='current-week'){
+    start=weekStart();
+    var ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
+    lbl='📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  } else if(adminRange==='month'){
+    start=new Date(now.getFullYear(),now.getMonth(),1);
+    lbl=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  } else {
+    start=new Date(2000,0,1);
+    lbl='All time';
+  }
+  return {start:start,end:end,lbl:lbl};
+}
+
 function renderEntriesList(){
   var el=document.getElementById('entries-list');
-  var c=new Date(); if(adminRange==='week') c.setDate(c.getDate()-7); else if(adminRange==='month') c.setDate(c.getDate()-30); else c.setFullYear(2000);
-  var ents=entries.filter(function(e){return e.endTime&&new Date(e.startTime)>=c;});
+  var range=getEntriesDateRange();
+  var lblEl=document.getElementById('entries-week-lbl');
+  if(lblEl) lblEl.textContent=range.lbl;
+  var ents=entries.filter(function(e){return e.endTime&&new Date(e.startTime)>=range.start&&new Date(e.startTime)<=range.end;});
   if(!ents.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No entries in this period.</div>'; return;}
-  el.innerHTML=ents.map(function(e){
-    var h=hById(e.helperId); var proj=e.projectId?projects.find(function(p){return p.id===e.projectId;}):null;
-    var apOpts='<option value="">No project</option>'+projects.filter(function(p){return p.status==='active';}).map(function(p){return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+p.name+'</option>';}).join('');
-    return '<div class="entry-row" style="margin-bottom:8px;flex-wrap:wrap;gap:6px"><div style="flex:1;min-width:200px"><div><strong>'+(h?h.name:'?')+'</strong> <span style="font-size:10px;background:#f0f0f0;padding:1px 6px;border-radius:99px">'+e.type+'</span></div><div class="entry-meta">'+new Date(e.startTime).toLocaleDateString()+' · '+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(e.note?' · '+e.note:'')+'</div><div style="margin-top:5px"><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:600;width:100%">'+apOpts+'</select></div></div><div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div></div>';
-  }).join('');
+
+  // Group by helper
+  var grouped={};
+  helpers.forEach(function(h){ grouped[h.id]=[]; });
+  ents.forEach(function(e){ if(grouped[e.helperId]) grouped[e.helperId].push(e); else grouped[e.helperId]=[e]; });
+
+  var html='';
+  helpers.forEach(function(h){
+    var hEnts=grouped[h.id]||[];
+    if(!hEnts.length) return;
+    var totalM=hEnts.reduce(function(s,e){return s+gMin(e);},0);
+    var totalPay=(totalM/60)*h.rate;
+    var avatarColor=AVATAR_COLORS[helpers.indexOf(h)%AVATAR_COLORS.length];
+    var initials=getInitials(h.name);
+
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">';
+    // Header - clickable
+    html+='<div data-hid="'+h.id+'" onclick="toggleHelperEntries(this.dataset.hid)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none">';
+    html+='<div style="width:38px;height:38px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>';
+    html+='<div style="flex:1"><div style="font-family:var(--font-d);font-weight:800;font-size:14px">'+h.name+'</div>';
+    html+='<div style="font-size:11px;color:var(--muted)">'+hEnts.length+' entr'+(hEnts.length>1?'ies':'y')+' · '+fmtD(totalM)+' · '+fmtC(totalPay)+'</div></div>';
+    html+='<span id="hent-arrow-'+h.id+'" style="color:var(--muted);font-size:16px">▼</span>';
+    html+='</div>';
+
+    // Entries - collapsed by default
+    html+='<div id="hent-'+h.id+'" style="display:none;border-top:1px solid var(--border)">';
+    hEnts.forEach(function(e){
+      var proj=e.projectId?projects.find(function(p){return p.id===e.projectId;}):null;
+      var apOpts='<option value="">No project</option>'+projects.filter(function(p){return p.status==='active';}).map(function(p){return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+p.name+'</option>';}).join('');
+      html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">';
+      html+='<div style="flex:1;min-width:180px">';
+      html+='<div style="font-size:12px;font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>';
+      html+='<div class="entry-meta">'+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'<span style="margin-left:6px;background:#f0f0f0;padding:1px 6px;border-radius:99px;font-size:10px">'+e.type+'</span>'+(e.note?' · '+e.note:'')+'</div>';
+      html+='<div style="margin-top:5px"><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:600;width:100%">'+apOpts+'</select></div>';
+      html+='</div>';
+      html+='<div style="display:flex;align-items:center;gap:6px">';
+      html+='<div class="entry-dur">'+fmtD(gMin(e))+'</div>';
+      html+='<button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button>';
+      html+='</div></div>';
+    });
+    html+='</div></div>';
+  });
+
+  el.innerHTML=html||'<div style="color:var(--muted);text-align:center;padding:40px">No entries in this period.</div>';
 }
+
+function toggleHelperEntries(hid){
+  var el=document.getElementById('hent-'+hid);
+  var arrow=document.getElementById('hent-arrow-'+hid);
+  if(el){
+    var open=el.style.display!=='none';
+    el.style.display=open?'none':'block';
+    if(arrow) arrow.textContent=open?'▼':'▲';
+  }
+}
+window.toggleHelperEntries=toggleHelperEntries;
 function delEntry(id){db.collection('entries').doc(id).delete(); showToast('Entry deleted');}
 window.delEntry=delEntry;
 
