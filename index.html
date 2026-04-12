@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412195413 -->
+<!-- WorkLog GreenIdea v20260412215503 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -465,11 +465,10 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
-        <div style="display:flex;gap:10px">
-          <div class="fg" style="flex:1"><label>Working Days</label><input id="ep-days" type="number" min="0.5" step="0.5"/></div>
-          <div class="fg" style="flex:1"><label>Teams on Job</label><input id="ep-teams" type="number" min="1" step="1" value="1"/></div>
-        </div>
-        <div id="ep-overhead-preview" style="font-size:12px;color:var(--muted);margin-top:-6px;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Overhead: <strong id="ep-overhead-val"></strong></div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">⚙️ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
+        <div id="ep-days-list"></div>
+        <button type="button" onclick="addOHDay('ep')" style="background:transparent;border:1px dashed #ccc;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;width:100%;margin-bottom:4px">+ Add Day</button>
+        <div id="ep-overhead-preview" style="font-size:12px;color:#1a6b2a;font-weight:700;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Total Overhead: <strong id="ep-overhead-val"></strong></div>
     <div class="form-row">
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
@@ -1033,10 +1032,9 @@ function renderProjects(){
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🧱 Materials & Extras</span><span style="color:var(--red);font-weight:700">− '+fmtC(extraCost)+'</span></div>';
       if(overhead > 0){
         var daysLabel='';
-        if(p.workingDays){
-          var t=p.teamsOnJob||1;
-          daysLabel=' ('+p.workingDays+' days × '+t+' team'+(t>1?'s':'')+')';
-        }
+        if(p.ohDays&&p.ohDays.length>0){
+          daysLabel=' ('+p.ohDays.length+' day'+(p.ohDays.length>1?'s':'')+')';}
+        else if(p.workingDays){ daysLabel=' ('+p.workingDays+' days)'; }
         html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">⚙️ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">− '+fmtC(overhead)+'</span></div>';
       }
       // Total
@@ -1091,11 +1089,11 @@ function addProject(){
   var name=document.getElementById('proj-name').value.trim(), desc=document.getElementById('proj-desc').value.trim(), budget=parseFloat(document.getElementById('proj-budget').value)||0, start=document.getElementById('proj-start').value, end=document.getElementById('proj-end').value;
   if(!name) return showToast('Enter a project name','err');
   if(!start) return showToast('Select a start date','err');
-  var days=parseFloat(document.getElementById('proj-days').value)||0;
-  var teams=parseFloat(document.getElementById('proj-teams').value)||1;
-  var overhead=Math.round(days*teams*DAILY_OVERHEAD*100)/100;
-  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,teamsOnJob:teams,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
-  document.getElementById('proj-name').value=''; document.getElementById('proj-desc').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-days').value=''; document.getElementById('proj-teams').value='1'; document.getElementById('proj-end').value='';
+  var ohDays=getOHDays('proj');
+  var overhead=calcOHTotal(ohDays);
+  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  document.getElementById('proj-name').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
+  document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
 }
@@ -1143,14 +1141,15 @@ function openEditProj(id){
   document.getElementById('ep-name').value=p.name||'';
   document.getElementById('ep-desc').value=p.desc||'';
   document.getElementById('ep-budget').value=p.budget||'';
-  document.getElementById('ep-days').value=p.workingDays||'';
-  document.getElementById('ep-teams').value=p.teamsOnJob||1;
-  var epPrev=document.getElementById('ep-overhead-preview');
-  if(p.workingDays&&p.workingDays>0){
-    var t=p.teamsOnJob||1;
-    document.getElementById('ep-overhead-val').textContent=fmtC(p.overhead||0)+' ('+p.workingDays+' days × '+t+' team'+(t>1?'s':'')+' × $'+DAILY_OVERHEAD.toFixed(2)+')';
-    epPrev.style.display='block';
-  } else { epPrev.style.display='none'; }
+  var epList=document.getElementById('ep-days-list');
+  epList.innerHTML='';
+  var ohDays=p.ohDays||[];
+  if(ohDays.length===0&&p.workingDays){
+    // Migrate old format
+    for(var di=0;di<p.workingDays;di++) ohDays.push({date:'',teams:p.teamsOnJob||1});
+  }
+  ohDays.forEach(function(d){ addOHDayRow('ep',d.date,d.teams); });
+  updateOHPreview('ep');
   document.getElementById('ep-start').value=p.start||'';
   document.getElementById('ep-end').value=p.end||'';
   document.getElementById('modal-edit-project').classList.add('open');
@@ -1159,9 +1158,11 @@ window.openEditProj=openEditProj;
 
 function saveEditProject(){
   if(!editingProjId) return;
-  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, days=parseFloat(document.getElementById('ep-days').value)||0, teams=parseFloat(document.getElementById('ep-teams').value)||1, overhead=Math.round(days*teams*DAILY_OVERHEAD*100)/100, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
+  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
+  var ohDays=getOHDays('ep');
+  var overhead=calcOHTotal(ohDays);
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,teamsOnJob:teams,start:start,end:end||null});
+  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
@@ -1408,30 +1409,136 @@ function stopGeofence(){
 }
 
 // Live overhead preview
-function setupOverheadPreview(daysId, teamsId, previewId, valId){
-  var dInput=document.getElementById(daysId);
-  var tInput=document.getElementById(teamsId);
-  if(!dInput) return;
-  function update(){
-    var days=parseFloat(dInput.value)||0;
-    var teams=parseFloat(tInput?tInput.value:1)||1;
-    var prev=document.getElementById(previewId);
-    var val=document.getElementById(valId);
-    if(days>0){
-      var oh=Math.round(days*teams*DAILY_OVERHEAD*100)/100;
-      val.textContent=fmtC(oh)+' ('+days+' days × '+teams+' team'+(teams>1?'s':'')+' × $'+DAILY_OVERHEAD.toFixed(2)+')';
+var ohDayCount = {proj:0, ep:0};
+
+function addOHDay(prefix, date, teams){
+  addOHDayRow(prefix, date||'', teams||1);
+}
+window.addOHDay=addOHDay;
+
+function addOHDayRow(prefix, date, teams){
+  ohDayCount[prefix] = (ohDayCount[prefix]||0)+1;
+  var idx = ohDayCount[prefix];
+  var list = document.getElementById(prefix+'-days-list');
+  var row = document.createElement('div');
+  row.id = prefix+'-ohrow-'+idx;
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+  var today = new Date().toISOString().slice(0,10);
+  // Build row using createElement to avoid quote issues
+  var dateIn = document.createElement('input');
+  dateIn.type = 'date';
+  dateIn.value = date||today;
+  dateIn.style.cssText = 'flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:6px 8px;font-size:12px;outline:none';
+  dateIn.onchange = function(){ updateOHPreview(prefix); };
+
+  var teamsWrap = document.createElement('div');
+  teamsWrap.style.cssText = 'display:flex;align-items:center;gap:4px;background:#f0f8f0;border:1px solid #ccc;border-radius:6px;padding:4px 8px';
+
+  var btnMinus = document.createElement('button');
+  btnMinus.type = 'button';
+  btnMinus.textContent = '−';
+  btnMinus.style.cssText = 'background:transparent;border:none;color:#1a6b2a;font-size:16px;font-weight:800;cursor:pointer;padding:0 4px';
+  btnMinus.setAttribute('data-prefix', prefix);
+  btnMinus.setAttribute('data-idx', idx);
+  btnMinus.setAttribute('data-delta', '-1');
+  btnMinus.onclick = function(){ changeTeams(this.dataset.prefix, this.dataset.idx, -1); };
+
+  var teamsSpan = document.createElement('span');
+  teamsSpan.id = prefix+'-teams-'+idx;
+  teamsSpan.style.cssText = 'font-family:var(--font-d);font-weight:800;font-size:14px;min-width:16px;text-align:center';
+  teamsSpan.textContent = teams;
+
+  var btnPlus = document.createElement('button');
+  btnPlus.type = 'button';
+  btnPlus.textContent = '+';
+  btnPlus.style.cssText = 'background:transparent;border:none;color:#1a6b2a;font-size:16px;font-weight:800;cursor:pointer;padding:0 4px';
+  btnPlus.setAttribute('data-prefix', prefix);
+  btnPlus.setAttribute('data-idx', idx);
+  btnPlus.onclick = function(){ changeTeams(this.dataset.prefix, this.dataset.idx, 1); };
+
+  var teamsLabel = document.createElement('span');
+  teamsLabel.style.cssText = 'font-size:11px;color:var(--muted);margin-left:2px';
+  teamsLabel.textContent = 'team'+(teams>1?'s':'');
+
+  teamsWrap.appendChild(btnMinus);
+  teamsWrap.appendChild(teamsSpan);
+  teamsWrap.appendChild(btnPlus);
+  teamsWrap.appendChild(teamsLabel);
+
+  var costSpan = document.createElement('span');
+  costSpan.id = prefix+'-ohdaycost-'+idx;
+  costSpan.style.cssText = 'font-size:12px;font-weight:700;color:#1a6b2a;min-width:60px;text-align:right';
+  costSpan.textContent = fmtC(teams*DAILY_OVERHEAD);
+
+  var btnRemove = document.createElement('button');
+  btnRemove.type = 'button';
+  btnRemove.textContent = '✕';
+  btnRemove.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px';
+  btnRemove.setAttribute('data-prefix', prefix);
+  btnRemove.setAttribute('data-idx', idx);
+  btnRemove.onclick = function(){ removeOHDay(this.dataset.prefix, this.dataset.idx); };
+
+  row.appendChild(dateIn);
+  row.appendChild(teamsWrap);
+  row.appendChild(costSpan);
+  row.appendChild(btnRemove);
+  list.appendChild(row);
+  updateOHPreview(prefix);
+}
+
+function changeTeams(prefix, idx, delta){
+  var el = document.getElementById(prefix+'-teams-'+idx);
+  if(!el) return;
+  var t = Math.max(1, parseInt(el.textContent)+delta);
+  el.textContent = t;
+  el.nextSibling.textContent = ' team'+(t>1?'s':'');
+  var cost = document.getElementById(prefix+'-ohdaycost-'+idx);
+  if(cost) cost.textContent = fmtC(t*DAILY_OVERHEAD);
+  updateOHPreview(prefix);
+}
+window.changeTeams=changeTeams;
+
+function removeOHDay(prefix, idx){
+  var row = document.getElementById(prefix+'-ohrow-'+idx);
+  if(row) row.remove();
+  updateOHPreview(prefix);
+}
+window.removeOHDay=removeOHDay;
+
+function getOHDays(prefix){
+  var list = document.getElementById(prefix+'-days-list');
+  if(!list) return [];
+  var rows = list.querySelectorAll('[id^="'+prefix+'-ohrow-"]');
+  var days = [];
+  rows.forEach(function(row){
+    var idx = row.id.split('-').pop();
+    var dateEl = row.querySelector('input[type="date"]');
+    var teamsEl = document.getElementById(prefix+'-teams-'+idx);
+    if(dateEl && teamsEl){
+      days.push({date: dateEl.value, teams: parseInt(teamsEl.textContent)||1});
+    }
+  });
+  return days;
+}
+
+function calcOHTotal(days){
+  return Math.round(days.reduce(function(s,d){return s+((d.teams||1)*DAILY_OVERHEAD);},0)*100)/100;
+}
+
+function updateOHPreview(prefix){
+  var days = getOHDays(prefix);
+  var total = calcOHTotal(days);
+  var prev = document.getElementById(prefix+'-overhead-preview');
+  var val = document.getElementById(prefix+'-overhead-val');
+  if(prev && val){
+    if(days.length>0){
+      val.textContent = fmtC(total)+' ('+days.length+' day'+(days.length>1?'s':'')+')';
       prev.style.display='block';
     } else {
       prev.style.display='none';
     }
   }
-  dInput.addEventListener('input', update);
-  if(tInput) tInput.addEventListener('input', update);
 }
-setTimeout(function(){
-  setupOverheadPreview('proj-days','proj-teams','proj-overhead-preview','proj-overhead-val');
-  setupOverheadPreview('ep-days','ep-teams','ep-overhead-preview','ep-overhead-val');
-},500);
 
 document.getElementById('loading').style.display='none';
 if(!checkRoute()){
