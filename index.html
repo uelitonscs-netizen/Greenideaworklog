@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412052208 -->
+<!-- WorkLog GreenIdea v20260412143323 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -464,7 +464,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
-    <div class="fg"><label>Budget ($)</label><input id="ep-budget" type="number"/></div>
+    <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
+    <div class="fg"><label>Working Days on this Job</label><input id="ep-days" type="number" min="0.5" step="0.5"/></div>
+    <div id="ep-overhead-preview" style="font-size:12px;color:var(--muted);margin-top:-6px;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Overhead: <strong id="ep-overhead-val"></strong></div>
     <div class="form-row">
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
@@ -495,6 +497,9 @@ var helpers=[], entries=[], payments=[], absences=[], projects=[], projectExpens
 
 // ── DEPOT LOCATION ─────────────────────────────────────
 var DEPOT_LAT = 42.2304418;
+var MONTHLY_OVERHEAD = 21314.48;
+var WORKING_DAYS = 22;
+var DAILY_OVERHEAD = MONTHLY_OVERHEAD / WORKING_DAYS; // $969.75/day
 var DEPOT_LNG = -71.8356176;
 var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
@@ -1009,6 +1014,31 @@ function renderProjects(){
     html+='</div>';
     // Budget bar
     if(budget>0) html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Budget: '+fmtC(budget)+'</span><span style="color:'+(pct>=100?'var(--red)':'var(--text)')+'">'+pct+'% used · '+fmtC(totalCost)+'</span></div><div style="background:#e0e0e0;border-radius:99px;height:6px"><div style="background:'+(pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)')+';height:6px;border-radius:99px;width:'+pct+'%"></div></div></div>';
+    // P&L Section
+    var overhead = p.overhead || 0;
+    var profit = budget - laborCost - extraCost - overhead;
+    var profitPct = budget > 0 ? Math.round((profit/budget)*100) : 0;
+    var costPct = budget > 0 ? Math.min(100, Math.round(((laborCost+extraCost+overhead)/budget)*100)) : 0;
+    var isProfit = profit >= 0;
+    if(budget > 0){
+      html += '<div style="background:'+(isProfit?'#f0fdf4':'#fef2f2')+';border:1px solid '+(isProfit?'#16a34a33':'#dc262633')+';border-radius:12px;padding:14px;margin-bottom:14px">';
+      html += '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px;letter-spacing:.5px">📊 P&L SUMMARY</div>';
+      // Rows
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">💵 Contract Value</span><span style="color:#2563eb;font-weight:700">'+fmtC(budget)+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">👷 Labor</span><span style="color:var(--red);font-weight:700">− '+fmtC(laborCost)+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🧱 Materials & Extras</span><span style="color:var(--red);font-weight:700">− '+fmtC(extraCost)+'</span></div>';
+      if(overhead > 0){
+        var daysLabel = p.workingDays ? ' ('+p.workingDays+' days)' : '';
+        html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">⚙️ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">− '+fmtC(overhead)+'</span></div>';
+      }
+      // Total
+      html += '<div style="display:flex;justify-content:space-between;font-size:15px;padding:8px 0 4px;font-family:var(--font-d);font-weight:800"><span>'+(isProfit?'🟢 Net Profit':'🔴 Net Loss')+'</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">'+( isProfit?'':'− ')+fmtC(Math.abs(profit))+'</span></div>';
+      // Bar
+      html += '<div style="background:#e0e0e0;border-radius:99px;height:7px;margin-top:6px;overflow:hidden"><div style="height:7px;border-radius:99px;width:'+costPct+'%;background:'+(costPct>=100?'var(--red)':'#f59e0b')+'"></div></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Costs: '+costPct+'%</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">Margin: '+Math.abs(profitPct)+'%'+(isProfit?'':' (loss)')+'</span></div>';
+      html += '</div>';
+    }
+
     // Expenses
     if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div>'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+new Date(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted)">✕</button></div></div>';}).join('')+'</div>';
     // Add expense
@@ -1053,8 +1083,11 @@ function addProject(){
   var name=document.getElementById('proj-name').value.trim(), desc=document.getElementById('proj-desc').value.trim(), budget=parseFloat(document.getElementById('proj-budget').value)||0, start=document.getElementById('proj-start').value, end=document.getElementById('proj-end').value;
   if(!name) return showToast('Enter a project name','err');
   if(!start) return showToast('Select a start date','err');
-  db.collection('projects').add({name:name,desc:desc,budget:budget,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
-  document.getElementById('proj-name').value=''; document.getElementById('proj-desc').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
+  var days=parseFloat(document.getElementById('proj-days').value)||0;
+  var overhead=Math.round(days*DAILY_OVERHEAD*100)/100;
+  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  document.getElementById('proj-name').value=''; document.getElementById('proj-desc').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-days').value=''; document.getElementById('proj-end').value='';
+  document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
 }
 window.addProject=addProject;
@@ -1101,6 +1134,12 @@ function openEditProj(id){
   document.getElementById('ep-name').value=p.name||'';
   document.getElementById('ep-desc').value=p.desc||'';
   document.getElementById('ep-budget').value=p.budget||'';
+  document.getElementById('ep-days').value=p.workingDays||'';
+  var epPrev=document.getElementById('ep-overhead-preview');
+  if(p.workingDays&&p.workingDays>0){
+    document.getElementById('ep-overhead-val').textContent=fmtC(p.overhead||0)+' ('+p.workingDays+' days × $'+DAILY_OVERHEAD.toFixed(2)+')';
+    epPrev.style.display='block';
+  } else { epPrev.style.display='none'; }
   document.getElementById('ep-start').value=p.start||'';
   document.getElementById('ep-end').value=p.end||'';
   document.getElementById('modal-edit-project').classList.add('open');
@@ -1109,9 +1148,9 @@ window.openEditProj=openEditProj;
 
 function saveEditProject(){
   if(!editingProjId) return;
-  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
+  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, days=parseFloat(document.getElementById('ep-days').value)||0, overhead=Math.round(days*DAILY_OVERHEAD*100)/100, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,start:start,end:end||null});
+  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,start:start,end:end||null});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
@@ -1356,6 +1395,26 @@ function showClockOutReminder(){
 function stopGeofence(){
   if(geofenceWatcher){ navigator.geolocation.clearWatch(geofenceWatcher); geofenceWatcher=null; }
 }
+
+// Live overhead preview
+function setupOverheadPreview(daysId, previewId, valId){
+  var input=document.getElementById(daysId);
+  if(!input) return;
+  input.addEventListener('input', function(){
+    var days=parseFloat(this.value)||0;
+    var prev=document.getElementById(previewId);
+    var val=document.getElementById(valId);
+    if(days>0){
+      val.textContent=fmtC(Math.round(days*DAILY_OVERHEAD*100)/100)+' ('+days+' days × $'+DAILY_OVERHEAD.toFixed(2)+'/day)';
+      prev.style.display='block';
+    } else {
+      prev.style.display='none';
+    }
+  });
+}
+setTimeout(function(){
+  setupOverheadPreview('proj-days','proj-overhead-preview','proj-overhead-val');
+},500);
 
 document.getElementById('loading').style.display='none';
 if(!checkRoute()){
