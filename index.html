@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412215503 -->
+<!-- WorkLog GreenIdea v20260412221939 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -307,7 +307,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
     <!-- PROJECTS -->
     <div id="tab-projects" class="tab-panel">
-      <div class="section-title">Projects</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div class="section-title" style="margin:0">Projects</div>
+      </div>
+      <div style="position:relative;margin-bottom:14px">
+        <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
+      </div>
       <div class="card" style="margin-bottom:18px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
@@ -982,11 +987,20 @@ function delAbsence(id){db.collection('absences').doc(id).delete(); showToast('A
 window.delAbsence=delAbsence;
 
 // ── PROJECTS ──────────────────────────────────────────
-function renderProjects(){
+function renderProjects(filter){
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=new Date().toISOString().slice(0,10);
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
-  el.innerHTML=projects.map(function(p){
+  // Sort: active first, then paused, then completed
+  var sorted = projects.slice().sort(function(a,b){
+    var order = {active:0, paused:1, completed:2};
+    return (order[a.status]||2) - (order[b.status]||2);
+  });
+  // Filter by search
+  var q = (filter || (document.getElementById('proj-search')?document.getElementById('proj-search').value:'')||'').toLowerCase().trim();
+  if(q) sorted = sorted.filter(function(p){ return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.desc||'').toLowerCase().indexOf(q)>=0; });
+  if(!sorted.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects found.</div>'; return;}
+  el.innerHTML=sorted.map(function(p){
     // Hours = only entries directly linked to this project via projectId
     var projEntries=entries.filter(function(e){return e.endTime&&e.projectId===p.id;});
     var laborMin=projEntries.reduce(function(s,e){return s+gMin(e);},0);
@@ -1254,6 +1268,11 @@ function showDepotQR(){
   document.getElementById('modal-qr').classList.add('open');
 }
 window.showDepotQR=showDepotQR;
+
+function filterProjects(){
+  renderProjects();
+}
+window.filterProjects=filterProjects;
 
 function exportCSV(){
   var rows=[['Helper','Date','Start','End','Minutes','Note','Type','Project']];
