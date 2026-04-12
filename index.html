@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412143323 -->
+<!-- WorkLog GreenIdea v20260412195413 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -465,8 +465,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
-    <div class="fg"><label>Working Days on this Job</label><input id="ep-days" type="number" min="0.5" step="0.5"/></div>
-    <div id="ep-overhead-preview" style="font-size:12px;color:var(--muted);margin-top:-6px;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Overhead: <strong id="ep-overhead-val"></strong></div>
+        <div style="display:flex;gap:10px">
+          <div class="fg" style="flex:1"><label>Working Days</label><input id="ep-days" type="number" min="0.5" step="0.5"/></div>
+          <div class="fg" style="flex:1"><label>Teams on Job</label><input id="ep-teams" type="number" min="1" step="1" value="1"/></div>
+        </div>
+        <div id="ep-overhead-preview" style="font-size:12px;color:var(--muted);margin-top:-6px;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Overhead: <strong id="ep-overhead-val"></strong></div>
     <div class="form-row">
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
@@ -499,7 +502,8 @@ var helpers=[], entries=[], payments=[], absences=[], projects=[], projectExpens
 var DEPOT_LAT = 42.2304418;
 var MONTHLY_OVERHEAD = 21314.48;
 var WORKING_DAYS = 22;
-var DAILY_OVERHEAD = MONTHLY_OVERHEAD / WORKING_DAYS; // $969.75/day
+var NUM_TEAMS = 2; // Total number of teams
+var DAILY_OVERHEAD = (MONTHLY_OVERHEAD / WORKING_DAYS) / NUM_TEAMS; // $484.88/team/day
 var DEPOT_LNG = -71.8356176;
 var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
@@ -1028,7 +1032,11 @@ function renderProjects(){
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">👷 Labor</span><span style="color:var(--red);font-weight:700">− '+fmtC(laborCost)+'</span></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🧱 Materials & Extras</span><span style="color:var(--red);font-weight:700">− '+fmtC(extraCost)+'</span></div>';
       if(overhead > 0){
-        var daysLabel = p.workingDays ? ' ('+p.workingDays+' days)' : '';
+        var daysLabel='';
+        if(p.workingDays){
+          var t=p.teamsOnJob||1;
+          daysLabel=' ('+p.workingDays+' days × '+t+' team'+(t>1?'s':'')+')';
+        }
         html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">⚙️ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">− '+fmtC(overhead)+'</span></div>';
       }
       // Total
@@ -1084,9 +1092,10 @@ function addProject(){
   if(!name) return showToast('Enter a project name','err');
   if(!start) return showToast('Select a start date','err');
   var days=parseFloat(document.getElementById('proj-days').value)||0;
-  var overhead=Math.round(days*DAILY_OVERHEAD*100)/100;
-  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
-  document.getElementById('proj-name').value=''; document.getElementById('proj-desc').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-days').value=''; document.getElementById('proj-end').value='';
+  var teams=parseFloat(document.getElementById('proj-teams').value)||1;
+  var overhead=Math.round(days*teams*DAILY_OVERHEAD*100)/100;
+  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,teamsOnJob:teams,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  document.getElementById('proj-name').value=''; document.getElementById('proj-desc').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-days').value=''; document.getElementById('proj-teams').value='1'; document.getElementById('proj-end').value='';
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
 }
@@ -1135,9 +1144,11 @@ function openEditProj(id){
   document.getElementById('ep-desc').value=p.desc||'';
   document.getElementById('ep-budget').value=p.budget||'';
   document.getElementById('ep-days').value=p.workingDays||'';
+  document.getElementById('ep-teams').value=p.teamsOnJob||1;
   var epPrev=document.getElementById('ep-overhead-preview');
   if(p.workingDays&&p.workingDays>0){
-    document.getElementById('ep-overhead-val').textContent=fmtC(p.overhead||0)+' ('+p.workingDays+' days × $'+DAILY_OVERHEAD.toFixed(2)+')';
+    var t=p.teamsOnJob||1;
+    document.getElementById('ep-overhead-val').textContent=fmtC(p.overhead||0)+' ('+p.workingDays+' days × '+t+' team'+(t>1?'s':'')+' × $'+DAILY_OVERHEAD.toFixed(2)+')';
     epPrev.style.display='block';
   } else { epPrev.style.display='none'; }
   document.getElementById('ep-start').value=p.start||'';
@@ -1148,9 +1159,9 @@ window.openEditProj=openEditProj;
 
 function saveEditProject(){
   if(!editingProjId) return;
-  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, days=parseFloat(document.getElementById('ep-days').value)||0, overhead=Math.round(days*DAILY_OVERHEAD*100)/100, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
+  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, days=parseFloat(document.getElementById('ep-days').value)||0, teams=parseFloat(document.getElementById('ep-teams').value)||1, overhead=Math.round(days*teams*DAILY_OVERHEAD*100)/100, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,start:start,end:end||null});
+  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,workingDays:days,teamsOnJob:teams,start:start,end:end||null});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
@@ -1397,23 +1408,29 @@ function stopGeofence(){
 }
 
 // Live overhead preview
-function setupOverheadPreview(daysId, previewId, valId){
-  var input=document.getElementById(daysId);
-  if(!input) return;
-  input.addEventListener('input', function(){
-    var days=parseFloat(this.value)||0;
+function setupOverheadPreview(daysId, teamsId, previewId, valId){
+  var dInput=document.getElementById(daysId);
+  var tInput=document.getElementById(teamsId);
+  if(!dInput) return;
+  function update(){
+    var days=parseFloat(dInput.value)||0;
+    var teams=parseFloat(tInput?tInput.value:1)||1;
     var prev=document.getElementById(previewId);
     var val=document.getElementById(valId);
     if(days>0){
-      val.textContent=fmtC(Math.round(days*DAILY_OVERHEAD*100)/100)+' ('+days+' days × $'+DAILY_OVERHEAD.toFixed(2)+'/day)';
+      var oh=Math.round(days*teams*DAILY_OVERHEAD*100)/100;
+      val.textContent=fmtC(oh)+' ('+days+' days × '+teams+' team'+(teams>1?'s':'')+' × $'+DAILY_OVERHEAD.toFixed(2)+')';
       prev.style.display='block';
     } else {
       prev.style.display='none';
     }
-  });
+  }
+  dInput.addEventListener('input', update);
+  if(tInput) tInput.addEventListener('input', update);
 }
 setTimeout(function(){
-  setupOverheadPreview('proj-days','proj-overhead-preview','proj-overhead-val');
+  setupOverheadPreview('proj-days','proj-teams','proj-overhead-preview','proj-overhead-val');
+  setupOverheadPreview('ep-days','ep-teams','ep-overhead-preview','ep-overhead-val');
 },500);
 
 document.getElementById('loading').style.display='none';
