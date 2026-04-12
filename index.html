@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412221939 -->
+<!-- WorkLog GreenIdea v20260412222613 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -993,8 +993,15 @@ function renderProjects(filter){
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
   // Sort: active first, then paused, then completed
   var sorted = projects.slice().sort(function(a,b){
-    var order = {active:0, paused:1, completed:2};
-    return (order[a.status]||2) - (order[b.status]||2);
+    var orderVal = function(s){
+      if(s==='active') return 0;
+      if(s==='paused') return 1;
+      return 2;
+    };
+    var diff = orderVal(a.status) - orderVal(b.status);
+    // If same status, keep newest first (by createdAt)
+    if(diff===0) return (b.createdAt||'') > (a.createdAt||'') ? 1 : -1;
+    return diff;
   });
   // Filter by search
   var q = (filter || (document.getElementById('proj-search')?document.getElementById('proj-search').value:'')||'').toLowerCase().trim();
