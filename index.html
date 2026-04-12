@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412225806 -->
+<!-- WorkLog GreenIdea v20260412230856 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -606,6 +606,12 @@ function setSyncStatus(ok){var d=document.getElementById('sync-dot'),l=document.
 
 // ── FIREBASE LISTENERS ─────────────────────────────────
 function startListeners(){
+  // If helper session, store their ID for security reference
+  var sess = localStorage.getItem('wl_session');
+  if(sess && sess.indexOf('helper:')===0){
+    var hid = sess.replace('helper:','');
+    window._currentHelperId = hid;
+  }
   db.collection('helpers').onSnapshot(function(s){helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){setSyncStatus(false);});
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -688,6 +694,10 @@ window.closeModal=closeModal;
 // ── HELPER VIEW ────────────────────────────────────────
 function openHelperView(hid){
   localStorage.setItem('wl_session','helper:'+hid);
+  // Sign in anonymously so Firestore rules can identify the session
+  if(!firebase.auth().currentUser){
+    firebase.auth().signInAnonymously().catch(function(){});
+  }
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
   document.getElementById('helper-name-display').textContent=h.name;
@@ -1663,6 +1673,8 @@ function updateOHPreview(prefix){
 
 // ── AUTH ───────────────────────────────────────────────
 var auth = firebase.auth();
+// Enable anonymous auth persistence
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
 
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
