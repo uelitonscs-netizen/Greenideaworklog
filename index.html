@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260412230856 -->
+<!-- WorkLog GreenIdea v20260414114244 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -861,7 +861,7 @@ function renderDashboard(){
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
       '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br>Total: '+fmtD(m)+'<br>Earned: <span style="color:var(--green2)">'+fmtC(pay)+'</span></div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
-      '<span style="font-size:11px;color:var(--blue);cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy link</span>'+
+      '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
       '</div></div>';
   }).join('');
@@ -1380,6 +1380,14 @@ function showDepotQR(){
   document.getElementById('modal-qr').classList.add('open');
 }
 window.showDepotQR=showDepotQR;
+
+// Event delegation for copy link buttons
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-link]');
+  if(btn && btn.dataset.link){
+    copyLink(btn.dataset.link);
+  }
+});
 
 function filterProjects(){
   renderProjects();
