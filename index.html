@@ -1206,7 +1206,7 @@ function initEntryMaps(){
   if(typeof L === 'undefined') return;
   var mapDivs = document.querySelectorAll('[id^="map-"]');
   mapDivs.forEach(function(div){
-    if(div._leaflet_id) return; // already initialized
+    if(div._leaflet_id) return;
     var latIn = parseFloat(div.dataset.latIn);
     var lngIn = parseFloat(div.dataset.lngIn);
     var latOut = parseFloat(div.dataset.latOut);
@@ -1226,12 +1226,22 @@ function initEntryMaps(){
       var redIcon = L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
       L.marker([latOut, lngOut], {icon:redIcon}).addTo(map);
     }
+    // Set view first, then fix size after paint
     if(hasIn && hasOut){
       var bounds = L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]);
       map.fitBounds(bounds, {padding:[20,20]});
     } else {
       map.setView([centerLat, centerLng], 14);
     }
+    // Force Leaflet to recalculate size after container becomes visible
+    setTimeout(function(){
+      map.invalidateSize();
+      if(hasIn && hasOut){
+        map.fitBounds(L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]), {padding:[20,20]});
+      } else {
+        map.setView([centerLat, centerLng], 14);
+      }
+    }, 200);
   });
 }
 window.initEntryMaps=initEntryMaps;
@@ -1243,7 +1253,7 @@ function toggleHelperEntries(hid){
     var open=el.style.display!=='none';
     el.style.display=open?'none':'block';
     if(arrow) arrow.textContent=open?'▼':'▲';
-    if(!open) setTimeout(initEntryMaps, 50);
+    if(!open) setTimeout(initEntryMaps, 300);
   }
 }
 window.toggleHelperEntries=toggleHelperEntries;
