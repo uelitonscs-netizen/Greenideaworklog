@@ -909,20 +909,9 @@ function updateHelperStats(){
   if(open&&open.projectId){var pj=projects.find(function(p){return p.id===open.projectId;}); if(pj) projName='WORKING ON: '+pj.name.toUpperCase();}
   document.getElementById('clock-status').textContent=open?(projName||'CLOCKED IN SINCE '+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'NOT CLOCKED IN';
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
-  var isPreview = document.getElementById('admin-preview-banner').style.display !== 'none';
   if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red'; tel.className='clock-time'; updateElapsed(open.startTime);}
   else{btn.textContent='Clock In'; btn.className='btn clock-btn green'; tel.className='clock-time idle'; tel.textContent='00:00:00';}
-  if(isPreview){
-    btn.disabled=true;
-    btn.style.opacity='0.4';
-    btn.style.cursor='not-allowed';
-    btn.title='Admin preview — clock in disabled';
-  } else {
-    btn.disabled=false;
-    btn.style.opacity='';
-    btn.style.cursor='';
-    btn.title='';
-  }
+  btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title='';
   var tm=totalMin(h.id);
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
   document.getElementById('stat-week').textContent=fmtD(weekMin(h.id));
@@ -938,7 +927,6 @@ function getLocation(){return new Promise(function(resolve){if(!navigator.geoloc
 
 function toggleClock(){
   if(!currentHelper) return;
-  if(document.getElementById('admin-preview-banner').style.display !== 'none') return;
   var open=getOpen(currentHelper.id);
   var btn=document.getElementById('clock-btn');
   btn.textContent='Getting location...'; btn.disabled=true;
