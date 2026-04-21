@@ -1216,32 +1216,44 @@ function initEntryMaps(){
     if(!hasIn && !hasOut) return;
     var centerLat = hasIn ? latIn : latOut;
     var centerLng = hasIn ? lngIn : lngOut;
-    var map = L.map(div, {zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false});
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    if(hasIn){
-      var greenIcon = L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#16a34a;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
-      L.marker([latIn, lngIn], {icon:greenIcon}).addTo(map);
-    }
-    if(hasOut){
-      var redIcon = L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
-      L.marker([latOut, lngOut], {icon:redIcon}).addTo(map);
-    }
-    // Set view first, then fix size after paint
-    if(hasIn && hasOut){
-      var bounds = L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]);
-      map.fitBounds(bounds, {padding:[20,20]});
-    } else {
-      map.setView([centerLat, centerLng], 14);
-    }
-    // Force Leaflet to recalculate size after container becomes visible
-    setTimeout(function(){
-      map.invalidateSize();
-      if(hasIn && hasOut){
-        map.fitBounds(L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]), {padding:[20,20]});
-      } else {
-        map.setView([centerLat, centerLng], 14);
+
+    function buildMap(){
+      if(div._leaflet_id) return;
+      if(div.offsetWidth === 0 || div.offsetHeight === 0) return;
+      var map = L.map(div, {zoomControl:false, attributionControl:false, dragging:true, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:true});
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+      if(hasIn){
+        var gi=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#16a34a;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',iconSize:[16,16],iconAnchor:[8,8],className:''});
+        L.marker([latIn,lngIn],{icon:gi}).addTo(map);
       }
-    }, 200);
+      if(hasOut){
+        var ri=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',iconSize:[16,16],iconAnchor:[8,8],className:''});
+        L.marker([latOut,lngOut],{icon:ri}).addTo(map);
+      }
+      if(hasIn && hasOut && Math.abs(latIn-latOut)+Math.abs(lngIn-lngOut) > 0.0001){
+        map.fitBounds(L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]),{padding:[24,24]});
+      } else {
+        map.setView([centerLat,centerLng],16);
+      }
+      // Final invalidate after render
+      setTimeout(function(){ map.invalidateSize(true); },100);
+    }
+
+    // Use ResizeObserver to detect when div becomes visible/sized
+    if(typeof ResizeObserver !== 'undefined'){
+      var ro = new ResizeObserver(function(entries){
+        entries.forEach(function(entry){
+          if(entry.contentRect.width > 0 && entry.contentRect.height > 0){
+            buildMap();
+            ro.disconnect();
+          }
+        });
+      });
+      ro.observe(div);
+    } else {
+      // Fallback for older browsers
+      setTimeout(buildMap, 400);
+    }
   });
 }
 window.initEntryMaps=initEntryMaps;
