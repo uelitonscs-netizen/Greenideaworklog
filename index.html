@@ -625,7 +625,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   </div>
 </div>
 
-
+<div id="modal-edit-project" class="modal-overlay">
   <div class="modal">
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
@@ -1901,7 +1901,6 @@ function renderSettingsTeam(){
         '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
         '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
       '</div>' +
-      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">Edit</button>' +
       '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
       '</div>';
   }).join('');
