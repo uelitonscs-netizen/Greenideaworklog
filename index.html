@@ -11,16 +11,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="WorkLog"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#f5f5f5;--surface:#fff;--border:#e0e0e0;--border2:#ccc;
   --text:#1a1a1a;--muted:#888;--green:#1a6b2a;--green2:#16a34a;
   --red:#dc2626;--blue:#2563eb;--amber:#f59e0b;
-  --font-d:'Syne',sans-serif;--font-m:'DM Mono',monospace;
+  --font-d:'Inter',sans-serif;--font-m:'Inter',sans-serif;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font-m);min-height:100vh;font-size:14px;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-m);min-height:100vh;font-size:14px;letter-spacing:-0.1px;}
 *{-webkit-tap-highlight-color:transparent;}
 
 /* BUTTONS */
@@ -224,6 +224,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <button class="nav-btn" onclick="aTab('payments',this)">💳 Payments</button>
     <button class="nav-btn" onclick="aTab('absences',this)">🗓 Absences</button>
     <button class="nav-btn" onclick="aTab('projects',this)">📁 Projects</button>
+    <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
   </div>
   <div class="admin-body">
 
@@ -327,6 +328,130 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button class="btn" onclick="addAbsence()">+ Add Absence</button>
       </div>
       <div id="absences-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tab-panel">
+      <div class="section-title">Settings</div>
+
+      <!-- Profile -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px">
+        <div style="padding:20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border)">
+          <div id="settings-avatar" style="width:56px;height:56px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:20px;color:#fff;flex-shrink:0">A</div>
+          <div>
+            <div style="font-weight:700;font-size:16px" id="settings-name-display">Admin</div>
+            <div style="font-size:12px;color:var(--muted)" id="settings-email-display">—</div>
+          </div>
+        </div>
+        <div style="padding:0 6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">🏢</span><span style="font-weight:600;font-size:14px">Company</span></div>
+            <span style="font-size:13px;color:var(--muted)">Green Idea Insulation</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">⏻</span><span style="font-weight:600;font-size:14px">Sign Out</span></div>
+            <button onclick="adminLogout()" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overtime & Pay -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;padding:0 2px;margin-bottom:8px">OVERTIME & PAY</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px;padding:0 6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;font-size:14px">Overtime Threshold</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Hours/week before OT kicks in</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input id="set-ot-threshold" type="number" value="40" min="1" max="80" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+            <span style="font-size:12px;color:var(--muted)">hrs</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px">
+          <div>
+            <div style="font-weight:600;font-size:14px">OT Multiplier</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Pay rate multiplier for overtime</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input id="set-ot-mult" type="number" value="1.5" min="1" max="3" step="0.25" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+            <span style="font-size:12px;color:var(--muted)">×</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overhead -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;padding:0 2px;margin-bottom:8px">OVERHEAD</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px;padding:0 6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;font-size:14px">Monthly Overhead</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Total monthly cost</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:13px;color:var(--muted)">$</span>
+            <input id="set-monthly-oh" type="number" value="21314.48" min="0" style="width:100px;text-align:right;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;font-size:14px">Working Days/Month</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Used to calc daily overhead</div>
+          </div>
+          <input id="set-work-days" type="number" value="22" min="1" max="31" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px">
+          <div>
+            <div style="font-weight:600;font-size:14px">Number of Teams</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Daily overhead splits by teams</div>
+          </div>
+          <input id="set-num-teams" type="number" value="2" min="1" max="10" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+        </div>
+      </div>
+
+      <!-- Depot -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;padding:0 2px;margin-bottom:8px">DEPOT & GEOFENCING</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px;padding:0 6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;font-size:14px">Geofence Radius</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Auto clock-in distance from depot</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input id="set-geo-radius" type="number" value="50" min="10" max="500" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
+            <span style="font-size:12px;color:var(--muted)">m</span>
+          </div>
+        </div>
+        <div style="padding:14px 14px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-weight:600;font-size:14px">📷 Depot QR Code</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Print for clock-in at depot entrance</div>
+          </div>
+          <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Show QR</button>
+        </div>
+      </div>
+
+      <!-- Manage Team -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;padding:0 2px;margin-bottom:8px">MANAGE TEAM</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px">
+        <!-- Add new helper inline -->
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <label>Name</label>
+            <input id="set-nh-name" placeholder="e.g. Maria"/>
+          </div>
+          <div style="width:90px">
+            <label>Rate ($/hr)</label>
+            <input id="set-nh-rate" type="number" placeholder="15"/>
+          </div>
+          <button onclick="settingsAddHelper()" class="btn sm" style="flex-shrink:0;margin-bottom:1px">+ Add</button>
+        </div>
+        <!-- Team list -->
+        <div id="settings-team-list"></div>
+      </div>
+
+      <!-- Save button -->
+      <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
     </div>
 
     <!-- PROJECTS -->
@@ -488,7 +613,19 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   </div>
 </div>
 
-<div id="modal-edit-project" class="modal-overlay">
+<div id="modal-edit-helper-rate" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="ehr-title">Edit Helper</div>
+    <div class="fg"><label>Name</label><input id="ehr-name"/></div>
+    <div class="fg"><label>Rate ($/hr)</label><input id="ehr-rate" type="number"/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveHelperRate()">✓ Save</button>
+      <button class="btn ghost" onclick="closeModal('modal-edit-helper-rate')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
   <div class="modal">
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
@@ -539,6 +676,19 @@ var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
 var currentHelper=null, liveInterval=null, adminRange='current-week', sumPeriod='week';
 var pendingDeleteId=null, editingProjId=null, quickHoursHelperId=null, currentAdminTab='dashboard';
+var OT_THRESHOLD_MINS = 40*60;
+var OT_MULTIPLIER = 1.5;
+// Apply saved settings on boot
+(function(){
+  var saved = JSON.parse(localStorage.getItem('wl_settings')||'{}');
+  if(saved.monthlyOH) MONTHLY_OVERHEAD = saved.monthlyOH;
+  if(saved.workDays) WORKING_DAYS = saved.workDays;
+  if(saved.numTeams) NUM_TEAMS = saved.numTeams;
+  DAILY_OVERHEAD = Math.round((MONTHLY_OVERHEAD / WORKING_DAYS / NUM_TEAMS)*100)/100;
+  if(saved.geoRadius) DEPOT_RADIUS = saved.geoRadius;
+  if(saved.otThreshold) OT_THRESHOLD_MINS = saved.otThreshold * 60;
+  if(saved.otMult) OT_MULTIPLIER = saved.otMult;
+})();
 
 // ── UTILS ──────────────────────────────────────────────
 function p2(n){return String(n).padStart(2,'0');}
@@ -575,13 +725,13 @@ function calcWeekPay(hid, rate){
   });
   var totalReg=0, totalOT=0;
   Object.values(weeks).forEach(function(w){
-    var regMins=Math.min(w.mins, 40*60);
-    var otMins=Math.max(0, w.mins - 40*60);
+    var regMins=Math.min(w.mins, OT_THRESHOLD_MINS);
+    var otMins=Math.max(0, w.mins - OT_THRESHOLD_MINS);
     totalReg+=regMins;
     totalOT+=otMins;
   });
   var regPay=(totalReg/60)*rate;
-  var otPay=(totalOT/60)*(rate*1.5);
+  var otPay=(totalOT/60)*(rate*OT_MULTIPLIER);
   return {regMins:totalReg, otMins:totalOT, regPay:regPay, otPay:otPay, totalPay:regPay+otPay};
 }
 
@@ -597,12 +747,12 @@ function calcPeriodPay(hid, rate, startDate, endDate){
   });
   var totalReg=0, totalOT=0;
   Object.values(weeks).forEach(function(w){
-    var regMins=Math.min(w.mins,40*60);
-    var otMins=Math.max(0,w.mins-40*60);
+    var regMins=Math.min(w.mins,OT_THRESHOLD_MINS);
+    var otMins=Math.max(0,w.mins-OT_THRESHOLD_MINS);
     totalReg+=regMins; totalOT+=otMins;
   });
   var regPay=(totalReg/60)*rate;
-  var otPay=(totalOT/60)*(rate*1.5);
+  var otPay=(totalOT/60)*(rate*OT_MULTIPLIER);
   return {regMins:totalReg,otMins:totalOT,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
 }
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
@@ -666,7 +816,7 @@ function renderAdminTab(n){
   else if(n==='summary') renderSummary();
   else if(n==='payments') renderPayments();
   else if(n==='absences') renderAbsences();
-  else if(n==='projects') renderProjects();
+  else if(n==='settings') renderSettings();
 }
 
 function hTab(name,btn){
@@ -1707,6 +1857,118 @@ function updateOHPreview(prefix){
     }
   }
 }
+
+// ── SETTINGS ───────────────────────────────────────────
+function renderSettings(){
+  // Populate profile
+  var user = firebase.auth().currentUser;
+  if(user){
+    var nameEl = document.getElementById('settings-name-display');
+    var emailEl = document.getElementById('settings-email-display');
+    var avatarEl = document.getElementById('settings-avatar');
+    if(nameEl) nameEl.textContent = user.displayName || 'Admin';
+    if(emailEl) emailEl.textContent = user.email || '—';
+    if(avatarEl) avatarEl.textContent = (user.displayName||user.email||'A')[0].toUpperCase();
+  }
+  // Load saved settings
+  var saved = JSON.parse(localStorage.getItem('wl_settings')||'{}');
+  var ot = document.getElementById('set-ot-threshold'); if(ot) ot.value = saved.otThreshold||40;
+  var om = document.getElementById('set-ot-mult'); if(om) om.value = saved.otMult||1.5;
+  var mo = document.getElementById('set-monthly-oh'); if(mo) mo.value = saved.monthlyOH||21314.48;
+  var wd = document.getElementById('set-work-days'); if(wd) wd.value = saved.workDays||22;
+  var nt = document.getElementById('set-num-teams'); if(nt) nt.value = saved.numTeams||2;
+  var gr = document.getElementById('set-geo-radius'); if(gr) gr.value = saved.geoRadius||50;
+  // Render team list
+  renderSettingsTeam();
+}
+
+function renderSettingsTeam(){
+  var el = document.getElementById('settings-team-list');
+  if(!el) return;
+  if(!helpers.length){
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">No helpers yet.</div>';
+    return;
+  }
+  el.innerHTML = helpers.map(function(h, i){
+    var cl = isClocked(h.id);
+    var wm = weekMin(h.id);
+    var initials = getInitials(h.name);
+    var avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    return '<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border)">' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
+      '</div>' +
+      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">Edit</button>' +
+      '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
+      '</div>';
+  }).join('');
+}
+window.renderSettingsTeam = renderSettingsTeam;
+
+var editingHelperId = null;
+function openEditHelperRate(hid){
+  var h = hById(hid); if(!h) return;
+  editingHelperId = hid;
+  document.getElementById('ehr-title').textContent = 'Edit — '+h.name;
+  document.getElementById('ehr-name').value = h.name;
+  document.getElementById('ehr-rate').value = h.rate;
+  document.getElementById('modal-edit-helper-rate').classList.add('open');
+}
+window.openEditHelperRate = openEditHelperRate;
+
+function saveHelperRate(){
+  if(!editingHelperId) return;
+  var name = document.getElementById('ehr-name').value.trim();
+  var rate = parseFloat(document.getElementById('ehr-rate').value);
+  if(!name) return showToast('Enter a name','err');
+  if(isNaN(rate)||rate<0) return showToast('Enter a valid rate','err');
+  db.collection('helpers').doc(editingHelperId).update({name:name, rate:rate});
+  closeModal('modal-edit-helper-rate');
+  showToast('Helper updated! ✅');
+}
+window.saveHelperRate = saveHelperRate;
+
+function settingsAddHelper(){
+  var name = document.getElementById('set-nh-name').value.trim();
+  var rate = parseFloat(document.getElementById('set-nh-rate').value);
+  if(!name) return showToast('Enter a name','err');
+  if(isNaN(rate)||rate<0) return showToast('Enter a valid rate','err');
+  db.collection('helpers').add({name:name, rate:rate, createdAt:new Date().toISOString()});
+  document.getElementById('set-nh-name').value = '';
+  document.getElementById('set-nh-rate').value = '';
+  showToast(name+' added! ✅');
+}
+window.settingsAddHelper = settingsAddHelper;
+
+function settingsPromptDelete(hid){
+  pendingDeleteId = hid;
+  document.getElementById('modal-delete-helper').classList.add('open');
+}
+window.settingsPromptDelete = settingsPromptDelete;
+
+function saveSettings(){
+  var otThreshold = parseFloat(document.getElementById('set-ot-threshold').value)||40;
+  var otMult = parseFloat(document.getElementById('set-ot-mult').value)||1.5;
+  var monthlyOH = parseFloat(document.getElementById('set-monthly-oh').value)||21314.48;
+  var workDays = parseInt(document.getElementById('set-work-days').value)||22;
+  var numTeams = parseInt(document.getElementById('set-num-teams').value)||2;
+  var geoRadius = parseInt(document.getElementById('set-geo-radius').value)||50;
+  // Save to localStorage
+  localStorage.setItem('wl_settings', JSON.stringify({otThreshold:otThreshold,otMult:otMult,monthlyOH:monthlyOH,workDays:workDays,numTeams:numTeams,geoRadius:geoRadius}));
+  // Apply immediately
+  MONTHLY_OVERHEAD = monthlyOH;
+  WORKING_DAYS = workDays;
+  NUM_TEAMS = numTeams;
+  DAILY_OVERHEAD = Math.round((MONTHLY_OVERHEAD / WORKING_DAYS / NUM_TEAMS)*100)/100;
+  DEPOT_RADIUS = geoRadius;
+  OT_THRESHOLD_MINS = otThreshold * 60;
+  OT_MULTIPLIER = otMult;
+  showToast('Settings saved! ✅');
+}
+window.saveSettings=saveSettings;
+window.renderSettings=renderSettings;
 
 // ── AUTH ───────────────────────────────────────────────
 var auth = firebase.auth();
