@@ -481,6 +481,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
 <!-- HELPER VIEW -->
 <div id="screen-helper" class="screen">
+  <!-- Admin Preview Banner -->
+  <div id="admin-preview-banner" style="display:none;background:#f59e0b;color:#fff;padding:8px 16px;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;">
+    <span>👁 Admin Preview Mode</span>
+    <button onclick="exitAdminPreview()" style="background:rgba(0,0,0,0.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">← Back</button>
+  </div>
   <div class="helper-header">
     <div>
       <div class="helper-sub">LOGGED IN AS</div>
@@ -788,7 +793,22 @@ function refreshView(){
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
-function goLanding(){stopLiveClock(); currentHelper=null; showScreen('landing');}
+function goLanding(){
+  stopLiveClock();
+  currentHelper=null;
+  var banner=document.getElementById('admin-preview-banner');
+  if(banner) banner.style.display='none';
+  showScreen('landing');
+}
+function exitAdminPreview(){
+  stopLiveClock();
+  currentHelper=null;
+  var banner=document.getElementById('admin-preview-banner');
+  if(banner) banner.style.display='none';
+  showScreen('admin');
+  aTab('helpers', document.querySelector('.nav-btn[onclick*="helpers"]'));
+}
+window.exitAdminPreview=exitAdminPreview;
 function goAdmin(){
   var user = firebase.auth().currentUser;
   if(!user){ showScreen('screen-login' in document.getElementById('screen-login')?'login':'landing'); return; }
@@ -889,8 +909,20 @@ function updateHelperStats(){
   if(open&&open.projectId){var pj=projects.find(function(p){return p.id===open.projectId;}); if(pj) projName='WORKING ON: '+pj.name.toUpperCase();}
   document.getElementById('clock-status').textContent=open?(projName||'CLOCKED IN SINCE '+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'NOT CLOCKED IN';
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
+  var isPreview = document.getElementById('admin-preview-banner').style.display !== 'none';
   if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red'; tel.className='clock-time'; updateElapsed(open.startTime);}
   else{btn.textContent='Clock In'; btn.className='btn clock-btn green'; tel.className='clock-time idle'; tel.textContent='00:00:00';}
+  if(isPreview){
+    btn.disabled=true;
+    btn.style.opacity='0.4';
+    btn.style.cursor='not-allowed';
+    btn.title='Admin preview — clock in disabled';
+  } else {
+    btn.disabled=false;
+    btn.style.opacity='';
+    btn.style.cursor='';
+    btn.title='';
+  }
   var tm=totalMin(h.id);
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
   document.getElementById('stat-week').textContent=fmtD(weekMin(h.id));
@@ -906,6 +938,7 @@ function getLocation(){return new Promise(function(resolve){if(!navigator.geoloc
 
 function toggleClock(){
   if(!currentHelper) return;
+  if(document.getElementById('admin-preview-banner').style.display !== 'none') return;
   var open=getOpen(currentHelper.id);
   var btn=document.getElementById('clock-btn');
   btn.textContent='Getting location...'; btn.disabled=true;
@@ -1058,7 +1091,24 @@ function renderHelpersList(){
       '</div>';
   }).join('');
 }
-function openHelperViewAdmin(id){openHelperView(id);}
+function openHelperViewAdmin(id){
+  var h=hById(id); if(!h) return showToast('Helper not found','err');
+  currentHelper=h;
+  // Do NOT save session or sign in anonymously — admin stays as admin
+  document.getElementById('helper-name-display').textContent=h.name;
+  document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('active',i===0);});
+  document.querySelectorAll('.hpanel').forEach(function(p,i){p.classList.toggle('active',i===0);});
+  document.getElementById('m-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('m-start').value='09:00';
+  document.getElementById('m-end').value='17:00';
+  document.getElementById('m-note').value='';
+  // Show admin preview banner
+  var banner=document.getElementById('admin-preview-banner');
+  if(banner) banner.style.display='flex';
+  showScreen('helper');
+  updateHelperStats();
+  startLiveClock();
+}
 window.openHelperViewAdmin=openHelperViewAdmin;
 function promptDeleteHelper(id){pendingDeleteId=id; document.getElementById('modal-delete-helper').classList.add('open');}
 window.promptDeleteHelper=promptDeleteHelper;
