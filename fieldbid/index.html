@@ -1642,7 +1642,7 @@ function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(id
 function renderPicker(mode){
   var id=mode==='fa'?'faPicker':'eiPicker';
   var sel=mode==='fa'?faProd:eiProd;
-  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" data-mode="'+mode+'">+ New Type</button></div>';
+  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" data-mode="'+mode+'" data-act="addprod">+ New Type</button></div>';
   for(var i=0;i<products.length;i++){
     var pr=products[i];var on=pr.id===sel?' on':'';
     h+='<div class="popt-wrap">';
@@ -1671,7 +1671,7 @@ function renderPicker(mode){
       var m=btn.getAttribute('data-mode');
       delProdFromPicker(pid,m);
     }
-    else if(btn.classList&&btn.classList.contains('picker-add-btn')){
+    else if(act==='addprod'){
       openProdModal(-1);
     }
   });
@@ -1691,7 +1691,8 @@ function delProdFromPicker(pid,mode){
 function selProd(el){
   var mode=el.getAttribute('data-mode');var pid=el.getAttribute('data-pid');
   if(mode==='fa')faProd=pid;else eiProd=pid;
-  var container=el.parentNode;
+  var wrap=el.parentNode;
+  var container=wrap.parentNode;
   var opts=container.querySelectorAll('.popt');
   for(var i=0;i<opts.length;i++)opts[i].className='popt';
   el.className='popt on';
