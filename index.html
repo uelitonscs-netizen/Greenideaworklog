@@ -620,9 +620,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
 <div id="modal-edit-helper-rate" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title" id="ehr-title">Edit Helper</div>
-    <div class="fg"><label>Name</label><input id="ehr-name"/></div>
-    <div class="fg"><label>Rate ($/hr)</label><input id="ehr-rate" type="number"/></div>
+    <div class="modal-title" id="ehr-title">Edit Rate</div>
+    <div id="ehr-current" style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
+    <div class="fg"><label>New Rate ($/hr)</label><input id="ehr-rate" type="number" min="0" step="0.25"/></div>
     <div class="modal-actions">
       <button class="btn" onclick="saveHelperRate()">✓ Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-helper-rate')">Cancel</button>
@@ -2014,6 +2014,7 @@ function renderSettingsTeam(){
         '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
         '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
       '</div>' +
+      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Rate</button>' +
       '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
       '</div>';
   }).join('');
@@ -2024,8 +2025,8 @@ var editingHelperId = null;
 function openEditHelperRate(hid){
   var h = hById(hid); if(!h) return;
   editingHelperId = hid;
-  document.getElementById('ehr-title').textContent = 'Edit — '+h.name;
-  document.getElementById('ehr-name').value = h.name;
+  document.getElementById('ehr-title').textContent = h.name;
+  document.getElementById('ehr-current').textContent = 'Current rate: $'+h.rate+'/hr';
   document.getElementById('ehr-rate').value = h.rate;
   document.getElementById('modal-edit-helper-rate').classList.add('open');
 }
@@ -2033,13 +2034,11 @@ window.openEditHelperRate = openEditHelperRate;
 
 function saveHelperRate(){
   if(!editingHelperId) return;
-  var name = document.getElementById('ehr-name').value.trim();
   var rate = parseFloat(document.getElementById('ehr-rate').value);
-  if(!name) return showToast('Enter a name','err');
   if(isNaN(rate)||rate<0) return showToast('Enter a valid rate','err');
-  db.collection('helpers').doc(editingHelperId).update({name:name, rate:rate});
+  db.collection('helpers').doc(editingHelperId).update({rate:rate});
   closeModal('modal-edit-helper-rate');
-  showToast('Helper updated! ✅');
+  showToast('Rate updated! ✅');
 }
 window.saveHelperRate = saveHelperRate;
 
