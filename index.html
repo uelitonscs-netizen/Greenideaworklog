@@ -535,10 +535,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="helper-body">
     <div class="helper-tabs">
       <button class="htab active" onclick="hTab('clock',this)">⏱ Clock</button>
-      <button class="htab" onclick="hTab('manual',this)">✏️ Manual</button>
       <button class="htab" onclick="hTab('history',this)">📋 History</button>
       <button class="htab" onclick="hTab('jobs',this)">📁 Jobs</button>
-      <button class="htab" onclick="hTab('mypay',this)">💳 Pay</button>
     </div>
 
     <!-- CLOCK -->
@@ -1020,13 +1018,79 @@ window.addManualEntry=addManualEntry;
 
 function renderHelperHistory(){
   if(!currentHelper) return;
-  var list=document.getElementById('helper-history-list');
-  var ents=entries.filter(function(e){return e.helperId===currentHelper.id&&e.endTime;}).slice(0,30);
-  if(!ents.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No entries yet.</div>'; return;}
-  list.innerHTML=ents.map(function(e){
-    var iL=e.clockInLocation?'https://www.google.com/maps?q='+e.clockInLocation.lat+','+e.clockInLocation.lng:null;
-    var oL=e.clockOutLocation?'https://www.google.com/maps?q='+e.clockOutLocation.lat+','+e.clockOutLocation.lng:null;
-    return '<div class="entry-row"><div style="flex:1"><div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString()+'</div><div class="entry-meta">'+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(e.note?' · '+e.note:'')+'</div>'+(iL||oL?'<div style="margin-top:3px;display:flex;gap:8px">'+(iL?'<a href="'+iL+'" target="_blank" style="font-size:11px;color:var(--green)">📍 In</a>':'')+(oL?'<a href="'+oL+'" target="_blank" style="font-size:11px;color:var(--red)">📍 Out</a>':'')+'</div>':'')+'</div><div class="entry-dur">'+fmtD(gMin(e))+'</div></div>';
+  var list = document.getElementById('helper-history-list');
+  var rate = currentHelper.rate || 0;
+  var ents = entries.filter(function(e){ return e.helperId===currentHelper.id && e.endTime; });
+  if(!ents.length){ list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No entries yet.</div>'; return; }
+
+  // Group by week (Monday-based)
+  function getWeekStart(d){
+    var dt = new Date(d);
+    var day = dt.getDay();
+    var diff = (day===0)?-6:1-day;
+    var mon = new Date(dt); mon.setDate(dt.getDate()+diff); mon.setHours(0,0,0,0);
+    return mon;
+  }
+  var weekMap = {};
+  ents.forEach(function(e){
+    var ws = getWeekStart(e.startTime).toISOString().slice(0,10);
+    if(!weekMap[ws]) weekMap[ws] = [];
+    weekMap[ws].push(e);
+  });
+  var weeks = Object.keys(weekMap).sort(function(a,b){ return b>a?1:-1; });
+
+  list.innerHTML = weeks.map(function(ws){
+    var wEnts = weekMap[ws].sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); });
+    var totalMins = wEnts.reduce(function(s,e){ return s+gMin(e); }, 0);
+    var regMins = Math.min(totalMins, OT_THRESHOLD_MINS);
+    var otMins = Math.max(0, totalMins - OT_THRESHOLD_MINS);
+    var regPay = (regMins/60)*rate;
+    var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
+    var totalPay = regPay + otPay;
+    var weEnd = new Date(ws); weEnd.setDate(weEnd.getDate()+6);
+    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+    var rows = wEnts.map(function(e){
+      var mins = gMin(e);
+      var pay = (mins/60)*rate;
+      var proj = e.projectId ? projects.find(function(p){return p.id===e.projectId;}) : null;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border);font-size:12px">'+
+        '<div>'+
+          '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+          '<div style="color:var(--muted);margin-top:1px">'+
+            new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
+            ' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
+            (proj?' · <span style="color:var(--green);font-weight:600">'+proj.name+'</span>':'')+(e.note?' · '+e.note:'')+
+          '</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0;margin-left:10px">'+
+          '<div style="font-weight:700;font-family:var(--font-d)">'+fmtD(mins)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+fmtC(pay)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">'+
+      // Week header
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fdf9">'+
+        '<div>'+
+          '<div style="font-weight:800;font-size:13px">📅 '+wLabel+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+wEnts.length+' entr'+(wEnts.length===1?'y':'ies')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-family:var(--font-d);font-weight:800;font-size:16px;color:var(--green)">'+fmtD(totalMins)+'</div>'+
+          (otMins>0?
+            '<div style="font-size:11px;color:var(--muted)">'+fmtC(regPay)+' reg + <span style="color:#d97706;font-weight:700">'+fmtC(otPay)+' OT</span></div>':
+            '<div style="font-size:11px;color:var(--muted)">'+fmtC(totalPay)+'</div>')+
+        '</div>'+
+      '</div>'+
+      rows+
+      // Week total footer
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-top:1px solid var(--border)">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--muted)">WEEK TOTAL</span>'+
+        '<span style="font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--green2)">'+fmtC(totalPay)+'</span>'+
+      '</div>'+
+    '</div>';
   }).join('');
 }
 
