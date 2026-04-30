@@ -465,6 +465,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div class="card" style="margin-bottom:18px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
+        <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction"/></div>
         <div class="fg"><label>Description</label><input id="proj-desc" placeholder="Brief description"/></div>
         <div class="form-row">
           <div class="fg" style="max-width:150px"><label>Budget ($)</label><input id="proj-budget" type="number" placeholder="0"/></div>
@@ -654,6 +655,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="modal">
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
+    <div class="fg"><label>Client / Company</label><input id="ep-client" placeholder="e.g. Smith Construction"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">⚙️ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
@@ -1412,7 +1414,7 @@ function renderProjects(filter){
   });
   // Filter by search
   var q = (filter || (document.getElementById('proj-search')?document.getElementById('proj-search').value:'')||'').toLowerCase().trim();
-  if(q) sorted = sorted.filter(function(p){ return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.desc||'').toLowerCase().indexOf(q)>=0; });
+  if(q) sorted = sorted.filter(function(p){ return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.desc||'').toLowerCase().indexOf(q)>=0 || (p.client||'').toLowerCase().indexOf(q)>=0; });
   if(!sorted.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects found.</div>'; return;}
   el.innerHTML=sorted.map(function(p){
     // Hours = only entries directly linked to this project via projectId
@@ -1430,7 +1432,7 @@ function renderProjects(filter){
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+new Date(p.start).toLocaleDateString()+(p.end?' → '+new Date(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+new Date(p.start).toLocaleDateString()+(p.end?' → '+new Date(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
     html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
@@ -1545,13 +1547,13 @@ function renderProjects(filter){
 }
 
 function addProject(){
-  var name=document.getElementById('proj-name').value.trim(), desc=document.getElementById('proj-desc').value.trim(), budget=parseFloat(document.getElementById('proj-budget').value)||0, start=document.getElementById('proj-start').value, end=document.getElementById('proj-end').value;
+  var name=document.getElementById('proj-name').value.trim(), client=document.getElementById('proj-client').value.trim(), desc=document.getElementById('proj-desc').value.trim(), budget=parseFloat(document.getElementById('proj-budget').value)||0, start=document.getElementById('proj-start').value, end=document.getElementById('proj-end').value;
   if(!name) return showToast('Enter a project name','err');
   if(!start) return showToast('Select a start date','err');
   var ohDays=getOHDays('proj');
   var overhead=calcOHTotal(ohDays);
-  db.collection('projects').add({name:name,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
-  document.getElementById('proj-name').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
   document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
@@ -1625,6 +1627,7 @@ function openEditProj(id){
   var p=projects.find(function(pr){return pr.id===id;}); if(!p) return;
   editingProjId=id;
   document.getElementById('ep-name').value=p.name||'';
+  document.getElementById('ep-client').value=p.client||'';
   document.getElementById('ep-desc').value=p.desc||'';
   document.getElementById('ep-budget').value=p.budget||'';
   var epList=document.getElementById('ep-days-list');
@@ -1644,11 +1647,11 @@ window.openEditProj=openEditProj;
 
 function saveEditProject(){
   if(!editingProjId) return;
-  var name=document.getElementById('ep-name').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
+  var name=document.getElementById('ep-name').value.trim(), client=document.getElementById('ep-client').value.trim(), desc=document.getElementById('ep-desc').value.trim(), budget=parseFloat(document.getElementById('ep-budget').value)||0, start=document.getElementById('ep-start').value, end=document.getElementById('ep-end').value;
   var ohDays=getOHDays('ep');
   var overhead=calcOHTotal(ohDays);
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null});
+  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
