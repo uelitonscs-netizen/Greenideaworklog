@@ -630,7 +630,27 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   </div>
 </div>
 
-<div id="modal-edit-project" class="modal-overlay">
+<div id="modal-edit-expense" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Expense</div>
+    <div class="fg"><label>Description</label><input id="ee-desc"/></div>
+    <div class="fg"><label>Amount ($)</label><input id="ee-amount" type="number" min="0" step="0.01"/></div>
+    <div class="fg"><label>Type</label>
+      <select id="ee-type" style="background:#f9f9f9;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:14px;font-family:var(--font-d);width:100%">
+        <option>🧱 Materials</option>
+        <option>📦 General</option>
+        <option>🔧 Other</option>
+      </select>
+    </div>
+    <div class="fg"><label>Date</label><input id="ee-date" type="date"/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveEditExpense()">✓ Save</button>
+      <button class="btn ghost" onclick="closeModal('modal-edit-expense')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
   <div class="modal">
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
@@ -1485,7 +1505,7 @@ function renderProjects(filter){
     }
 
     // Expenses
-    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div>'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+new Date(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted)">✕</button></div></div>';}).join('')+'</div>';
+    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+new Date(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
     // Add expense
     html+='<button data-pid="'+p.id+'" onclick="toggleExpForm(this.dataset.pid)" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;margin-bottom:8px">+ Add Expense</button>';
     html+='<div id="expf-'+p.id+'" style="display:none;background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">';
@@ -1570,6 +1590,33 @@ window.saveExpense=saveExpense;
 
 function delExpense(id){db.collection('projectExpenses').doc(id).delete(); showToast('Expense deleted');}
 window.delExpense=delExpense;
+
+var editingExpenseId=null;
+function openEditExpense(id){
+  var exp=projectExpenses.find(function(e){return e.id===id;});
+  if(!exp) return showToast('Expense not found','err');
+  editingExpenseId=id;
+  document.getElementById('ee-desc').value=exp.desc||'';
+  document.getElementById('ee-amount').value=exp.amount||'';
+  document.getElementById('ee-type').value=exp.type||'📦 General';
+  document.getElementById('ee-date').value=exp.date||new Date().toISOString().slice(0,10);
+  document.getElementById('modal-edit-expense').classList.add('open');
+}
+window.openEditExpense=openEditExpense;
+
+function saveEditExpense(){
+  if(!editingExpenseId) return;
+  var desc=document.getElementById('ee-desc').value.trim();
+  var amount=parseFloat(document.getElementById('ee-amount').value);
+  var type=document.getElementById('ee-type').value;
+  var date=document.getElementById('ee-date').value;
+  if(!desc) return showToast('Enter a description','err');
+  if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
+  db.collection('projectExpenses').doc(editingExpenseId).update({desc:desc,amount:amount,type:type,date:date});
+  closeModal('modal-edit-expense');
+  showToast('Expense updated! ✅');
+}
+window.saveEditExpense=saveEditExpense;
 
 function toggleHist(pid){var el=document.getElementById('hist-'+pid),ar=document.getElementById('ha-'+pid); if(el){var o=el.style.display!=='none'; el.style.display=o?'none':'block'; if(ar) ar.textContent=o?'▼':'▲';}}
 window.toggleHist=toggleHist;
