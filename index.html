@@ -1364,6 +1364,16 @@ function delAbsence(id){db.collection('absences').doc(id).delete(); showToast('A
 window.delAbsence=delAbsence;
 
 // ── PROJECTS ──────────────────────────────────────────
+function toggleLaborDrop(id){
+  var el=document.getElementById(id);
+  var arrow=document.getElementById(id+'-arrow');
+  if(!el) return;
+  var open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arrow) arrow.textContent=open?'▼':'▲';
+}
+window.toggleLaborDrop=toggleLaborDrop;
+
 function renderProjects(filter){
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=new Date().toISOString().slice(0,10);
   var el=document.getElementById('projects-list');
@@ -1424,9 +1434,40 @@ function renderProjects(filter){
     if(budget > 0){
       html += '<div style="background:'+(isProfit?'#f0fdf4':'#fef2f2')+';border:1px solid '+(isProfit?'#16a34a33':'#dc262633')+';border-radius:12px;padding:14px;margin-bottom:14px">';
       html += '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px;letter-spacing:.5px">📊 P&L SUMMARY</div>';
+      // Build labor by day breakdown
+      var laborByDay={};
+      projEntries.forEach(function(e){
+        var h=hById(e.helperId);
+        var day=new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        if(!laborByDay[day]) laborByDay[day]={mins:0,cost:0,helpers:{}};
+        var mins=gMin(e), cost=(mins/60)*(h?h.rate:0);
+        laborByDay[day].mins+=mins; laborByDay[day].cost+=cost;
+        var hname=h?h.name:'Unknown';
+        if(!laborByDay[day].helpers[hname]) laborByDay[day].helpers[hname]={mins:0,cost:0};
+        laborByDay[day].helpers[hname].mins+=mins; laborByDay[day].helpers[hname].cost+=cost;
+      });
+      var laborDays=Object.keys(laborByDay).sort(function(a,b){return new Date(a)-new Date(b);});
+      var ldid='labor-drop-'+p.id;
       // Rows
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">💵 Contract Value</span><span style="color:#2563eb;font-weight:700">'+fmtC(budget)+'</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">👷 Labor</span><span style="color:var(--red);font-weight:700">− '+fmtC(laborCost)+'</span></div>';
+      // Labor row expandable
+      html += '<div style="border-bottom:1px solid #e0e0e022">';
+      html += '<div data-ldid="'+ldid+'" onclick="toggleLaborDrop(this.dataset.ldid)" style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;cursor:pointer;user-select:none">';
+      html += '<span style="color:#444">👷 Labor <span id="'+ldid+'-arrow" style="font-size:9px">▼</span></span>';
+      html += '<span style="color:var(--red);font-weight:700">− '+fmtC(laborCost)+'</span></div>';
+      html += '<div id="'+ldid+'" style="display:none;border-radius:8px;background:rgba(0,0,0,0.03);padding:8px 10px;margin-bottom:6px">';
+      if(!laborDays.length){ html += '<div style="font-size:12px;color:var(--muted)">No entries yet.</div>'; }
+      else { laborDays.forEach(function(day){
+        var d=laborByDay[day];
+        html += '<div style="margin-bottom:7px">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#333"><span>📅 '+day+'</span><span>'+fmtD(d.mins)+' · '+fmtC(d.cost)+'</span></div>';
+        Object.keys(d.helpers).forEach(function(hname){
+          var hd=d.helpers[hname];
+          html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-left:12px"><span>'+hname+'</span><span>'+fmtD(hd.mins)+' · '+fmtC(hd.cost)+'</span></div>';
+        });
+        html += '</div>';
+      }); }
+      html += '</div></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🧱 Materials & Extras</span><span style="color:var(--red);font-weight:700">− '+fmtC(extraCost)+'</span></div>';
       if(overhead > 0){
         var daysLabel='';
