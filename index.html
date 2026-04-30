@@ -224,6 +224,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <button class="nav-btn" onclick="aTab('payments',this)">💳 Payments</button>
     <button class="nav-btn" onclick="aTab('absences',this)">🗓 Absences</button>
     <button class="nav-btn" onclick="aTab('projects',this)">📁 Projects</button>
+    <button class="nav-btn" onclick="aTab('analytics',this)">📊 Analytics</button>
     <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
   </div>
   <div class="admin-body">
@@ -328,6 +329,26 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button class="btn" onclick="addAbsence()">+ Add Absence</button>
       </div>
       <div id="absences-list"></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="tab-analytics" class="tab-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin-bottom:0">📊 Profit Analytics</div>
+        <select id="analytics-year" onchange="renderAnalytics()" style="background:#fff;border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:13px;font-family:var(--font-d);font-weight:600">
+          <option value="all">All Time</option>
+        </select>
+      </div>
+      <!-- KPI row -->
+      <div id="analytics-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px"></div>
+      <!-- Bar chart -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:12px">MARGIN % BY CLIENT</div>
+        <div id="analytics-chart"></div>
+      </div>
+      <!-- Client breakdown -->
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:8px">CLIENT BREAKDOWN</div>
+      <div id="analytics-clients"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -465,7 +486,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div class="card" style="margin-bottom:18px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
-        <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction"/></div>
+        <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
         <div class="fg"><label>Description</label><input id="proj-desc" placeholder="Brief description"/></div>
         <div class="form-row">
           <div class="fg" style="max-width:150px"><label>Budget ($)</label><input id="proj-budget" type="number" placeholder="0"/></div>
@@ -655,7 +676,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="modal">
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
-    <div class="fg"><label>Client / Company</label><input id="ep-client" placeholder="e.g. Smith Construction"/></div>
+    <div class="fg"><label>Client / Company</label><input id="ep-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">⚙️ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
@@ -672,6 +693,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     </div>
   </div>
 </div>
+
+<!-- Client autocomplete datalist -->
+<datalist id="client-suggestions"></datalist>
 
 <!-- FIREBASE -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
@@ -803,7 +827,7 @@ function startListeners(){
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -814,6 +838,7 @@ function refreshView(){
   if(!active) return;
   if(active.id==='screen-admin') renderAdminTab(currentAdminTab);
   else if(active.id==='screen-helper') updateHelperStats();
+  if(currentAdminTab==='analytics') renderAnalytics();
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
@@ -861,6 +886,7 @@ function renderAdminTab(n){
   else if(n==='payments') renderPayments();
   else if(n==='absences') renderAbsences();
   else if(n==='projects') renderProjects();
+  else if(n==='analytics') renderAnalytics();
   else if(n==='settings') renderSettings();
 }
 
@@ -2062,6 +2088,158 @@ function updateOHPreview(prefix){
     }
   }
 }
+
+// ── ANALYTICS ──────────────────────────────────────────
+function updateClientSuggestions(){
+  var dl = document.getElementById('client-suggestions');
+  if(!dl) return;
+  var seen = {};
+  var opts = '';
+  projects.forEach(function(p){
+    if(p.client && !seen[p.client]){
+      seen[p.client] = 1;
+      opts += '<option value="'+p.client.replace(/"/g,'&quot;')+'"></option>';
+    }
+  });
+  dl.innerHTML = opts;
+}
+window.updateClientSuggestions = updateClientSuggestions;
+
+function renderAnalytics(){
+  var yearSel = document.getElementById('analytics-year');
+  // Populate year options
+  var years = {};
+  projects.forEach(function(p){ if(p.start) years[new Date(p.start).getFullYear()]=1; });
+  var yearKeys = Object.keys(years).sort().reverse();
+  var currentOpts = yearSel.innerHTML;
+  var newOpts = '<option value="all">All Time</option>'+yearKeys.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+  if(currentOpts !== newOpts) yearSel.innerHTML = newOpts;
+  var selYear = yearSel.value;
+
+  // Filter projects by year
+  var filteredProjects = projects.filter(function(p){
+    if(selYear==='all') return true;
+    return p.start && new Date(p.start).getFullYear() == selYear;
+  });
+
+  // Build per-project P&L
+  var projData = filteredProjects.map(function(p){
+    var pEntries = entries.filter(function(e){ return e.projectId===p.id; });
+    var pExpenses = projectExpenses.filter(function(e){ return e.projectId===p.id; });
+    var laborCost = pEntries.reduce(function(sum,e){
+      var h=hById(e.helperId); return sum+(gMin(e)/60)*(h?h.rate:0);
+    },0);
+    var materialsCost = pExpenses.reduce(function(s,e){ return s+e.amount; },0);
+    var overhead = p.overhead||0;
+    var totalCost = laborCost + materialsCost + overhead;
+    var budget = p.budget||0;
+    var profit = budget - totalCost;
+    var margin = budget>0 ? (profit/budget)*100 : 0;
+    return {
+      id:p.id, name:p.name, client:p.client||'No Client',
+      budget:budget, labor:laborCost, materials:materialsCost,
+      overhead:overhead, totalCost:totalCost, profit:profit, margin:margin,
+      start:p.start
+    };
+  }).filter(function(p){ return p.budget>0; });
+
+  // Group by client
+  var clientMap = {};
+  projData.forEach(function(p){
+    var c = p.client;
+    if(!clientMap[c]) clientMap[c]={client:c,projects:[],totalBudget:0,totalCost:0,totalProfit:0,totalLabor:0,totalMaterials:0,totalOverhead:0};
+    clientMap[c].projects.push(p);
+    clientMap[c].totalBudget+=p.budget;
+    clientMap[c].totalCost+=p.totalCost;
+    clientMap[c].totalProfit+=p.profit;
+    clientMap[c].totalLabor+=p.labor;
+    clientMap[c].totalMaterials+=p.materials;
+    clientMap[c].totalOverhead+=p.overhead;
+  });
+  var clients = Object.values(clientMap).sort(function(a,b){ return b.totalProfit-a.totalProfit; });
+
+  // Overall KPIs
+  var totalBudget=0, totalCost=0, totalProfit=0;
+  projData.forEach(function(p){ totalBudget+=p.budget; totalCost+=p.totalCost; totalProfit+=p.profit; });
+  var avgMargin = totalBudget>0?(totalProfit/totalBudget)*100:0;
+
+  // Render KPIs
+  var kpiEl = document.getElementById('analytics-kpis');
+  kpiEl.innerHTML = [
+    {label:'Total Revenue',val:fmtC(totalBudget),color:'#2563eb'},
+    {label:'Total Profit',val:fmtC(totalProfit),color:totalProfit>=0?'#16a34a':'#dc2626'},
+    {label:'Avg Margin',val:avgMargin.toFixed(1)+'%',color:avgMargin>=20?'#16a34a':avgMargin>=10?'#d97706':'#dc2626'},
+    {label:'Projects',val:projData.length,color:'var(--text)'}
+  ].map(function(k){
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 12px;text-align:center">'+
+      '<div style="font-size:20px;font-weight:800;color:'+k.color+';font-family:var(--font-d)">'+k.val+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:3px">'+k.label+'</div>'+
+      '</div>';
+  }).join('');
+
+  // Render bar chart
+  var chartEl = document.getElementById('analytics-chart');
+  if(!clients.length){ chartEl.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No data yet. Add Client to your projects first.</div>'; }
+  else {
+    var maxMargin = Math.max.apply(null, clients.map(function(c){ return Math.abs(c.totalProfit/c.totalBudget*100)||0; }));
+    chartEl.innerHTML = clients.map(function(c){
+      var margin = c.totalBudget>0?(c.totalProfit/c.totalBudget)*100:0;
+      var barW = maxMargin>0?(Math.abs(margin)/maxMargin)*100:0;
+      var barColor = margin>=20?'#16a34a':margin>=10?'#d97706':margin>=0?'#f59e0b':'#dc2626';
+      return '<div style="margin-bottom:12px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px">'+
+          '<span>'+c.client+'</span>'+
+          '<span style="color:'+barColor+'">'+margin.toFixed(1)+'%</span>'+
+        '</div>'+
+        '<div style="background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">'+
+          '<div style="height:100%;width:'+barW+'%;background:'+barColor+';border-radius:99px;transition:width .4s"></div>'+
+        '</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue · '+fmtC(c.totalProfit)+' profit</div>'+
+      '</div>';
+    }).join('');
+  }
+
+  // Render client cards
+  var clientsEl = document.getElementById('analytics-clients');
+  if(!clients.length){ clientsEl.innerHTML=''; return; }
+  clientsEl.innerHTML = clients.map(function(c){
+    var margin = c.totalBudget>0?(c.totalProfit/c.totalBudget)*100:0;
+    var marginColor = margin>=20?'#16a34a':margin>=10?'#d97706':margin>=0?'#f59e0b':'#dc2626';
+    var projRows = c.projects.sort(function(a,b){ return new Date(b.start)-new Date(a.start); }).map(function(p){
+      var mc = p.budget>0?(p.profit/p.budget)*100:0;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">'+
+        '<div>'+
+          '<div style="font-weight:600">'+p.name+'</div>'+
+          '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+new Date(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-weight:700;color:'+(mc>=0?'#16a34a':'#dc2626')+'">'+fmtC(p.profit)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+mc.toFixed(1)+'% margin</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">'+
+      '<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div>'+
+          '<div style="font-weight:800;font-size:15px">🏢 '+c.client+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:22px;font-weight:800;color:'+marginColor+';font-family:var(--font-d)">'+margin.toFixed(1)+'%</div>'+
+          '<div style="font-size:11px;color:var(--muted)">avg margin</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">'+
+        ['Labor:'+fmtC(c.totalLabor),'Extras:'+fmtC(c.totalMaterials),'Overhead:'+fmtC(c.totalOverhead)].map(function(item){
+          var parts=item.split(':');
+          return '<div style="background:var(--surface);padding:10px;text-align:center"><div style="font-size:13px;font-weight:700">'+parts[1]+'</div><div style="font-size:10px;color:var(--muted);font-weight:600">'+parts[0]+'</div></div>';
+        }).join('')+
+      '</div>'+
+      projRows+
+    '</div>';
+  }).join('');
+}
+window.renderAnalytics=renderAnalytics;
 
 // ── SETTINGS ───────────────────────────────────────────
 function renderSettings(){
