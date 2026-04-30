@@ -222,10 +222,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="admin-nav">
     <button class="nav-btn active" onclick="aTab('dashboard',this)">⊞ Dashboard</button>
     <button class="nav-btn" onclick="aTab('helpers',this)">👥 Helpers</button>
-    <button class="nav-btn" onclick="aTab('entries',this)">📋 Entries</button>
-    <button class="nav-btn" onclick="aTab('summary',this)">💰 Summary</button>
-    <button class="nav-btn" onclick="aTab('payments',this)">💳 Payments</button>
-    <button class="nav-btn" onclick="aTab('absences',this)">🗓 Absences</button>
+    <button class="nav-btn" onclick="aTab('reports',this)">📋 Reports</button>
     <button class="nav-btn" onclick="aTab('projects',this)">📁 Projects</button>
     <button class="nav-btn" onclick="aTab('analytics',this)">📊 Analytics</button>
     <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
@@ -259,81 +256,94 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button class="btn" onclick="addHelper()">+ Add Helper</button>
       </div>
       <div id="helpers-list"></div>
+
+      <!-- ABSENCES section inside Helpers -->
+      <div style="margin-top:24px">
+        <div class="section-title">🗓 Absences & Days Off</div>
+        <div class="card" style="margin-bottom:18px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD ABSENCE</div>
+          <div class="form-row">
+            <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
+            <div class="fg" style="max-width:150px"><label>Type</label>
+              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label>Date</label><input type="date" id="abs-date"/></div>
+            <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
+          </div>
+          <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        </div>
+        <div id="absences-list"></div>
+      </div>
     </div>
 
     <!-- ENTRIES -->
-    <div id="tab-entries" class="tab-panel">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-        <div class="section-title" style="margin:0">All Entries</div>
-        <div class="range-btns" style="margin-left:auto">
-          <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
-          <button class="range-btn" onclick="setRange('month',this)">Month</button>
-          <button class="range-btn" onclick="setRange('all',this)">All</button>
-        </div>
+    <!-- REPORTS (Entries + Summary merged) -->
+    <div id="tab-reports" class="tab-panel">
+      <!-- Toggle -->
+      <div style="display:flex;gap:0;background:#f0f0f0;border-radius:10px;padding:3px;margin-bottom:16px">
+        <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
+        <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
+        <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
       </div>
-      <div id="entries-week-lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--font-m)"></div>
-      <div id="entries-list"></div>
-    </div>
 
-    <!-- SUMMARY -->
-    <div id="tab-summary" class="tab-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="section-title" style="margin:0">Summary</div>
-        <div class="sum-period-btns">
-          <button class="speriod-btn active" onclick="setSumPeriod('week',this)">This Week</button>
-          <button class="speriod-btn" onclick="setSumPeriod('last2',this)">Last 2 Weeks</button>
-          <button class="speriod-btn" onclick="setSumPeriod('month',this)">This Month</button>
-          <button class="speriod-btn" onclick="setSumPeriod('all',this)">All Time</button>
-        </div>
-      </div>
-      <div id="sum-period-lbl" style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:var(--font-m)"></div>
-      <div id="sum-list"></div>
-      <div class="sum-total">
-        <span style="font-family:var(--font-d);font-weight:800;font-size:16px">Total</span>
-        <div style="text-align:right">
-          <div id="sum-total-hrs" style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)"></div>
-          <div id="sum-total-pay" style="font-size:13px;font-weight:700;color:var(--green2)"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAYMENTS -->
-    <div id="tab-payments" class="tab-panel">
-      <div class="section-title">Payment History</div>
-      <div class="card" style="margin-bottom:18px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">RECORD PAYMENT</div>
-        <div class="form-row">
-          <div class="fg"><label>Helper</label><select id="pay-helper"><option value="">-- Select --</option></select></div>
-          <div class="fg" style="max-width:140px"><label>Amount ($)</label><input id="pay-amount" type="number" placeholder="0.00"/></div>
-        </div>
-        <div class="form-row">
-          <div class="fg"><label>Date</label><input type="date" id="pay-date"/></div>
-          <div class="fg"><label>Note (optional)</label><input id="pay-note" placeholder="e.g. Week of Apr 1"/></div>
-        </div>
-        <button class="btn" onclick="addPayment()">✓ Mark as Paid</button>
-      </div>
-      <div id="payments-list"></div>
-    </div>
-
-    <!-- ABSENCES -->
-    <div id="tab-absences" class="tab-panel">
-      <div class="section-title">Absences & Days Off</div>
-      <div class="card" style="margin-bottom:18px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD ABSENCE</div>
-        <div class="form-row">
-          <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
-          <div class="fg" style="max-width:150px"><label>Type</label>
-            <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+      <!-- Entries panel -->
+      <div id="rep-entries">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="section-title" style="margin:0">All Entries</div>
+          <div class="range-btns" style="margin-left:auto">
+            <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
+            <button class="range-btn" onclick="setRange('month',this)">Month</button>
+            <button class="range-btn" onclick="setRange('all',this)">All</button>
           </div>
         </div>
-        <div class="form-row">
-          <div class="fg"><label>Date</label><input type="date" id="abs-date"/></div>
-          <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
-        </div>
-        <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        <div id="entries-week-lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--font-m)"></div>
+        <div id="entries-list"></div>
       </div>
-      <div id="absences-list"></div>
+
+      <!-- Summary panel -->
+      <div id="rep-summary" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div class="section-title" style="margin:0">Summary</div>
+          <div class="sum-period-btns">
+            <button class="speriod-btn active" onclick="setSumPeriod('week',this)">This Week</button>
+            <button class="speriod-btn" onclick="setSumPeriod('last2',this)">Last 2 Weeks</button>
+            <button class="speriod-btn" onclick="setSumPeriod('month',this)">This Month</button>
+            <button class="speriod-btn" onclick="setSumPeriod('all',this)">All Time</button>
+          </div>
+        </div>
+        <div id="sum-period-lbl" style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:var(--font-m)"></div>
+        <div id="sum-list"></div>
+        <div class="sum-total">
+          <span style="font-family:var(--font-d);font-weight:800;font-size:16px">Total</span>
+          <div style="text-align:right">
+            <div id="sum-total-hrs" style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)"></div>
+            <div id="sum-total-pay" style="font-size:13px;font-weight:700;color:var(--green2)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payments panel -->
+      <div id="rep-payments" style="display:none">
+        <div class="section-title">Payment History</div>
+        <div class="card" style="margin-bottom:18px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">RECORD PAYMENT</div>
+          <div class="form-row">
+            <div class="fg"><label>Helper</label><select id="pay-helper"><option value="">-- Select --</option></select></div>
+            <div class="fg" style="max-width:140px"><label>Amount ($)</label><input id="pay-amount" type="number" placeholder="0.00"/></div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label>Date</label><input type="date" id="pay-date"/></div>
+            <div class="fg"><label>Note (optional)</label><input id="pay-note" placeholder="e.g. Week of Apr 1"/></div>
+          </div>
+          <button class="btn" onclick="addPayment()">✓ Mark as Paid</button>
+        </div>
+        <div id="payments-list"></div>
+      </div>
     </div>
+
+
 
     <!-- ANALYTICS -->
     <div id="tab-analytics" class="tab-panel">
@@ -843,6 +853,7 @@ function refreshView(){
   if(active.id==='screen-admin') renderAdminTab(currentAdminTab);
   else if(active.id==='screen-helper') updateHelperStats();
   if(currentAdminTab==='analytics') renderAnalytics();
+  if(currentAdminTab==='helpers') renderAbsences();
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
@@ -884,11 +895,8 @@ window.aTab=aTab;
 
 function renderAdminTab(n){
   if(n==='dashboard') renderDashboard();
-  else if(n==='helpers') renderHelpersList();
-  else if(n==='entries') renderEntriesList();
-  else if(n==='summary') renderSummary();
-  else if(n==='payments') renderPayments();
-  else if(n==='absences') renderAbsences();
+  else if(n==='helpers'){ renderHelpersList(); renderAbsences(); }
+  else if(n==='reports'){ renderEntriesList(); }
   else if(n==='projects') renderProjects();
   else if(n==='analytics') renderAnalytics();
   else if(n==='settings') renderSettings();
@@ -1164,6 +1172,24 @@ function confirmDeleteHelper(){
 window.confirmDeleteHelper=confirmDeleteHelper;
 
 // ── ENTRIES ────────────────────────────────────────────
+var currentReport = 'entries';
+function switchReport(panel, btn){
+  currentReport = panel;
+  document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
+  document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
+  document.getElementById('rep-payments').style.display = panel==='payments'?'block':'none';
+  var be = document.getElementById('rep-toggle-entries');
+  var bs = document.getElementById('rep-toggle-summary');
+  var bp = document.getElementById('rep-toggle-payments');
+  if(be){ be.style.background=panel==='entries'?'var(--green)':'transparent'; be.style.color=panel==='entries'?'#fff':'var(--muted)'; }
+  if(bs){ bs.style.background=panel==='summary'?'var(--green)':'transparent'; bs.style.color=panel==='summary'?'#fff':'var(--muted)'; }
+  if(bp){ bp.style.background=panel==='payments'?'var(--green)':'transparent'; bp.style.color=panel==='payments'?'#fff':'var(--muted)'; }
+  if(panel==='entries') renderEntriesList();
+  else if(panel==='summary') renderSummary();
+  else renderPayments();
+}
+window.switchReport=switchReport;
+
 function setRange(r,btn){adminRange=r; document.querySelectorAll('.range-btn').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); renderEntriesList();}
 window.setRange=setRange;
 
