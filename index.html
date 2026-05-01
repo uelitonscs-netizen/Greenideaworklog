@@ -830,6 +830,8 @@ function setSyncStatus(ok){var d=document.getElementById('sync-dot'),l=document.
 
 // ── FIREBASE LISTENERS ─────────────────────────────────
 function startListeners(){
+  if(window._listenersStarted) return;
+  window._listenersStarted = true;
   // If helper session, store their ID for security reference
   var sess = localStorage.getItem('wl_session');
   if(sess && sess.indexOf('helper:')===0){
@@ -847,6 +849,7 @@ function startListeners(){
       var h = hById(hid);
       if(h){ window._pendingHelperSession=null; openHelperView(hid); }
     }
+    if(window._pendingQR){ window._pendingQR=false; showQRHelperModal(); }
   },function(){setSyncStatus(false);});
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -862,7 +865,6 @@ function refreshView(){
   if(!active) return;
   if(active.id==='screen-admin') renderAdminTab(currentAdminTab);
   else if(active.id==='screen-helper') updateHelperStats();
-  if(currentAdminTab==='analytics') renderAnalytics();
   if(currentAdminTab==='helpers') renderAbsences();
 }
 
@@ -1950,13 +1952,13 @@ function checkRoute(){
   // QR Code scan - no helper yet, show modal to select name then clock in
   if(action==='clockin'&&!hid){
     startListeners();
+    auth.signInAnonymously().catch(function(){});
     showScreen('landing');
-    // Show helper select modal after listeners load
-    var done=false;
-    var wait=setInterval(function(){
-      if(helpers.length>0){ clearInterval(wait); if(!done){ done=true; showQRHelperModal(); }}
-    },300);
-    setTimeout(function(){clearInterval(wait);},5000);
+    if(helpers.length>0){ showQRHelperModal(); }
+    else {
+      window._pendingQR = true;
+      setTimeout(function(){ window._pendingQR=false; },5000);
+    }
     return true;
   }
   // Direct helper link
@@ -2336,7 +2338,7 @@ function renderAnalytics(){
   clientsEl.innerHTML = clients.map(function(c){
     var margin = c.totalBudget>0?(c.totalProfit/c.totalBudget)*100:0;
     var marginColor = margin>=20?'#16a34a':margin>=10?'#d97706':margin>=0?'#f59e0b':'#dc2626';
-    var projRows = c.projects.sort(function(a,b){ return new Date(b.start)-new Date(a.start); }).map(function(p){
+    var projRows = c.projects.sort(function(a,b){ return parseLocalDate(b.start)-parseLocalDate(a.start); }).map(function(p){
       var mc = p.budget>0?(p.profit/p.budget)*100:0;
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">'+
         '<div>'+
@@ -2543,6 +2545,7 @@ goLanding = function(){
 function adminLogout(){
   auth.signOut().then(function(){
     localStorage.removeItem('wl_session');
+    window._listenersStarted = false;
     showScreen('login');
   });
 }
