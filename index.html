@@ -1047,8 +1047,8 @@ function renderHelperHistory(){
     var regPay = (regMins/60)*rate;
     var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
     var totalPay = regPay + otPay;
-    var weEnd = parseLocalDate(ws); weEnd.setDate(weEnd.getDate()+6);
-    var wLabel = parseLocalDate(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var weEnd = new Date(ws); weEnd.setDate(weEnd.getDate()+6);
+    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
     var rows = wEnts.map(function(e){
       var mins = gMin(e);
@@ -1263,7 +1263,7 @@ function getEntriesDateRange(){
   var lbl='';
   if(adminRange==='current-week'){
     start=weekStart();
-    var ws=weekStart(), we=parseLocalDate(ws); we.setDate(ws.getDate()+6);
+    var ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
     lbl='📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   } else if(adminRange==='month'){
     start=new Date(now.getFullYear(),now.getMonth(),1);
