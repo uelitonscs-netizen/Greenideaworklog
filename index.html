@@ -1142,7 +1142,7 @@ function renderHelperPay(){
 
 // ── DASHBOARD ─────────────────────────────────────────
 function renderDashboard(){
-  var ws=weekStart(), we=parseLocalDate(ws); we.setDate(ws.getDate()+6);
+  var ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
   var lbl=document.getElementById('dash-week-lbl');
   if(lbl) lbl.innerHTML='Dashboard <span style="font-size:11px;color:var(--muted);font-family:var(--font-m);font-weight:400;margin-left:6px">📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>';
 
