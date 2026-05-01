@@ -211,6 +211,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="admin-header">
     <img src="icon-192.png" style="width:30px;height:30px;border-radius:6px;object-fit:cover"/>
     <div class="admin-logo">Work<span>Log</span></div>
+    <div id="admin-profile-name" style="font-size:11px;color:#a8f0b8;font-weight:600;margin-left:4px;opacity:0.9"></div>
     <div style="margin-left:8px;display:flex;align-items:center;font-size:11px;color:#a8f0b8">
       <span class="sync-dot" id="sync-dot"></span><span id="sync-lbl">Live</span>
     </div>
@@ -740,6 +741,7 @@ var DAILY_OVERHEAD = (MONTHLY_OVERHEAD / WORKING_DAYS) / NUM_TEAMS; // $484.88/t
 var DEPOT_LNG = -71.8356176;
 var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
+var currentAdminProfile=null;
 var currentHelper=null, liveInterval=null, adminRange='current-week', sumPeriod='week';
 var pendingDeleteId=null, editingProjId=null, quickHoursHelperId=null, currentAdminTab='dashboard';
 var OT_THRESHOLD_MINS = 40*60;
@@ -2501,19 +2503,47 @@ var auth = firebase.auth();
 // Enable anonymous auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
 
+var ADMIN_PROFILES = {
+  'Yzis0313': {name:'Ueliton Silva', initials:'US'},
+  'Soeusei13':  {name:'Rafael Gazel',  initials:'RG'}
+};
+
+// ── ADMIN PROFILE ─────────────────────────────────────
+function renderAdminProfileBadge(){
+  var profile = currentAdminProfile || JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+  if(!profile) return;
+  var name = document.getElementById('admin-profile-name');
+  if(name) name.textContent = profile.name;
+}
+window.renderAdminProfileBadge = renderAdminProfileBadge;
+
+function getAdminName(){
+  var profile = currentAdminProfile || JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+  return profile ? profile.name : 'Admin';
+}
+window.getAdminName = getAdminName;
+
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
   var pass = document.getElementById('login-password').value;
   var btn = document.getElementById('login-btn');
   var err = document.getElementById('login-error');
   if(!email||!pass){ err.textContent='Please enter email and password.'; err.style.display='block'; return; }
+  // Identify profile by password
+  var profile = ADMIN_PROFILES[pass];
+  if(!profile){ err.textContent='Invalid email or password.'; err.style.display='block'; return; }
   btn.disabled=true; btn.textContent='Signing in...'; err.style.display='none';
-  auth.signInWithEmailAndPassword(email, pass)
+  // Always sign in with the real Firebase password (Ueliton's)
+  var firebasePass = 'Yzis0313';
+  auth.signInWithEmailAndPassword(email, firebasePass)
     .then(function(){
       btn.disabled=false; btn.textContent='Sign In';
+      currentAdminProfile = profile;
       localStorage.setItem('wl_session','admin');
+      localStorage.setItem('wl_admin_profile', JSON.stringify(profile));
       showScreen('admin');
       currentAdminTab='dashboard';
+      renderAdminProfileBadge();
       renderDashboard();
     })
     .catch(function(e){
@@ -2558,9 +2588,11 @@ if(!checkRoute()){
     // Verify still authenticated
     auth.onAuthStateChanged(function(user){
       if(user){
+        currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
         startListeners();
         showScreen('admin');
         currentAdminTab='dashboard';
+        renderAdminProfileBadge();
         renderDashboard();
       } else {
         localStorage.removeItem('wl_session');
