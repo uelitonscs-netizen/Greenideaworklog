@@ -2567,7 +2567,9 @@ if(!checkRoute()){
     });
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
+    // Start listeners immediately, sign in anonymously in background
     startListeners();
+    auth.signInAnonymously().catch(function(){});
     if(helpers.length>0){
       var _h=hById(_hid);
       if(_h) openHelperView(_hid);
@@ -2584,7 +2586,9 @@ if(!checkRoute()){
     }
   } else {
     showScreen('landing');
+    // Start listeners immediately for fast helper load, then sign in anonymously
     startListeners();
+    auth.signInAnonymously().catch(function(){});
   }
 }
 </script>
