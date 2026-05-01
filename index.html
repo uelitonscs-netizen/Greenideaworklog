@@ -835,7 +835,7 @@ function startListeners(){
     var hid = sess.replace('helper:','');
     window._currentHelperId = hid;
   }
-  db.collection('helpers').onSnapshot(function(s){helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){setSyncStatus(false);});
+  db.collection('helpers').onSnapshot(function(s){helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView(); populateHelperSelectDD();},function(){setSyncStatus(false);});
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -913,13 +913,19 @@ window.hTab=hTab;
 
 // ── HELPER SELECT ──────────────────────────────────────
 function showHelperModal(){
+  document.getElementById('modal-helper-select').classList.add('open');
+  populateHelperSelectDD();
+}
+window.showHelperModal=showHelperModal;
+
+function populateHelperSelectDD(){
   var sel=document.getElementById('helper-sel-dd');
+  if(!sel) return;
   sel.innerHTML='<option value="">-- Choose --</option>';
   helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
   document.getElementById('no-helpers-msg').style.display=helpers.length===0?'block':'none';
-  document.getElementById('modal-helper-select').classList.add('open');
 }
-window.showHelperModal=showHelperModal;
+window.populateHelperSelectDD=populateHelperSelectDD;
 
 function selectHelper(){
   var id=document.getElementById('helper-sel-dd').value;
