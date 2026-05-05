@@ -508,6 +508,35 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           <div class="fg"><label>Start Date</label><input type="date" id="proj-start"/></div>
           <div class="fg"><label>End Date</label><input type="date" id="proj-end"/></div>
         </div>
+        <!-- Material Budget -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET (optional)</div>
+        <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
+          <!-- Spray Foam -->
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--muted)">Closed Cell — Sq Ft</label><input id="proj-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--muted)">Open Cell — Sq Ft</label><input id="proj-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-oc-inch" type="number" placeholder="3.5" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+          </div>
+          <!-- Set config -->
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600">SET CONFIGURATION (adjust per brand)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div><label style="font-size:9px;color:var(--muted)">CC BF/set</label><input id="proj-cc-bf" type="number" placeholder="4500" value="4500" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">CC Gal/set</label><input id="proj-cc-gal" type="number" placeholder="55" value="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">OC BF/set</label><input id="proj-oc-bf" type="number" placeholder="17000" value="17000" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="proj-oc-gal" type="number" placeholder="55" value="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
+          <!-- Other materials -->
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
+            <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="proj-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="proj-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="proj-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
+        </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
       </div>
       <div id="projects-list"></div>
@@ -700,6 +729,32 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="form-row">
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
+    </div>
+    <!-- Material Budget in Edit -->
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>
+    <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:10px;color:var(--muted)">Closed Cell Sq Ft</label><input id="ep-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+        <div><label style="font-size:10px;color:var(--muted)">CC Thickness (in)</label><input id="ep-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:10px;color:var(--muted)">Open Cell Sq Ft</label><input id="ep-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+        <div><label style="font-size:10px;color:var(--muted)">OC Thickness (in)</label><input id="ep-oc-inch" type="number" placeholder="3.5" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600">SET CONFIG (adjust per brand)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+        <div><label style="font-size:9px;color:var(--muted)">CC BF/set</label><input id="ep-cc-bf" type="number" placeholder="4500" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">CC Gal/set</label><input id="ep-cc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">OC BF/set</label><input id="ep-oc-bf" type="number" placeholder="17000" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="ep-oc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="ep-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="ep-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="ep-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="saveEditProject()">✓ Save</button>
@@ -1667,6 +1722,61 @@ function renderProjects(filter){
       html += '</div>';
     }
 
+    // Material Budget Section
+    var mb=p.matBudget;
+    if(mb){
+      var ccBF=Math.round((mb.cc.sqft||0)*(mb.cc.inch||0)); // board feet quoted CC
+      var ocBF=Math.round((mb.oc.sqft||0)*(mb.oc.inch||0)); // board feet quoted OC
+      // Calculate gallons used from expenses (match keywords)
+      var exps=projectExpenses.filter(function(e){return e.projectId===p.id;});
+      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0;
+      exps.forEach(function(e){
+        var desc=(e.desc||'').toLowerCase();
+        var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
+        if(desc.indexOf('closed')>=0||desc.indexOf('cc')===0||desc.indexOf('closed cell')>=0) ccGalUsed+=qty;
+        else if(desc.indexOf('open')>=0||desc.indexOf('oc')===0||desc.indexOf('open cell')>=0) ocGalUsed+=qty;
+        else if(desc.indexOf('cellulose')>=0) celUsed+=qty;
+        else if(desc.indexOf('roxul')>=0||desc.indexOf('mineral')>=0) roxUsed+=qty;
+        else if(desc.indexOf('fiberglass')>=0||desc.indexOf('fbg')>=0||desc.indexOf('fg')===0) fbgUsed+=qty;
+      });
+      // Convert gallons used to BF used
+      var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
+      var ocBFUsed = mb.oc.galPerSet>0 ? Math.round(ocGalUsed/mb.oc.galPerSet*mb.oc.bfPerSet) : 0;
+
+      var hasMat = ccBF>0||ocBF>0||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0;
+      if(hasMat){
+        html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
+        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
+
+        function matRow(label, quoted, used, unit){
+          if(quoted===0&&used===0) return '';
+          var diff=used-quoted;
+          var pct=quoted>0?Math.min(200,Math.round(used/quoted*100)):0;
+          var over=diff>0;
+          var barColor=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
+          var html2='<div style="margin-bottom:8px">';
+          html2+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">';
+          html2+='<span>'+label+'</span>';
+          html2+='<span style="color:'+(over?'var(--red)':used>0?'var(--green)':'var(--muted)')+'">'+used+' / '+quoted+' '+unit+(over?' <span style="background:#fee2e2;color:var(--red);border-radius:4px;padding:1px 5px;font-size:10px">+'+diff+' over</span>':diff<0?' <span style="background:#dcfce7;color:var(--green2);border-radius:4px;padding:1px 5px;font-size:10px">'+Math.abs(diff)+' left</span>':'')+'</span>';
+          html2+='</div>';
+          if(quoted>0){
+            html2+='<div style="background:#e0e0e0;border-radius:99px;height:5px;overflow:hidden">';
+            html2+='<div style="height:5px;border-radius:99px;width:'+Math.min(100,pct)+'%;background:'+barColor+'"></div></div>';
+          }
+          html2+='</div>';
+          return html2;
+        }
+
+        if(ccBF>0||ccGalUsed>0) html+=matRow('🫧 Closed Cell',ccBF,ccBFUsed,'BF')+'<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ccGalUsed+' gal used ('+Math.round(ccGalUsed/(mb.cc.galPerSet||55)*10)/10+' sets)</div>';
+        if(ocBF>0||ocGalUsed>0) html+=matRow('🫧 Open Cell',ocBF,ocBFUsed,'BF')+'<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ocGalUsed+' gal used ('+Math.round(ocGalUsed/(mb.oc.galPerSet||55)*10)/10+' sets)</div>';
+        if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
+        if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
+        if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Add gallons to expenses with keywords: "closed cell", "open cell", "cellulose", "roxul", "fiberglass"</div>';
+        html+='</div>';
+      }
+    }
+
     // Expenses
     if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
     // Add expense
@@ -1713,8 +1823,17 @@ function addProject(){
   if(!start) return showToast('Select a start date','err');
   var ohDays=getOHDays('proj');
   var overhead=calcOHTotal(ohDays);
-  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  var matBudget={
+    cc:{sqft:parseFloat(document.getElementById('proj-cc-sqft').value)||0, inch:parseFloat(document.getElementById('proj-cc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('proj-cc-bf').value)||4500, galPerSet:parseFloat(document.getElementById('proj-cc-gal').value)||55},
+    oc:{sqft:parseFloat(document.getElementById('proj-oc-sqft').value)||0, inch:parseFloat(document.getElementById('proj-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('proj-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('proj-oc-gal').value)||55},
+    celBags:parseFloat(document.getElementById('proj-cel-bags').value)||0,
+    roxBags:parseFloat(document.getElementById('proj-rox-bags').value)||0,
+    fbgBags:parseFloat(document.getElementById('proj-fbg-bags').value)||0
+  };
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
+  document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
+  document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
   document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
@@ -1795,13 +1914,25 @@ function openEditProj(id){
   epList.innerHTML='';
   var ohDays=p.ohDays||[];
   if(ohDays.length===0&&p.workingDays){
-    // Migrate old format
     for(var di=0;di<p.workingDays;di++) ohDays.push({date:'',teams:p.teamsOnJob||1});
   }
   ohDays.forEach(function(d){ addOHDayRow('ep',d.date,d.teams); });
   updateOHPreview('ep');
   document.getElementById('ep-start').value=p.start?localDateStr(parseLocalDate(p.start)):'';
   document.getElementById('ep-end').value=p.end?localDateStr(parseLocalDate(p.end)):'';
+  // Material budget
+  var mb=p.matBudget||{cc:{sqft:0,inch:0,bfPerSet:4500,galPerSet:55},oc:{sqft:0,inch:0,bfPerSet:17000,galPerSet:55},celBags:0,roxBags:0,fbgBags:0};
+  document.getElementById('ep-cc-sqft').value=mb.cc&&mb.cc.sqft||'';
+  document.getElementById('ep-cc-inch').value=mb.cc&&mb.cc.inch||'';
+  document.getElementById('ep-cc-bf').value=mb.cc&&mb.cc.bfPerSet||4500;
+  document.getElementById('ep-cc-gal').value=mb.cc&&mb.cc.galPerSet||55;
+  document.getElementById('ep-oc-sqft').value=mb.oc&&mb.oc.sqft||'';
+  document.getElementById('ep-oc-inch').value=mb.oc&&mb.oc.inch||'';
+  document.getElementById('ep-oc-bf').value=mb.oc&&mb.oc.bfPerSet||17000;
+  document.getElementById('ep-oc-gal').value=mb.oc&&mb.oc.galPerSet||55;
+  document.getElementById('ep-cel-bags').value=mb.celBags||'';
+  document.getElementById('ep-rox-bags').value=mb.roxBags||'';
+  document.getElementById('ep-fbg-bags').value=mb.fbgBags||'';
   document.getElementById('modal-edit-project').classList.add('open');
 }
 window.openEditProj=openEditProj;
@@ -1812,7 +1943,14 @@ function saveEditProject(){
   var ohDays=getOHDays('ep');
   var overhead=calcOHTotal(ohDays);
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null});
+  var matBudget={
+    cc:{sqft:parseFloat(document.getElementById('ep-cc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-cc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-cc-bf').value)||4500, galPerSet:parseFloat(document.getElementById('ep-cc-gal').value)||55},
+    oc:{sqft:parseFloat(document.getElementById('ep-oc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('ep-oc-gal').value)||55},
+    celBags:parseFloat(document.getElementById('ep-cel-bags').value)||0,
+    roxBags:parseFloat(document.getElementById('ep-rox-bags').value)||0,
+    fbgBags:parseFloat(document.getElementById('ep-fbg-bags').value)||0
+  };
+  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
