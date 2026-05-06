@@ -2169,161 +2169,120 @@ document.getElementById('confirmYes').addEventListener('click', function() {
 
 
 
-function sendToWorkLog() {
-  var cEl=document.getElementById("qClient"),aEl=document.getElementById("qAddress"),tEl=document.getElementById("eTotalCost");
-  var client=(typeof quoteInfo!=='undefined'&&quoteInfo.client)?quoteInfo.client:(cEl?cEl.textContent.trim():"");
-  var address=(typeof quoteInfo!=='undefined'&&quoteInfo.address)?quoteInfo.address:(aEl?aEl.textContent.trim():"");
-  var budget=tEl?parseFloat(tEl.textContent.replace(/[^0-9.]/g,""))||0:0;
-  if(client==="Tap to add") client="";
-  if(address==="Tap to add") address="";
-  if(!client&&!address){toast("Add client name and address first!","warn"); return;}
-  if(!_wlDb){toast("Firebase not ready — please refresh","err"); return;}
-  // ── BUILD MATERIAL BUDGET FROM FIELD AREAS / EST ITEMS ──
+function sendToWorkLog(){
+  // ── GUARD CHECKS ──
+  var cEl=document.getElementById('qClient');
+  var aEl=document.getElementById('qAddress');
+  var tEl=document.getElementById('eTotalCost');
+  var client=(quoteInfo&&quoteInfo.client)?quoteInfo.client:(cEl?cEl.textContent.trim():'');
+  var address=(quoteInfo&&quoteInfo.address)?quoteInfo.address:(aEl?aEl.textContent.trim():'');
+  var budget=tEl?parseFloat(tEl.textContent.replace(/[^0-9.]/g,''))||0:0;
+  if(client==='Tap to add') client='';
+  if(address==='Tap to add') address='';
+  if(!client&&!address){ toast('Add client name and address first!','warn'); return; }
+  if(!_wlDb){ toast('Firebase not ready — please refresh','err'); return; }
+
+  // ── BTN STATE ──
+  var btn=document.getElementById('sendWLBtn');
+  var origLabel=btn?btn.textContent:'';
+  if(btn){ btn.textContent='Sending...'; btn.disabled=true; btn.style.opacity='0.6'; }
+
+  // ── MATERIAL BUDGET CALC ──
+  var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
+  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32, FBG_SQFT_BAG=45;
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
   var celSqft=0, roxSqft=0, fbgSqft=0, ignSqft=0, fbSqft=0;
-  // Default set configs (adjustable in WorkLog)
-  var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
-  // Bag coverage defaults (sq ft per bag)
-  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32, FBG_SQFT_BAG=45;
 
-  function parseInches(spec){
-    // Try to extract inches from spec like "3 inches", "3\"", "3in", "R-21 2x6 3.5in"
+  function getInches(spec){
     var m=(spec||'').match(/(\d+\.?\d*)\s*(?:in|inch|inches|")/i);
-    if(m) return parseFloat(m[1]);
-    // Try to parse from R-value pattern for foam: R-13 ≈ 2in CC, R-21 ≈ 3.5in CC
-    var rv=(spec||'').match(/R-?(\d+)/i);
-    if(rv){
-      var r=parseInt(rv[1]);
-      // Rough CC: R/6.5, OC: R/3.7
-      return 0; // return 0 if no explicit inches - user sets in WorkLog
-    }
-    return 0;
+    return m?parseFloat(m[1]):0;
   }
 
-  // Process BOTH fieldAreas AND estItems to get complete material picture
-  var allAreas = [];
-  if(Array.isArray(fieldAreas)&&fieldAreas.length>0) allAreas = allAreas.concat(fieldAreas);
-  if(Array.isArray(estItems)&&estItems.length>0) allAreas = allAreas.concat(estItems);
-
-  try{ if(allAreas.length>0){
-    for(var i=0;i<allAreas.length;i++){
-      var a=allAreas[i];
-      if(!a) continue;
-      var pr=null; try{ pr=getProd(a.productId); }catch(e){}
-      var cat=pr?pr.cat:'';
-      var sf=parseFloat(a.sf)||0;
-      if(sf<=0) continue;
-      // spec field has inches (e.g. "3" cc 6.5" oc"), notes may have R-values
-      var specSrc = a.spec || '';
-      if(!specSrc && a.notes) specSrc = a.notes;
-      if(!specSrc && a.name) specSrc = a.name;
-      var inches=parseInches(specSrc);
-      if(cat==='Spray Foam'){
-        var pid=a.productId||'';
-        var prName=(pr&&pr.name)?pr.name.toLowerCase():'';
-        if(pid==='p2'||prName.indexOf('closed')>=0){
-          ccSqft+=sf; if(inches>0){ccInchTotal+=inches*sf; ccCount+=sf;}
-        } else {
-          ocSqft+=sf; if(inches>0){ocInchTotal+=inches*sf; ocCount+=sf;}
-        }
-      } else if(cat==='Hybrid'){
-        // Parse CC and OC inches from spec
-        // Patterns: "3" cc 6.5" oc", "2 closed cell 3.5 open cell", "cc 2 oc 3.5", "2 oc 3.5 cc", etc.
-        var specLow=specSrc.toLowerCase();
-        var ccInch=0, ocInch=0;
-        // Find all number+inch patterns
-        var numMatches=specLow.match(/(\d+\.?\d*)\s*(?:in|inch|inches|")?/g)||[];
-        var nums=[];
-        for(var ni=0;ni<numMatches.length;ni++){
-          var nm=parseFloat(numMatches[ni]);
-          if(!isNaN(nm)&&nm>0&&nm<24) nums.push(nm);
-        }
-        if(nums.length>=2){
-          // Check if CC comes before OC in spec
-          var ccPos=Math.min(
-            specLow.indexOf('cc')>=0?specLow.indexOf('cc'):9999,
-            specLow.indexOf('closed')>=0?specLow.indexOf('closed'):9999
-          );
-          var ocPos=Math.min(
-            specLow.indexOf('oc')>=0?specLow.indexOf('oc'):9999,
-            specLow.indexOf('open')>=0?specLow.indexOf('open'):9999
-          );
-          // Position-based: find nearest number to each keyword
-          function nearestNumToKw(str, kwPos){
-            var re=/(\d+\.?\d*)/g, best=0, bestDist=9999, m2;
-            while((m2=re.exec(str))!==null){
-              var n=parseFloat(m2[1]);
-              if(n>0&&n<24){var d=Math.abs(m2.index-kwPos);if(d<bestDist){bestDist=d;best=n;}}
-            }
-            return best;
-          }
-          var ccKwPos=9999, ocKwPos=9999;
-          var ccKw=specLow.match(/closed[\s-]*cell|(?:^|\s|\d)cc(?:\s|\d|$)/i);
-          var ocKw=specLow.match(/open[\s-]*cell|(?:^|\s|\d)oc(?:\s|\d|$)/i);
-          if(ccKw) ccKwPos=specLow.indexOf(ccKw[0]);
-          if(ocKw) ocKwPos=specLow.indexOf(ocKw[0]);
-          if(ccKwPos<9999) ccInch=nearestNumToKw(specLow, ccKwPos);
-          if(ocKwPos<9999) ocInch=nearestNumToKw(specLow, ocKwPos);
-          // If same number assigned to both, differentiate
-          if(ccInch>0&&ocInch>0&&ccInch===ocInch&&nums.length>=2){
-            if(ccKwPos<ocKwPos) ocInch=nums.find(function(n){return n!==ccInch;})||ocInch;
-            else ccInch=nums.find(function(n){return n!==ocInch;})||ccInch;
-          }
-          // Fallback: two numbers, no keyword match
-          if(!ccInch&&!ocInch&&nums.length>=2){
-            if(ccPos<ocPos||ocPos===9999){ccInch=nums[0];ocInch=nums[1];}
-            else{ocInch=nums[0];ccInch=nums[1];}
-          } else if(ccInch&&!ocInch){
-            ocInch=nums.find(function(n){return n!==ccInch;})||0;
-          } else if(ocInch&&!ccInch){
-            ccInch=nums.find(function(n){return n!==ocInch;})||0;
-          }
-        }
-        ccSqft+=sf;
-        ocSqft+=sf;
-        if(ccInch>0){ccInchTotal+=ccInch*sf; ccCount+=sf;}
-        if(ocInch>0){ocInchTotal+=ocInch*sf; ocCount+=sf;}
-      } else if(cat==='Mineral Wool'||((pr&&pr.name)?pr.name.toLowerCase().match(/mineral|roxul|rockwool/):false)){
-        roxSqft+=sf;
-      } else if(cat==='Blown-In'){
-        var pid2=a.productId||'';
-        var pnLow=pr?pr.name.toLowerCase():'';
-        if(pid2==='p4'||pnLow.indexOf('cellulose')>=0) celSqft+=sf;
-        else fbgSqft+=sf;
-      } else if(cat==='Batt'){
-        fbgSqft+=sf;
-      } else if(cat==='Air Barrier'||((pr&&pr.name)?pr.name.toLowerCase().match(/ignition|intumescent|fire paint/):false)){
-        ignSqft+=sf;
-      } else if(cat==='Other'||((pr&&pr.name)?pr.name.toLowerCase().match(/fire block|fireblock/):false)){
-        fbSqft+=sf;
+  function getHybridInches(spec){
+    var s=spec.toLowerCase();
+    var nums=[];
+    var re=/(\d+\.?\d*)/g; var m2;
+    while((m2=re.exec(s))!==null){var n=parseFloat(m2[1]);if(n>0&&n<24)nums.push({v:n,p:m2.index});}
+    var ccPos=9999,ocPos=9999;
+    var ccM=s.match(/closed[\s-]*cell|(?:^|\s)cc(?:\s|$)/);
+    var ocM=s.match(/open[\s-]*cell|(?:^|\s)oc(?:\s|$)/);
+    if(ccM) ccPos=s.indexOf(ccM[0]);
+    if(ocM) ocPos=s.indexOf(ocM[0]);
+    var ccIn=0,ocIn=0;
+    if(nums.length>=2){
+      if(ccPos<9999){var best=null,bd=9999;nums.forEach(function(n){var d=Math.abs(n.p-ccPos);if(d<bd){bd=d;best=n;}});if(best)ccIn=best.v;}
+      if(ocPos<9999){var best2=null,bd2=9999;nums.forEach(function(n){var d=Math.abs(n.p-ocPos);if(d<bd2){bd2=d;best2=n;}});if(best2)ocIn=best2.v;}
+      if(!ccIn&&!ocIn){ccIn=nums[0].v;ocIn=nums[1].v;}
+      else if(ccIn&&!ocIn){ocIn=nums.find(function(n){return n.v!==ccIn;})||{v:0};ocIn=ocIn.v||0;}
+      else if(ocIn&&!ccIn){ccIn=nums.find(function(n){return n.v!==ocIn;})||{v:0};ccIn=ccIn.v||0;}
+      if(ccIn===ocIn&&nums.length>=2){
+        if(ccPos<ocPos)ocIn=nums.find(function(n){return n.v!==ccIn;})||{v:ocIn};
+        else ccIn=nums.find(function(n){return n.v!==ocIn;})||{v:ccIn};
+        if(typeof ccIn==='object')ccIn=ccIn.v||0;
+        if(typeof ocIn==='object')ocIn=ocIn.v||0;
       }
     }
-  }}catch(e){ console.warn('matBudget calc error:',e&&e.message); }
+    return{cc:ccIn,oc:ocIn};
+  }
 
-  // Weighted average inches
+  // Combine fieldAreas + estItems
+  var all=[];
+  if(Array.isArray(fieldAreas)) all=all.concat(fieldAreas);
+  if(Array.isArray(estItems)) all=all.concat(estItems);
+
+  for(var i=0;i<all.length;i++){
+    try{
+      var a=all[i]; if(!a) continue;
+      var pr=null; try{pr=getProd(a.productId);}catch(e){}
+      var cat=pr?pr.cat:'';
+      var pname=(pr&&pr.name)?pr.name.toLowerCase():'';
+      var sf=parseFloat(a.sf)||0; if(sf<=0) continue;
+      var spec=a.spec||'';
+      var notes=a.notes||'';
+      var aname=a.name||'';
+
+      if(cat==='Hybrid'){
+        var src=spec||notes||aname;
+        var hi=getHybridInches(src);
+        ccSqft+=sf; ocSqft+=sf;
+        if(hi.cc>0){ccInchTotal+=hi.cc*sf;ccCount+=sf;}
+        if(hi.oc>0){ocInchTotal+=hi.oc*sf;ocCount+=sf;}
+      } else if(cat==='Spray Foam'||pname.indexOf('spray foam')>=0){
+        var isClosed=pname.indexOf('closed')>=0||a.productId==='p2';
+        var src2=spec||notes||aname;
+        var inch=getInches(src2);
+        if(isClosed){ccSqft+=sf;if(inch>0){ccInchTotal+=inch*sf;ccCount+=sf;}}
+        else{ocSqft+=sf;if(inch>0){ocInchTotal+=inch*sf;ocCount+=sf;}}
+      } else if(cat==='Mineral Wool'||pname.match(/mineral|roxul|rockwool/)){
+        roxSqft+=sf;
+      } else if(cat==='Blown-In'){
+        if(pname.indexOf('cellulose')>=0) celSqft+=sf;
+        else fbgSqft+=sf;
+      } else if(cat==='Batt'||pname.match(/fiberglass|fiber glass|batt/)){
+        fbgSqft+=sf;
+      } else if(cat==='Air Barrier'||pname.match(/ignition|intumescent/)){
+        ignSqft+=sf;
+      } else if(pname.match(/fire block|fireblock/)){
+        fbSqft+=sf;
+      }
+    }catch(e){ console.warn('area parse error:',e); }
+  }
+
   var ccInchAvg=ccCount>0?Math.round(ccInchTotal/ccCount*10)/10:0;
   var ocInchAvg=ocCount>0?Math.round(ocInchTotal/ocCount*10)/10:0;
-  // Convert sq ft to bags
-  var celBags=celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0;
-  var roxBags=roxSqft>0?Math.ceil(roxSqft/ROX_SQFT_BAG):0;
-  var fbgBags=fbgSqft>0?Math.ceil(fbgSqft/FBG_SQFT_BAG):0;
-
   var matBudget={
-    cc:{sqft:Math.round(ccSqft), inch:ccInchAvg, bfPerSet:CC_BF_SET, galPerSet:CC_GAL_SET},
-    oc:{sqft:Math.round(ocSqft), inch:ocInchAvg, bfPerSet:OC_BF_SET, galPerSet:OC_GAL_SET},
-    celBags:celBags, roxBags:roxBags, fbgBags:fbgBags,
-    ignSqft:Math.round(ignSqft), fbSqft:Math.round(fbSqft),
+    cc:{sqft:Math.round(ccSqft),inch:ccInchAvg,bfPerSet:CC_BF_SET,galPerSet:CC_GAL_SET},
+    oc:{sqft:Math.round(ocSqft),inch:ocInchAvg,bfPerSet:OC_BF_SET,galPerSet:OC_GAL_SET},
+    celBags:celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0,
+    roxBags:roxSqft>0?Math.ceil(roxSqft/ROX_SQFT_BAG):0,
+    fbgBags:fbgSqft>0?Math.ceil(fbgSqft/FBG_SQFT_BAG):0,
+    ignSqft:Math.round(ignSqft),
+    fbSqft:Math.round(fbSqft),
     source:'fieldbid'
   };
 
-  var btn=document.getElementById("sendWLBtn");
-  var origLabel=btn?btn.textContent:"";
-  // Debug: show what was calculated
-  var dbgMsg='CC:'+Math.round(ccSqft)+'sf OC:'+Math.round(ocSqft)+'sf Cel:'+celSqft+'sf Rox:'+roxSqft+'sf Fbg:'+fbgSqft+'sf Ign:'+ignSqft+'sf allAreas:'+allAreas.length;
-  console.log('matBudget debug:', dbgMsg);
-  toast(dbgMsg,'info');
-  if(btn){btn.textContent="Sending..."; btn.disabled=true; btn.style.opacity="0.6";}
-  _wlDb.collection("projects").add({
+  // ── FIREBASE ADD ──
+  _wlDb.collection('projects').add({
     name:client||address,
     client:client||null,
     desc:address,
@@ -2332,25 +2291,25 @@ function sendToWorkLog() {
     ohDays:[],
     start:new Date().toISOString().slice(0,10),
     end:null,
-    status:"active",
+    status:'active',
     helpers:[],
     matBudget:matBudget,
     createdAt:new Date().toISOString(),
-    source:"fieldbid",
+    source:'fieldbid',
     fieldbidTotal:budget
   })
   .then(function(){
-    if(btn){btn.textContent="✅ Sent!"; btn.style.background="#16a34a";}
-    toast("✅ Project sent to WorkLog!");
-    setTimeout(function(){if(btn){btn.textContent=origLabel||"Send to WorkLog";btn.style.background="#1a6b2a";btn.disabled=false;}},3000);
+    if(btn){btn.textContent='✅ Sent!';btn.style.background='#16a34a';btn.style.opacity='1';}
+    toast('✅ Project sent to WorkLog!');
+    setTimeout(function(){
+      if(btn){btn.textContent=origLabel||'Send to WorkLog';btn.style.background='#1a6b2a';btn.disabled=false;}
+    },3000);
   })
   .catch(function(err){
-    toast("Error: "+(err&&err.message||"failed"),"err");
-    if(btn){btn.textContent=origLabel||"Send to WorkLog";btn.disabled=false;btn.style.opacity="1";}
+    toast('Error: '+(err&&err.message||'failed'),'err');
+    if(btn){btn.textContent=origLabel||'Send to WorkLog';btn.disabled=false;btn.style.opacity='1';btn.style.background='#1a6b2a';}
   });
 }
-
-
 
 
 </script>
