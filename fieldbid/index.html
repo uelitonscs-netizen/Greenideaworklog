@@ -1035,8 +1035,20 @@ function getProd(id){for(var i=0;i<products.length;i++)if(products[i].id===id)re
 function calcItem(it){if(!it)return 0;var sf=Number(it.sf)||0,pr=Number(it.price)||0,mk=Number(cfg&&cfg.markup)||0;return sf*pr*(1+mk/100);}
 function calcTotals(){var s=0;if(Array.isArray(estItems))for(var i=0;i<estItems.length;i++)s+=calcItem(estItems[i]);var tr=Number(cfg&&cfg.taxRate)||0;var t=s*tr/100;return{sub:s,tax:t,total:s+t};}
 function toast(msg,type){var t=document.getElementById('toast')||(function(){var el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);return el;})();t.className='toast on'+(type?' '+type:'');t.textContent=msg;clearTimeout(t._h);t._h=setTimeout(function(){t.className='toast'+(type?' '+type:'');},2400);}
-function openOv(id){document.getElementById(id).className='overlay on';}
-function closeOv(id){document.getElementById(id).className='overlay';}
+function openOv(id){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.classList.add('on');
+  el.style.display='flex';
+}
+function closeOv(id){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('on');
+  el.style.display='none';
+  // Force reflow on Android
+  void el.offsetHeight;
+}
 
 function parseSum(str){
   if(!str||!str.trim())return 0;
@@ -1158,6 +1170,28 @@ document.getElementById('fieldProjName').addEventListener('click',function(){ope
 document.getElementById('projCloseBtn').addEventListener('click',function(){closeOv('projOverlay');});
 document.getElementById('createProjBtn').addEventListener('click',function(){createProj();});
 function openProjModal(){renderProjList();openOv('projOverlay');}
+function switchProjById(pid){
+  if(currentProj)saveProjAreas();
+  var projs=loadProjs();
+  for(var i=0;i<projs.length;i++){
+    if(projs[i].id===pid){currentProj=projs[i];fieldAreas=projs[i].areas?JSON.parse(JSON.stringify(projs[i].areas)):[];break;}
+  }
+  window.fieldAreas=fieldAreas;
+  updateProjHeader();renderFA();renderFWO();closeOv('projOverlay');toast('📂 Switched to "'+currentProj.name+'"');
+}
+window.switchProjById=switchProjById;
+
+function deleteProjById(pid){
+  appConfirm('Delete this project?',function(){
+    var projs=loadProjs();
+    projs=projs.filter(function(p){return p.id!==pid;});
+    saveProjs(projs);
+    if(currentProj&&currentProj.id===pid){currentProj=projs.length?projs[0]:null;fieldAreas=currentProj&&currentProj.areas?JSON.parse(JSON.stringify(currentProj.areas)):[];window.fieldAreas=fieldAreas;}
+    renderProjList();updateProjHeader();renderFA();renderFWO();toast('🗑 Deleted');
+  });
+}
+window.deleteProjById=deleteProjById;
+
 function renderProjList(){
   var projs=loadProjs();
   var list=document.getElementById('projList');
@@ -1166,24 +1200,14 @@ function renderProjList(){
   for(var i=0;i<projs.length;i++){
     var p=projs[i];var active=currentProj&&currentProj.id===p.id;
     h+='<div class="proj-item '+(active?'active':'inactive')+'">';
-    h+='<button class="proj-btn" data-pid="'+p.id+'">';
+    h+='<button class="proj-btn" data-pid="'+p.id+'" onclick="switchProjById(this.dataset.pid)" style="flex:1;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font-family:inherit">';
     h+='<div class="proj-name">'+esc(p.name)+(active?' ✓':'')+'</div>';
     h+='<div class="proj-meta">'+(p.areas?p.areas.length:0)+' areas · '+p.created+'</div>';
     h+='</button>';
-    h+='<button class="proj-del" data-pid="'+p.id+'">🗑</button>';
+    h+='<button class="proj-del" data-pid="'+p.id+'" onclick="deleteProjById(this.dataset.pid)">🗑</button>';
     h+='</div>';
   }
   list.innerHTML=h;
-  list.addEventListener('click',function(e){
-    var btn=e.target;
-    while(btn&&btn!==list){
-      if(btn.tagName==='BUTTON'&&btn.classList&&(btn.classList.contains('proj-btn')||btn.classList.contains('proj-del')))break;
-      btn=btn.parentNode;
-    }
-    if(!btn||btn===list)return;
-    if(btn.classList.contains('proj-del'))deleteProj(btn);
-    else switchProj(btn);
-  });
 }
 function createProj(){
   var name=document.getElementById('newProjName').value.trim();
