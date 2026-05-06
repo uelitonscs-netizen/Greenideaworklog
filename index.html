@@ -1957,7 +1957,7 @@ function renderProjects(filter){
       var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
       var ocBFUsed = mb.oc.galPerSet>0 ? Math.round(ocGalUsed/mb.oc.galPerSet*mb.oc.bfPerSet) : 0;
 
-      var hasMat = ccBF>0||ocBF>0||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
+      var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
       if(hasMat){
         html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
         html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
@@ -1981,8 +1981,18 @@ function renderProjects(filter){
           return html2;
         }
 
-        if(ccBF>0||ccGalUsed>0) html+=matRow('🫧 Closed Cell',ccBF,ccBFUsed,'BF')+'<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ccGalUsed+' gal used ('+Math.round(ccGalUsed/(mb.cc.galPerSet||55)*10)/10+' sets)</div>';
-        if(ocBF>0||ocGalUsed>0) html+=matRow('🫧 Open Cell',ocBF,ocBFUsed,'BF')+'<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ocGalUsed+' gal used ('+Math.round(ocGalUsed/(mb.oc.galPerSet||55)*10)/10+' sets)</div>';
+        if((mb.cc&&mb.cc.sqft>0)||ccGalUsed>0){
+          var ccLabel = ccBF>0 ? matRow('🫧 Closed Cell',ccBF,ccBFUsed,'BF') : matRow('🫧 Closed Cell (sq ft)',mb.cc.sqft||0,0,'sq ft');
+          html+=ccLabel;
+          if(ccGalUsed>0) html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ccGalUsed+' gal used ('+Math.round(ccGalUsed/(mb.cc.galPerSet||55)*10)/10+' sets)</div>';
+          else if(mb.cc.inch===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+        }
+        if((mb.oc&&mb.oc.sqft>0)||ocGalUsed>0){
+          var ocLabel = ocBF>0 ? matRow('🫧 Open Cell',ocBF,ocBFUsed,'BF') : matRow('🫧 Open Cell (sq ft)',mb.oc.sqft||0,0,'sq ft');
+          html+=ocLabel;
+          if(ocGalUsed>0) html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">'+ocGalUsed+' gal used ('+Math.round(ocGalUsed/(mb.oc.galPerSet||55)*10)/10+' sets)</div>';
+          else if(mb.oc.inch===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+        }
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
