@@ -1706,6 +1706,9 @@ function exportProjectReport(pid){
     laborByHelper[n].entries.push(e);
   });
 
+  var totalMins=projEntries.reduce(function(s,e){return s+gMin(e);},0);
+  var totalDays=Math.round(totalMins/60/8*10)/10; // 8h workday
+
   var fmtC2=function(v){return '$'+(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');};
   var fmtD2=function(m){return Math.floor(m/60)+'h '+String(Math.round(m%60)).padStart(2,'0')+'m';};
   var fmtDt=function(s){return s?parseLocalDate(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'-';};
@@ -1758,11 +1761,14 @@ function exportProjectReport(pid){
     '<div class="kpi"><div class="kpi-val" style="color:#dc2626">'+fmtC2(totalCost)+'</div><div class="kpi-lbl" data-en="TOTAL COST" data-pt="CUSTO TOTAL">TOTAL COST</div></div>'+
     '<div class="kpi"><div class="kpi-val '+(profit>=0?'profit':'loss')+'">'+fmtC2(profit)+'</div><div class="kpi-lbl" data-en="NET PROFIT" data-pt="LUCRO LÍQUIDO">NET PROFIT</div></div>'+
     '<div class="kpi"><div class="kpi-val '+(margin>=0?'profit':'loss')+'">'+margin.toFixed(1)+'%</div><div class="kpi-lbl" data-en="MARGIN" data-pt="MARGEM">MARGIN</div></div>'+
+    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#1a6b2a">'+fmtD2(totalMins)+'</div><div style="font-size:12px;color:#888;margin-top:2px">= '+totalDays+' <span data-en="days" data-pt="dias">days</span> @ 8h</div><div class="kpi-lbl" data-en="TOTAL LABOR HOURS" data-pt="TOTAL DE HORAS">TOTAL LABOR HOURS</div></div>'+
+    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#111">'+projEntries.length+'</div><div class="kpi-lbl" data-en="ENTRIES" data-pt="REGISTROS">ENTRIES</div></div>'+
   '</div>'+
 
   '<h2 data-en="📊 P&L Summary" data-pt="📊 Resumo P&L">📊 P&L Summary</h2>'+
   '<table><tr><td data-en="Contract Value" data-pt="Valor do Contrato">Contract Value</td><td style="text-align:right;font-weight:700;color:#2563eb">'+fmtC2(budget)+'</td></tr>'+
   '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
+  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="days" data-pt="dias">days</span>)</td></tr>'+
   '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
   '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
   '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
@@ -1772,7 +1778,9 @@ function exportProjectReport(pid){
   '<table><tr><th data-en="Material" data-pt="Material">Material</th><th data-en="Quoted" data-pt="Cotado">Quoted</th><th data-en="Used" data-pt="Usado">Used</th><th data-en="Difference" data-pt="Diferença">Difference</th><th>%</th></tr>'+mbRows+'</table>':'')+
 
   (laborRows?'<h2 data-en="👷 Labor Detail" data-pt="👷 Detalhe de Mão de Obra">👷 Labor Detail</h2>'+
-  '<table><tr><th data-en="Helper" data-pt="Funcionário">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+'</table>':'')+
+  '<table><tr><th data-en="Helper" data-pt="Funcionário">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+
+  '<tr style="background:#f8fdf9"><td colspan="2"><strong data-en="TOTAL" data-pt="TOTAL">TOTAL</strong> <span style="font-size:11px;color:#888">('+totalDays+' <span data-en="days @ 8h" data-pt="dias @ 8h">days @ 8h</span>)</span></td><td style="text-align:right;font-weight:800;color:#1a6b2a">'+fmtD2(totalMins)+'</td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(laborCost)+'</td></tr>'+
+  '</table>':'')+
 
   (expenseRows?'<h2 data-en="📦 Expenses" data-pt="📦 Despesas">📦 Expenses</h2>'+
   '<table><tr><th data-en="Date" data-pt="Data">Date</th><th data-en="Description" data-pt="Descrição">Description</th><th data-en="Type" data-pt="Tipo">Type</th><th style="text-align:right" data-en="Amount" data-pt="Valor">Amount</th></tr>'+expenseRows+
