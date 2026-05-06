@@ -2318,6 +2318,10 @@ function sendToWorkLog() {
 
   var btn=document.getElementById("sendWLBtn");
   var origLabel=btn?btn.textContent:"";
+  // Debug: show what was calculated
+  var dbgMsg='CC:'+Math.round(ccSqft)+'sf OC:'+Math.round(ocSqft)+'sf Cel:'+celSqft+'sf Rox:'+roxSqft+'sf Fbg:'+fbgSqft+'sf Ign:'+ignSqft+'sf allAreas:'+allAreas.length;
+  console.log('matBudget debug:', dbgMsg);
+  toast(dbgMsg,'info');
   if(btn){btn.textContent="Sending..."; btn.disabled=true; btn.style.opacity="0.6";}
   _wlDb.collection("projects").add({
     name:client||address,
