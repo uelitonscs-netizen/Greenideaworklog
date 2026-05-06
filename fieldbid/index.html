@@ -2180,7 +2180,7 @@ function sendToWorkLog() {
   if(!_wlDb){toast("Firebase not ready — please refresh","err"); return;}
   // ── BUILD MATERIAL BUDGET FROM FIELD AREAS / EST ITEMS ──
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
-  var celSqft=0, roxSqft=0, fbgSqft=0;
+  var celSqft=0, roxSqft=0, fbgSqft=0, ignSqft=0, fbSqft=0;
   // Default set configs (adjustable in WorkLog)
   var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
   // Bag coverage defaults (sq ft per bag)
@@ -2286,6 +2286,10 @@ function sendToWorkLog() {
         else fbgSqft+=sf;
       } else if(cat==='Batt'){
         fbgSqft+=sf;
+      } else if(cat==='Air Barrier'||(pr&&pr.name.toLowerCase().match(/ignition|intumescent|fire paint/))){
+        ignSqft+=sf;
+      } else if(cat==='Other'||(pr&&pr.name.toLowerCase().match(/fire block|fireblock/))){
+        fbSqft+=sf;
       }
     }
   }
@@ -2302,6 +2306,7 @@ function sendToWorkLog() {
     cc:{sqft:Math.round(ccSqft), inch:ccInchAvg, bfPerSet:CC_BF_SET, galPerSet:CC_GAL_SET},
     oc:{sqft:Math.round(ocSqft), inch:ocInchAvg, bfPerSet:OC_BF_SET, galPerSet:OC_GAL_SET},
     celBags:celBags, roxBags:roxBags, fbgBags:fbgBags,
+    ignSqft:Math.round(ignSqft), fbSqft:Math.round(fbSqft),
     source:'fieldbid'
   };
 
