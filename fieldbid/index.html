@@ -2178,8 +2178,7 @@ function sendToWorkLog() {
   if(address==="Tap to add") address="";
   if(!client&&!address){toast("Add client name and address first!","warn"); return;}
   if(!_wlDb){toast("Firebase not ready — please refresh","err"); return;}
-
-  // ── BUILD MATERIAL BUDGET FROM FIELD AREAS ──
+  // ── BUILD MATERIAL BUDGET FROM FIELD AREAS / EST ITEMS ──
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
   var celSqft=0, roxSqft=0, fbgSqft=0;
   // Default set configs (adjustable in WorkLog)
@@ -2201,17 +2200,22 @@ function sendToWorkLog() {
     return 0;
   }
 
-  if(Array.isArray(fieldAreas)){
-    for(var i=0;i<fieldAreas.length;i++){
-      var a=fieldAreas[i];
+  // Use fieldAreas if available, otherwise fall back to estItems
+  var areasToProcess = (Array.isArray(fieldAreas)&&fieldAreas.length>0) ? fieldAreas : estItems;
+
+  if(Array.isArray(areasToProcess)){
+    for(var i=0;i<areasToProcess.length;i++){
+      var a=areasToProcess[i];
       var pr=getProd(a.productId);
       var cat=pr?pr.cat:'';
       var sf=parseFloat(a.sf)||0;
-      var inches=parseInches(a.spec);
+      // spec is on fieldAreas; for estItems use name+notes as spec source
+      var specSrc = a.spec || a.name || a.notes || '';
+      var inches=parseInches(specSrc);
       if(cat==='Spray Foam'){
         var pid=a.productId||'';
-        // p2 = Closed Cell, p1 = Open Cell
-        if(pid==='p2'||esc(pr.name).toLowerCase().indexOf('closed')>=0){
+        var prName=pr?pr.name.toLowerCase():'';
+        if(pid==='p2'||prName.indexOf('closed')>=0){
           ccSqft+=sf; if(inches>0){ccInchTotal+=inches*sf; ccCount+=sf;}
         } else {
           ocSqft+=sf; if(inches>0){ocInchTotal+=inches*sf; ocCount+=sf;}
@@ -2219,7 +2223,7 @@ function sendToWorkLog() {
       } else if(cat==='Hybrid'){
         // Parse CC and OC inches from spec
         // Patterns: "3" cc 6.5" oc", "2 closed cell 3.5 open cell", "cc 2 oc 3.5", "2 oc 3.5 cc", etc.
-        var specLow=(a.spec||'').toLowerCase();
+        var specLow=specSrc.toLowerCase();
         var ccInch=0, ocInch=0;
         // Find all number+inch patterns
         var numMatches=specLow.match(/(\d+\.?\d*)\s*(?:in|inch|inches|")?/g)||[];
@@ -2273,11 +2277,12 @@ function sendToWorkLog() {
         ocSqft+=sf;
         if(ccInch>0){ccInchTotal+=ccInch*sf; ccCount+=sf;}
         if(ocInch>0){ocInchTotal+=ocInch*sf; ocCount+=sf;}
-      } else if(cat==='Mineral Wool'){
+      } else if(cat==='Mineral Wool'||(pr&&pr.name.toLowerCase().match(/mineral|roxul|rockwool/))){
         roxSqft+=sf;
       } else if(cat==='Blown-In'){
         var pid2=a.productId||'';
-        if(pid2==='p4'||(pr&&pr.name.toLowerCase().indexOf('cellulose')>=0)) celSqft+=sf;
+        var pnLow=pr?pr.name.toLowerCase():'';
+        if(pid2==='p4'||pnLow.indexOf('cellulose')>=0) celSqft+=sf;
         else fbgSqft+=sf;
       } else if(cat==='Batt'){
         fbgSqft+=sf;
