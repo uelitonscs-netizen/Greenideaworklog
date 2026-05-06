@@ -537,6 +537,10 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
             <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="proj-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
             <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="proj-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+            <div><label style="font-size:9px;color:var(--muted)">Ignition Barrier (sq ft)</label><input id="proj-ign-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Fire Blocking (sq ft)</label><input id="proj-fb-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
         </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
       </div>
@@ -751,10 +755,14 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="ep-oc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
         <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="ep-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
         <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="ep-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
         <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="ep-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label style="font-size:9px;color:var(--muted)">Ignition Barrier (sq ft)</label><input id="ep-ign-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Fire Blocking (sq ft)</label><input id="ep-fb-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -1667,7 +1675,7 @@ function exportProjectReport(pid){
   var mbRows='';
   if(mb){
     function matchMat(d,kws){for(var i=0;i<kws.length;i++)if(d.indexOf(kws[i])>=0)return true;return false;}
-    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0;
+    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0,ignU=0,fbkU=0;
     expenses.forEach(function(e){
       var d=(e.desc||'').toLowerCase();
       var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
@@ -1676,6 +1684,8 @@ function exportProjectReport(pid){
       else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
       else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
       else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/^fg[\s\d]/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
+      else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
     var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
     var ocBFq=(mb.oc.sqft||0)*(mb.oc.inch||0);
@@ -1694,7 +1704,9 @@ function exportProjectReport(pid){
            (ocGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ocGal+' gal used ('+Math.round(ocGal/(mb.oc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
-           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags');
+           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
+           mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
+           mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
   }
 
   // Labor by helper
@@ -1707,10 +1719,11 @@ function exportProjectReport(pid){
   });
 
   var totalMins=projEntries.reduce(function(s,e){return s+gMin(e);},0);
-  // Get number of teams from overhead days config
+  // Get number of teams from overhead days config, fallback to Settings
   var numTeams = 1;
-  if(p.ohDays&&p.ohDays.length) numTeams = p.ohDays[0].teams||1;
-  var peoplePerTeam = 2; // standard crew
+  if(p.ohDays&&p.ohDays.length&&p.ohDays[0].teams) numTeams = parseInt(p.ohDays[0].teams)||1;
+  else { var saved=JSON.parse(localStorage.getItem('wl_settings')||'{}'); numTeams=parseInt(saved.numTeams)||1; }
+  var peoplePerTeam = 2;
   var totalPeople = numTeams * peoplePerTeam;
   var totalDays=Math.round(totalMins/60/(totalPeople*8)*10)/10;
 
@@ -1773,7 +1786,7 @@ function exportProjectReport(pid){
   '<h2 data-en="📊 P&L Summary" data-pt="📊 Resumo P&L">📊 P&L Summary</h2>'+
   '<table><tr><td data-en="Contract Value" data-pt="Valor do Contrato">Contract Value</td><td style="text-align:right;font-weight:700;color:#2563eb">'+fmtC2(budget)+'</td></tr>'+
   '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
-  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span>)</td></tr>'+
+  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> · '+numTeams+' team'+(numTeams>1?'s':'')+' × '+totalPeople+' people)</td></tr>'+
   '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
   '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
   '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
@@ -1922,7 +1935,7 @@ function renderProjects(filter){
       var ocBF=Math.round((mb.oc.sqft||0)*(mb.oc.inch||0)); // board feet quoted OC
       // Calculate gallons used from expenses (match keywords)
       var exps=projectExpenses.filter(function(e){return e.projectId===p.id;});
-      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0;
+      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0,ignUsed=0,fbkUsed=0;
       exps.forEach(function(e){
         var desc=(e.desc||'').toLowerCase();
         var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
@@ -1937,12 +1950,14 @@ function renderProjects(filter){
         else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
         else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/^fg[\s\d]/.test(desc)||desc==='fg'||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
+        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=qty;
+        else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
       // Convert gallons used to BF used
       var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
       var ocBFUsed = mb.oc.galPerSet>0 ? Math.round(ocGalUsed/mb.oc.galPerSet*mb.oc.bfPerSet) : 0;
 
-      var hasMat = ccBF>0||ocBF>0||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0;
+      var hasMat = ccBF>0||ocBF>0||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
       if(hasMat){
         html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
         html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
@@ -1971,6 +1986,8 @@ function renderProjects(filter){
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
+        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Keywords — CC: "closed cell", "cc" · OC: "open cell", "oc" · Cellulose: "cellulose", "celulose" · Roxul: "roxul", "roxull", "mineral wool", "rock wool" · Fiberglass: "fiberglass", "fiber glass", "fg", "batt", "kraft", "unfaced", "r-13" thru "r-49"</div>';
         html+='</div>';
       }
@@ -2027,12 +2044,15 @@ function addProject(){
     oc:{sqft:parseFloat(document.getElementById('proj-oc-sqft').value)||0, inch:parseFloat(document.getElementById('proj-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('proj-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('proj-oc-gal').value)||55},
     celBags:parseFloat(document.getElementById('proj-cel-bags').value)||0,
     roxBags:parseFloat(document.getElementById('proj-rox-bags').value)||0,
-    fbgBags:parseFloat(document.getElementById('proj-fbg-bags').value)||0
+    fbgBags:parseFloat(document.getElementById('proj-fbg-bags').value)||0,
+    ignSqft:parseFloat(document.getElementById('proj-ign-sqft').value)||0,
+    fbSqft:parseFloat(document.getElementById('proj-fb-sqft').value)||0
   };
   db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
   document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
   document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
+  document.getElementById('proj-ign-sqft').value=''; document.getElementById('proj-fb-sqft').value='';
   document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
@@ -2120,7 +2140,7 @@ function openEditProj(id){
   document.getElementById('ep-start').value=p.start?localDateStr(parseLocalDate(p.start)):'';
   document.getElementById('ep-end').value=p.end?localDateStr(parseLocalDate(p.end)):'';
   // Material budget
-  var mb=p.matBudget||{cc:{sqft:0,inch:0,bfPerSet:4500,galPerSet:55},oc:{sqft:0,inch:0,bfPerSet:17000,galPerSet:55},celBags:0,roxBags:0,fbgBags:0};
+  var mb=p.matBudget||{cc:{sqft:0,inch:0,bfPerSet:4500,galPerSet:55},oc:{sqft:0,inch:0,bfPerSet:17000,galPerSet:55},celBags:0,roxBags:0,fbgBags:0,ignSqft:0,fbSqft:0};
   document.getElementById('ep-cc-sqft').value=mb.cc&&mb.cc.sqft||'';
   document.getElementById('ep-cc-inch').value=mb.cc&&mb.cc.inch||'';
   document.getElementById('ep-cc-bf').value=mb.cc&&mb.cc.bfPerSet||4500;
@@ -2132,6 +2152,8 @@ function openEditProj(id){
   document.getElementById('ep-cel-bags').value=mb.celBags||'';
   document.getElementById('ep-rox-bags').value=mb.roxBags||'';
   document.getElementById('ep-fbg-bags').value=mb.fbgBags||'';
+  document.getElementById('ep-ign-sqft').value=mb.ignSqft||'';
+  document.getElementById('ep-fb-sqft').value=mb.fbSqft||'';
   document.getElementById('modal-edit-project').classList.add('open');
 }
 window.openEditProj=openEditProj;
@@ -2147,7 +2169,9 @@ function saveEditProject(){
     oc:{sqft:parseFloat(document.getElementById('ep-oc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('ep-oc-gal').value)||55},
     celBags:parseFloat(document.getElementById('ep-cel-bags').value)||0,
     roxBags:parseFloat(document.getElementById('ep-rox-bags').value)||0,
-    fbgBags:parseFloat(document.getElementById('ep-fbg-bags').value)||0
+    fbgBags:parseFloat(document.getElementById('ep-fbg-bags').value)||0,
+    ignSqft:parseFloat(document.getElementById('ep-ign-sqft').value)||0,
+    fbSqft:parseFloat(document.getElementById('ep-fb-sqft').value)||0
   };
   db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
