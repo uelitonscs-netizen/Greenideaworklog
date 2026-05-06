@@ -2178,10 +2178,147 @@ function sendToWorkLog() {
   if(address==="Tap to add") address="";
   if(!client&&!address){toast("Add client name and address first!","warn"); return;}
   if(!_wlDb){toast("Firebase not ready — please refresh","err"); return;}
+
+  // ── BUILD MATERIAL BUDGET FROM FIELD AREAS ──
+  var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
+  var celSqft=0, roxSqft=0, fbgSqft=0;
+  // Default set configs (adjustable in WorkLog)
+  var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
+  // Bag coverage defaults (sq ft per bag)
+  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32, FBG_SQFT_BAG=45;
+
+  function parseInches(spec){
+    // Try to extract inches from spec like "3 inches", "3\"", "3in", "R-21 2x6 3.5in"
+    var m=(spec||'').match(/(\d+\.?\d*)\s*(?:in|inch|inches|")/i);
+    if(m) return parseFloat(m[1]);
+    // Try to parse from R-value pattern for foam: R-13 ≈ 2in CC, R-21 ≈ 3.5in CC
+    var rv=(spec||'').match(/R-?(\d+)/i);
+    if(rv){
+      var r=parseInt(rv[1]);
+      // Rough CC: R/6.5, OC: R/3.7
+      return 0; // return 0 if no explicit inches - user sets in WorkLog
+    }
+    return 0;
+  }
+
+  if(Array.isArray(fieldAreas)){
+    for(var i=0;i<fieldAreas.length;i++){
+      var a=fieldAreas[i];
+      var pr=getProd(a.productId);
+      var cat=pr?pr.cat:'';
+      var sf=parseFloat(a.sf)||0;
+      var inches=parseInches(a.spec);
+      if(cat==='Spray Foam'){
+        var pid=a.productId||'';
+        // p2 = Closed Cell, p1 = Open Cell
+        if(pid==='p2'||esc(pr.name).toLowerCase().indexOf('closed')>=0){
+          ccSqft+=sf; if(inches>0){ccInchTotal+=inches*sf; ccCount+=sf;}
+        } else {
+          ocSqft+=sf; if(inches>0){ocInchTotal+=inches*sf; ocCount+=sf;}
+        }
+      } else if(cat==='Hybrid'){
+        // Parse CC and OC inches from spec
+        // Patterns: "3" cc 6.5" oc", "2 closed cell 3.5 open cell", "cc 2 oc 3.5", "2 oc 3.5 cc", etc.
+        var specLow=(a.spec||'').toLowerCase();
+        var ccInch=0, ocInch=0;
+        // Find all number+inch patterns
+        var numMatches=specLow.match(/(\d+\.?\d*)\s*(?:in|inch|inches|")?/g)||[];
+        var nums=[];
+        for(var ni=0;ni<numMatches.length;ni++){
+          var nm=parseFloat(numMatches[ni]);
+          if(!isNaN(nm)&&nm>0&&nm<24) nums.push(nm);
+        }
+        if(nums.length>=2){
+          // Check if CC comes before OC in spec
+          var ccPos=Math.min(
+            specLow.indexOf('cc')>=0?specLow.indexOf('cc'):9999,
+            specLow.indexOf('closed')>=0?specLow.indexOf('closed'):9999
+          );
+          var ocPos=Math.min(
+            specLow.indexOf('oc')>=0?specLow.indexOf('oc'):9999,
+            specLow.indexOf('open')>=0?specLow.indexOf('open'):9999
+          );
+          // Position-based: find nearest number to each keyword
+          function nearestNumToKw(str, kwPos){
+            var re=/(\d+\.?\d*)/g, best=0, bestDist=9999, m2;
+            while((m2=re.exec(str))!==null){
+              var n=parseFloat(m2[1]);
+              if(n>0&&n<24){var d=Math.abs(m2.index-kwPos);if(d<bestDist){bestDist=d;best=n;}}
+            }
+            return best;
+          }
+          var ccKwPos=9999, ocKwPos=9999;
+          var ccKw=specLow.match(/closed[\s-]*cell|(?:^|\s|\d)cc(?:\s|\d|$)/i);
+          var ocKw=specLow.match(/open[\s-]*cell|(?:^|\s|\d)oc(?:\s|\d|$)/i);
+          if(ccKw) ccKwPos=specLow.indexOf(ccKw[0]);
+          if(ocKw) ocKwPos=specLow.indexOf(ocKw[0]);
+          if(ccKwPos<9999) ccInch=nearestNumToKw(specLow, ccKwPos);
+          if(ocKwPos<9999) ocInch=nearestNumToKw(specLow, ocKwPos);
+          // If same number assigned to both, differentiate
+          if(ccInch>0&&ocInch>0&&ccInch===ocInch&&nums.length>=2){
+            if(ccKwPos<ocKwPos) ocInch=nums.find(function(n){return n!==ccInch;})||ocInch;
+            else ccInch=nums.find(function(n){return n!==ocInch;})||ccInch;
+          }
+          // Fallback: two numbers, no keyword match
+          if(!ccInch&&!ocInch&&nums.length>=2){
+            if(ccPos<ocPos||ocPos===9999){ccInch=nums[0];ocInch=nums[1];}
+            else{ocInch=nums[0];ccInch=nums[1];}
+          } else if(ccInch&&!ocInch){
+            ocInch=nums.find(function(n){return n!==ccInch;})||0;
+          } else if(ocInch&&!ccInch){
+            ccInch=nums.find(function(n){return n!==ocInch;})||0;
+          }
+        }
+        ccSqft+=sf;
+        ocSqft+=sf;
+        if(ccInch>0){ccInchTotal+=ccInch*sf; ccCount+=sf;}
+        if(ocInch>0){ocInchTotal+=ocInch*sf; ocCount+=sf;}
+      } else if(cat==='Mineral Wool'){
+        roxSqft+=sf;
+      } else if(cat==='Blown-In'){
+        var pid2=a.productId||'';
+        if(pid2==='p4'||(pr&&pr.name.toLowerCase().indexOf('cellulose')>=0)) celSqft+=sf;
+        else fbgSqft+=sf;
+      } else if(cat==='Batt'){
+        fbgSqft+=sf;
+      }
+    }
+  }
+
+  // Weighted average inches
+  var ccInchAvg=ccCount>0?Math.round(ccInchTotal/ccCount*10)/10:0;
+  var ocInchAvg=ocCount>0?Math.round(ocInchTotal/ocCount*10)/10:0;
+  // Convert sq ft to bags
+  var celBags=celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0;
+  var roxBags=roxSqft>0?Math.ceil(roxSqft/ROX_SQFT_BAG):0;
+  var fbgBags=fbgSqft>0?Math.ceil(fbgSqft/FBG_SQFT_BAG):0;
+
+  var matBudget={
+    cc:{sqft:Math.round(ccSqft), inch:ccInchAvg, bfPerSet:CC_BF_SET, galPerSet:CC_GAL_SET},
+    oc:{sqft:Math.round(ocSqft), inch:ocInchAvg, bfPerSet:OC_BF_SET, galPerSet:OC_GAL_SET},
+    celBags:celBags, roxBags:roxBags, fbgBags:fbgBags,
+    source:'fieldbid'
+  };
+
   var btn=document.getElementById("sendWLBtn");
   var origLabel=btn?btn.textContent:"";
   if(btn){btn.textContent="Sending..."; btn.disabled=true;}
-  _wlDb.collection("projects").add({name:client||address,desc:address,budget:budget,overhead:0,ohDays:[],start:new Date().toISOString().slice(0,10),end:null,status:"active",helpers:[],createdAt:new Date().toISOString(),source:"fieldbid",fieldbidTotal:budget})
+  _wlDb.collection("projects").add({
+    name:client||address,
+    client:client||null,
+    desc:address,
+    budget:budget,
+    overhead:0,
+    ohDays:[],
+    start:new Date().toISOString().slice(0,10),
+    end:null,
+    status:"active",
+    helpers:[],
+    matBudget:matBudget,
+    createdAt:new Date().toISOString(),
+    source:"fieldbid",
+    fieldbidTotal:budget
+  })
   .then(function(){
     if(btn){btn.textContent="✅ Sent!"; btn.style.background="#16a34a";}
     toast("✅ Project sent to WorkLog!");
