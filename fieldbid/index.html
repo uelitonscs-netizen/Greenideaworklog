@@ -1902,39 +1902,21 @@ function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(id
 function renderPicker(mode){
   var id=mode==='fa'?'faPicker':'eiPicker';
   var sel=mode==='fa'?faProd:eiProd;
-  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" data-mode="'+mode+'" data-act="addprod">+ New Type</button></div>';
+  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" onclick="openProdModal(-1)">+ New Type</button></div>';
   for(var i=0;i<products.length;i++){
     var pr=products[i];var on=pr.id===sel?' on':'';
     h+='<div class="popt-wrap">';
-    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="sel">';
+    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="selProd(this)">';
     h+='<div class="po-l"><div class="po-em">'+pr.emoji+'</div><div><div class="po-nm">'+esc(pr.name)+'</div><div class="po-ct">'+esc(pr.cat)+'</div></div></div>';
     h+='<div style="display:flex;align-items:center">';
     if(mode==='ei')h+='<div class="po-pr">$'+parseFloat(pr.price).toFixed(2)+'/SF</div>';
     h+='<div class="po-ck">✓</div></div></button>';
-    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="delprod" title="Delete">×</button>';
+    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="delProdFromPicker(this.dataset.pid,this.dataset.mode)" title="Delete">×</button>';
     h+='</div>';
   }
   if(products.length===0)h+='<div style="padding:14px;color:#4d5560;font-size:12px;text-align:center">No products — tap + New Type</div>';
   var container=document.getElementById(id);
-  container.innerHTML=h;
-  container.addEventListener('click',function(e){
-    var btn=e.target;
-    while(btn&&btn!==container){
-      if(btn.tagName==='BUTTON'&&btn.getAttribute('data-act'))break;
-      btn=btn.parentNode;
-    }
-    if(!btn||btn===container)return;
-    var act=btn.getAttribute('data-act');
-    if(act==='sel'){selProd(btn);}
-    else if(act==='delprod'){
-      var pid=btn.getAttribute('data-pid');
-      var m=btn.getAttribute('data-mode');
-      delProdFromPicker(pid,m);
-    }
-    else if(act==='addprod'){
-      openProdModal(-1);
-    }
-  });
+  if(container) container.innerHTML=h;
 }
 function delProdFromPicker(pid,mode){
   var idx=-1;
