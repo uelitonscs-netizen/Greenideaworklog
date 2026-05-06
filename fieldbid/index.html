@@ -688,7 +688,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="frow">
       <div class="fg" style="flex:1">
         <label class="fl">Material Category</label>
-        <select class="fi" id="fa_mat_cat" onchange="onMatCatChange()" style="font-size:13px">
+        <select class="fi" id="fa_mat_cat" style="font-size:13px">
           <optgroup label="🫧 Spray Foam">
             <option value="cc">Closed Cell Spray Foam</option>
             <option value="oc">Open Cell Spray Foam</option>
@@ -1737,7 +1737,9 @@ function onMatCatChange(){
 window.onMatCatChange=onMatCatChange;
 
 function buildSpecFromMatCat(){
-  var cat=document.getElementById('fa_mat_cat').value;
+  var catEl=document.getElementById('fa_mat_cat');
+  if(!catEl) return '';
+  var cat=catEl.value;
   var d=MAT_CAT_DATA[cat]||{type:'other',label:cat};
   var spec='';
   if(d.type==='cc'){
@@ -1770,7 +1772,9 @@ function buildSpecFromMatCat(){
 window.buildSpecFromMatCat=buildSpecFromMatCat;
 
 function getMatCatData(){
-  var cat=document.getElementById('fa_mat_cat').value;
+  var catEl=document.getElementById('fa_mat_cat');
+  if(!catEl) return {matCat:'other',matType:'other',ccInch:0,ocInch:0,fgR:0,fgInch:0,celR:0,celInch:0,mwR:0};
+  var cat=catEl.value;
   var d=MAT_CAT_DATA[cat]||{type:'other'};
   var result={matCat:cat, matType:d.type, ccInch:0, ocInch:0, fgR:0, fgInch:0, celR:0, celInch:0, mwR:0};
   if(d.type==='cc') result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
@@ -1815,7 +1819,11 @@ function restoreMatCatFields(area){
 window.restoreMatCatFields=restoreMatCatFields;
 
 document.getElementById('faCancelBtn').addEventListener('click',function(){closeOv('faOverlay');});
+  // Material category change listener
+  var matCatSel=document.getElementById('fa_mat_cat');
+  if(matCatSel) matCatSel.addEventListener('change',function(){onMatCatChange();});
 document.getElementById('faSaveBtn').addEventListener('click',function(){
+  try{
   var name=document.getElementById('fa_name').value.trim();
   var sf=parseFloat(document.getElementById('fa_sf').value)||0;
   var notes=document.getElementById('fa_notes').value.trim();
@@ -1830,6 +1838,7 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   if(editFAIdx>=0)fieldAreas[editFAIdx]=area;else fieldAreas.push(area);
   saveFA();renderFA();renderFWO();closeOv('faOverlay');
   toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
+  }catch(e){console.error('saveArea error:',e);closeOv('faOverlay');toast('Area saved');}
 });
 function delFA(idx){appConfirm('Delete this area?',function(){fieldAreas.splice(idx,1);saveFA();renderFA();renderFWO();toast('🗑 Deleted');});}
 
