@@ -644,7 +644,6 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="mhandle"></div>
     <div class="mtitle" id="faTitle">Add Area</div>
     <div class="fg"><label class="fl">Area Name</label><input class="fi af" id="fa_name" type="text" placeholder="e.g. North exterior wall"></div>
-    <div class="fg"><label class="fl">Product / Type</label><div class="prod-picker" id="faPicker"></div></div>
     <!-- MEASUREMENT CALCULATOR -->
     <div class="fg">
       <label class="fl">Measurement Mode</label>
@@ -1341,10 +1340,13 @@ function renderFA(){
   if(expBtn)expBtn.style.display=fieldAreas.length?'block':'none';
   checkImportBar();
   if(!fieldAreas.length){list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-title">No areas yet</div><div class="empty-body">Tap + to measure your first area</div></div>';return;}
+  var matEmoji={'cc':'🫧','oc':'💧','hybrid':'🔀','fg_r11':'🧶','fg_r13':'🧶','fg_r15':'🧶','fg_r19':'🧶','fg_r21':'🧶','fg_r25':'🧶','fg_r30':'🧶','fg_r38':'🧶','fg_r49':'🧶','fg_custom':'🧶','cel_blown':'📦','cel_dense':'📦','mw_r15':'🪨','mw_r23':'🪨','mw_r30':'🪨','mw_custom':'🪨','ign':'🔥','fb':'🧱','other':'📦'};
+  var matLabel={'cc':'Closed Cell','oc':'Open Cell','hybrid':'Hybrid CC+OC','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel_blown':'Cellulose Blown','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','other':'Other'};
   var h='';
   for(var i=0;i<fieldAreas.length;i++){
     var a=fieldAreas[i];var pr=getProd(a.productId);
-    var em=pr?pr.emoji:'📦';var pn=pr?pr.name:'Unknown';
+    var em=a.matCat?(matEmoji[a.matCat]||(pr?pr.emoji:'📦')):pr?pr.emoji:'📦';
+    var pn=a.matCat?(matLabel[a.matCat]||(pr?pr.name:'Unknown')):pr?pr.name:'Unknown';
     h+='<div class="card">';
     if(a.photos&&a.photos.length){h+='<div class="card-photos">';for(var p=0;p<a.photos.length;p++)h+='<img class="card-photo" src="'+a.photos[p]+'" data-ii="'+i+'" data-pi="'+p+'" onclick="openLB(this)" alt="">';h+='</div>';}
     h+='<div class="card-body"><div class="card-em f">'+em+'</div><div class="card-info"><div class="card-name">'+esc(a.name)+'</div><div class="card-type">'+esc(pn)+'</div><div class="card-sf">'+fmtN(a.sf)+' SF'+(a.spec?' · '+esc(a.spec):'')+'</div>'+formatDimRows(a)+(a.notes?'<div class="card-note">📋 '+esc(a.notes)+'</div>':'')+(a.photos&&a.photos.length?'<div class="card-ph">📷 '+a.photos.length+' photo'+(a.photos.length>1?'s':'')+'</div>':'')+'</div></div>';
@@ -1463,7 +1465,7 @@ function buildWOTask(idx,name,prod,sf,spec,notes,photos,checked,mode,t,dimsHtml)
 function renderFWO(){
   var t=WO[fwLang];var h=buildWOHd(t,fwLang,currentProj?currentProj.name:'',currentProj?currentProj.address||'':'',quoteNum);
   if(!fieldAreas.length)h+='<div class="empty"><div class="empty-body">'+t.none+'</div></div>';
-  else{h+='<div class="wo-tasks">';for(var i=0;i<fieldAreas.length;i++){var a=fieldAreas[i];var pr=getProd(a.productId);h+=buildWOTask(i,(pr?pr.emoji:'📦')+' '+esc(a.name),pr?esc(pr.name):'—',fmtN(a.sf),a.spec,a.notes,a.photos,woChecked['f'+i],'f',t,formatDimRows(a,{print:true}));}h+='</div>';}
+  else{h+='<div class="wo-tasks">';for(var i=0;i<fieldAreas.length;i++){var a=fieldAreas[i];var pr=getProd(a.productId);var woEm=a.matCat?(matEmoji[a.matCat]||(pr?pr.emoji:'📦')):pr?pr.emoji:'📦';var woType=a.matCat?(matLabel[a.matCat]||(pr?pr.name:'—')):pr?pr.name:'—';h+=buildWOTask(i,woEm+' '+esc(a.name),woType,fmtN(a.sf),a.spec,a.notes,a.photos,woChecked['f'+i],'f',t,formatDimRows(a,{print:true}));}h+='</div>';}
   var fwo=document.getElementById('fieldWO');
   fwo.innerHTML=h;
   fwo.addEventListener('click',function(e){
@@ -1650,7 +1652,7 @@ function openFAModal(idx){
     document.getElementById('fa_name').value=a.name;
     restoreMatCatFields(a);
     document.getElementById('fa_notes').value=a.notes||'';
-    faProd=a.productId||null;
+
     faPendPh=a.photos?a.photos.slice():[];
     // Restore measurement mode and rows
     var savedMode=a.calcMode||'manual';
@@ -1678,9 +1680,9 @@ function openFAModal(idx){
     document.getElementById('fa_cc_inch').value='';
     document.getElementById('fa_oc_inch').value='';
     document.getElementById('fa_notes').value='';
-    faProd=products.length?products[0].id:null;
+
   }
-  renderPicker('fa');renderPPGrid('fa');openOv('faOverlay');
+  onMatCatChange();openOv('faOverlay');
 }
 
 var MAT_CAT_DATA = {
@@ -1821,7 +1823,7 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   if(!sf||sf<=0){toast('Enter measurements or SF');return;}
   var spec=buildSpecFromMatCat();
   var matData=getMatCatData();
-  var area=Object.assign({name:name,productId:faProd,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice()},matData,{
+  var area=Object.assign({name:name,productId:null,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice()},matData,{
     calcMode:calcMode||'manual',
     wallRows:(wallRows&&wallRows.length)?JSON.parse(JSON.stringify(wallRows)):[],
     floorRows:(floorRows&&floorRows.length)?JSON.parse(JSON.stringify(floorRows)):[]});
