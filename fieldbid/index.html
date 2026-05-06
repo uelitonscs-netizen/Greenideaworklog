@@ -687,7 +687,98 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     </div>
     <input type="hidden" id="fa_sf" value="0">
     <div class="frow">
-      <div class="fg"><label class="fl">R-Value / Spec</label><input class="fi" id="fa_spec" type="text" placeholder="R-13..."></div>
+      <div class="fg" style="flex:1">
+        <label class="fl">Material Category</label>
+        <select class="fi" id="fa_mat_cat" onchange="onMatCatChange()" style="font-size:13px">
+          <optgroup label="🫧 Spray Foam">
+            <option value="cc">Closed Cell Spray Foam</option>
+            <option value="oc">Open Cell Spray Foam</option>
+            <option value="hybrid">Hybrid — CC + OC</option>
+          </optgroup>
+          <optgroup label="🧶 Fiberglass Batts">
+            <option value="fg_r11">Fiberglass R-11 (3.5")</option>
+            <option value="fg_r13">Fiberglass R-13 (3.5")</option>
+            <option value="fg_r15">Fiberglass R-15 (3.5")</option>
+            <option value="fg_r19">Fiberglass R-19 (6.25")</option>
+            <option value="fg_r21">Fiberglass R-21 (5.5")</option>
+            <option value="fg_r25">Fiberglass R-25 (8")</option>
+            <option value="fg_r30">Fiberglass R-30 (9.5")</option>
+            <option value="fg_r38">Fiberglass R-38 (12")</option>
+            <option value="fg_r49">Fiberglass R-49 (15.5")</option>
+            <option value="fg_custom">Fiberglass — Custom R/Thickness</option>
+          </optgroup>
+          <optgroup label="📦 Cellulose">
+            <option value="cel_blown">Cellulose Open Blown</option>
+            <option value="cel_dense">Cellulose Dense Pack</option>
+          </optgroup>
+          <optgroup label="🪨 Mineral Wool">
+            <option value="mw_r15">Mineral Wool R-15</option>
+            <option value="mw_r23">Mineral Wool R-23</option>
+            <option value="mw_r30">Mineral Wool R-30</option>
+            <option value="mw_custom">Mineral Wool — Custom</option>
+          </optgroup>
+          <optgroup label="🔥 Other">
+            <option value="ign">Ignition Barrier</option>
+            <option value="fb">Fire Blocking</option>
+            <option value="other">Other</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <!-- Spray Foam fields (CC / OC / Hybrid) -->
+    <div id="mat_foam_fields" style="display:none">
+      <div class="frow">
+        <div class="fg" id="mat_cc_wrap">
+          <label class="fl">CC Thickness (inches)</label>
+          <input class="fi" id="fa_cc_inch" type="number" placeholder="e.g. 3" step="0.5" min="0" max="20"/>
+        </div>
+        <div class="fg" id="mat_oc_wrap">
+          <label class="fl">OC Thickness (inches)</label>
+          <input class="fi" id="fa_oc_inch" type="number" placeholder="e.g. 6.5" step="0.5" min="0" max="20"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fiberglass custom fields -->
+    <div id="mat_fg_fields" style="display:none">
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">R-Value</label>
+          <input class="fi" id="fa_fg_r" type="number" placeholder="e.g. 21" min="1" max="60"/>
+        </div>
+        <div class="fg">
+          <label class="fl">Thickness (inches)</label>
+          <input class="fi" id="fa_fg_inch" type="number" placeholder="e.g. 5.5" step="0.25" min="0" max="20"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cellulose custom fields -->
+    <div id="mat_cel_fields" style="display:none">
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">R-Value</label>
+          <input class="fi" id="fa_cel_r" type="number" placeholder="e.g. 49" min="1" max="80"/>
+        </div>
+        <div class="fg">
+          <label class="fl">Depth (inches)</label>
+          <input class="fi" id="fa_cel_inch" type="number" placeholder="e.g. 12" step="0.5" min="0" max="30"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mineral Wool custom fields -->
+    <div id="mat_mw_fields" style="display:none">
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">R-Value</label>
+          <input class="fi" id="fa_mw_r" type="number" placeholder="e.g. 15" min="1" max="60"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="frow">
       <div class="fg"><label class="fl">Field Notes</label><input class="fi" id="fa_notes" type="text" placeholder="Access, instructions..."></div>
     </div>
     <div class="fg"><label class="fl">Photos</label>
@@ -1557,7 +1648,7 @@ function openFAModal(idx){
   if(idx>=0){
     var a=fieldAreas[idx];
     document.getElementById('fa_name').value=a.name;
-    document.getElementById('fa_spec').value=a.spec||'';
+    restoreMatCatFields(a);
     document.getElementById('fa_notes').value=a.notes||'';
     faProd=a.productId||null;
     faPendPh=a.photos?a.photos.slice():[];
@@ -1582,24 +1673,158 @@ function openFAModal(idx){
     }
   } else {
     document.getElementById('fa_name').value='';
-    document.getElementById('fa_spec').value='';
+    var matCatEl=document.getElementById('fa_mat_cat');if(matCatEl)matCatEl.value='cc';
+    onMatCatChange();
+    document.getElementById('fa_cc_inch').value='';
+    document.getElementById('fa_oc_inch').value='';
     document.getElementById('fa_notes').value='';
     faProd=products.length?products[0].id:null;
   }
   renderPicker('fa');renderPPGrid('fa');openOv('faOverlay');
 }
+
+var MAT_CAT_DATA = {
+  'cc':       {label:'Closed Cell Spray Foam', type:'cc', ccInch:0, ocInch:0},
+  'oc':       {label:'Open Cell Spray Foam',   type:'oc', ccInch:0, ocInch:0},
+  'hybrid':   {label:'Hybrid CC+OC',           type:'hybrid', ccInch:0, ocInch:0},
+  'fg_r11':   {label:'Fiberglass R-11', type:'fg', r:11,  inch:3.5},
+  'fg_r13':   {label:'Fiberglass R-13', type:'fg', r:13,  inch:3.5},
+  'fg_r15':   {label:'Fiberglass R-15', type:'fg', r:15,  inch:3.5},
+  'fg_r19':   {label:'Fiberglass R-19', type:'fg', r:19,  inch:6.25},
+  'fg_r21':   {label:'Fiberglass R-21', type:'fg', r:21,  inch:5.5},
+  'fg_r25':   {label:'Fiberglass R-25', type:'fg', r:25,  inch:8},
+  'fg_r30':   {label:'Fiberglass R-30', type:'fg', r:30,  inch:9.5},
+  'fg_r38':   {label:'Fiberglass R-38', type:'fg', r:38,  inch:12},
+  'fg_r49':   {label:'Fiberglass R-49', type:'fg', r:49,  inch:15.5},
+  'fg_custom':{label:'Fiberglass Custom', type:'fg', r:0,  inch:0},
+  'cel_blown':{label:'Cellulose Open Blown', type:'cel', r:0, inch:0},
+  'cel_dense':{label:'Cellulose Dense Pack', type:'cel', r:0, inch:0},
+  'mw_r15':   {label:'Mineral Wool R-15', type:'mw', r:15},
+  'mw_r23':   {label:'Mineral Wool R-23', type:'mw', r:23},
+  'mw_r30':   {label:'Mineral Wool R-30', type:'mw', r:30},
+  'mw_custom':{label:'Mineral Wool Custom', type:'mw', r:0},
+  'ign':      {label:'Ignition Barrier', type:'ign'},
+  'fb':       {label:'Fire Blocking', type:'fb'},
+  'other':    {label:'Other', type:'other'}
+};
+
+function onMatCatChange(){
+  var cat = document.getElementById('fa_mat_cat').value;
+  var d = MAT_CAT_DATA[cat]||{type:'other'};
+  // Hide all conditional fields
+  document.getElementById('mat_foam_fields').style.display='none';
+  document.getElementById('mat_fg_fields').style.display='none';
+  document.getElementById('mat_cel_fields').style.display='none';
+  document.getElementById('mat_mw_fields').style.display='none';
+  // Show relevant fields
+  if(d.type==='cc'||d.type==='oc'||d.type==='hybrid'){
+    document.getElementById('mat_foam_fields').style.display='block';
+    document.getElementById('mat_cc_wrap').style.display=d.type==='oc'?'none':'block';
+    document.getElementById('mat_oc_wrap').style.display=d.type==='cc'?'none':'block';
+  } else if(d.type==='fg'){
+    document.getElementById('mat_fg_fields').style.display='block';
+    if(d.r) document.getElementById('fa_fg_r').value=d.r;
+    if(d.inch) document.getElementById('fa_fg_inch').value=d.inch;
+  } else if(d.type==='cel'){
+    document.getElementById('mat_cel_fields').style.display='block';
+  } else if(d.type==='mw'){
+    document.getElementById('mat_mw_fields').style.display='block';
+    if(d.r) document.getElementById('fa_mw_r').value=d.r;
+  }
+}
+window.onMatCatChange=onMatCatChange;
+
+function buildSpecFromMatCat(){
+  var cat=document.getElementById('fa_mat_cat').value;
+  var d=MAT_CAT_DATA[cat]||{type:'other',label:cat};
+  var spec='';
+  if(d.type==='cc'){
+    var inch=document.getElementById('fa_cc_inch').value;
+    spec=inch?inch+'" closed cell':d.label;
+  } else if(d.type==='oc'){
+    var inch=document.getElementById('fa_oc_inch').value;
+    spec=inch?inch+'" open cell':d.label;
+  } else if(d.type==='hybrid'){
+    var cc=document.getElementById('fa_cc_inch').value;
+    var oc=document.getElementById('fa_oc_inch').value;
+    spec=(cc?cc+'" cc ':'')+''+(oc?oc+'" oc':'');
+    if(!spec.trim()) spec=d.label;
+  } else if(d.type==='fg'){
+    var r=document.getElementById('fa_fg_r').value;
+    var inch=document.getElementById('fa_fg_inch').value;
+    spec=(r?'R-'+r+' ':d.label+' ')+(inch?inch+'"':'');
+  } else if(d.type==='cel'){
+    var r=document.getElementById('fa_cel_r').value;
+    var inch=document.getElementById('fa_cel_inch').value;
+    spec=d.label+(r?' R-'+r:'')+(inch?' '+inch+'"':'');
+  } else if(d.type==='mw'){
+    var r=document.getElementById('fa_mw_r').value;
+    spec=d.label+(r?' R-'+r:'');
+  } else {
+    spec=d.label;
+  }
+  return spec.trim();
+}
+window.buildSpecFromMatCat=buildSpecFromMatCat;
+
+function getMatCatData(){
+  var cat=document.getElementById('fa_mat_cat').value;
+  var d=MAT_CAT_DATA[cat]||{type:'other'};
+  var result={matCat:cat, matType:d.type, ccInch:0, ocInch:0, fgR:0, fgInch:0, celR:0, celInch:0, mwR:0};
+  if(d.type==='cc') result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
+  else if(d.type==='oc') result.ocInch=parseFloat(document.getElementById('fa_oc_inch').value)||0;
+  else if(d.type==='hybrid'){
+    result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
+    result.ocInch=parseFloat(document.getElementById('fa_oc_inch').value)||0;
+  } else if(d.type==='fg'){
+    result.fgR=parseFloat(document.getElementById('fa_fg_r').value)||d.r||0;
+    result.fgInch=parseFloat(document.getElementById('fa_fg_inch').value)||d.inch||0;
+  } else if(d.type==='cel'){
+    result.celR=parseFloat(document.getElementById('fa_cel_r').value)||0;
+    result.celInch=parseFloat(document.getElementById('fa_cel_inch').value)||0;
+  } else if(d.type==='mw'){
+    result.mwR=parseFloat(document.getElementById('fa_mw_r').value)||d.r||0;
+  }
+  return result;
+}
+window.getMatCatData=getMatCatData;
+
+function restoreMatCatFields(area){
+  var cat=area.matCat||'other';
+  var el=document.getElementById('fa_mat_cat');
+  if(el) el.value=cat;
+  onMatCatChange();
+  var d=MAT_CAT_DATA[cat]||{type:'other'};
+  if(d.type==='cc') { document.getElementById('fa_cc_inch').value=area.ccInch||''; }
+  else if(d.type==='oc') { document.getElementById('fa_oc_inch').value=area.ocInch||''; }
+  else if(d.type==='hybrid'){
+    document.getElementById('fa_cc_inch').value=area.ccInch||'';
+    document.getElementById('fa_oc_inch').value=area.ocInch||'';
+  } else if(d.type==='fg'){
+    document.getElementById('fa_fg_r').value=area.fgR||d.r||'';
+    document.getElementById('fa_fg_inch').value=area.fgInch||d.inch||'';
+  } else if(d.type==='cel'){
+    document.getElementById('fa_cel_r').value=area.celR||'';
+    document.getElementById('fa_cel_inch').value=area.celInch||'';
+  } else if(d.type==='mw'){
+    document.getElementById('fa_mw_r').value=area.mwR||d.r||'';
+  }
+}
+window.restoreMatCatFields=restoreMatCatFields;
+
 document.getElementById('faCancelBtn').addEventListener('click',function(){closeOv('faOverlay');});
 document.getElementById('faSaveBtn').addEventListener('click',function(){
   var name=document.getElementById('fa_name').value.trim();
   var sf=parseFloat(document.getElementById('fa_sf').value)||0;
-  var spec=document.getElementById('fa_spec').value.trim();
   var notes=document.getElementById('fa_notes').value.trim();
   if(!name){toast('Add an area name');return;}
   if(!sf||sf<=0){toast('Enter measurements or SF');return;}
-  var area={name:name,productId:faProd,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice(),
+  var spec=buildSpecFromMatCat();
+  var matData=getMatCatData();
+  var area=Object.assign({name:name,productId:faProd,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice()},matData,{
     calcMode:calcMode||'manual',
     wallRows:(wallRows&&wallRows.length)?JSON.parse(JSON.stringify(wallRows)):[],
-    floorRows:(floorRows&&floorRows.length)?JSON.parse(JSON.stringify(floorRows)):[]};
+    floorRows:(floorRows&&floorRows.length)?JSON.parse(JSON.stringify(floorRows)):[]});
   if(editFAIdx>=0)fieldAreas[editFAIdx]=area;else fieldAreas.push(area);
   saveFA();renderFA();renderFWO();closeOv('faOverlay');
   toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
@@ -2233,39 +2458,49 @@ function sendToWorkLog(){
   for(var i=0;i<all.length;i++){
     try{
       var a=all[i]; if(!a) continue;
+      var sf=parseFloat(a.sf)||0; if(sf<=0) continue;
+      var mtype=a.matType||'';
       var pr=null; try{pr=getProd(a.productId);}catch(e){}
       var cat=pr?pr.cat:'';
-      var pname=(pr&&pr.name)?pr.name.toLowerCase():'';
-      var sf=parseFloat(a.sf)||0; if(sf<=0) continue;
-      var spec=a.spec||'';
-      var notes=a.notes||'';
-      var aname=a.name||'';
 
-      if(cat==='Hybrid'){
-        var src=spec||notes||aname;
-        var hi=getHybridInches(src);
+      if(mtype==='cc'){
+        ccSqft+=sf;
+        var ci=a.ccInch||0;
+        if(ci>0){ccInchTotal+=ci*sf;ccCount+=sf;}
+      } else if(mtype==='oc'){
+        ocSqft+=sf;
+        var oi=a.ocInch||0;
+        if(oi>0){ocInchTotal+=oi*sf;ocCount+=sf;}
+      } else if(mtype==='hybrid'){
         ccSqft+=sf; ocSqft+=sf;
-        if(hi.cc>0){ccInchTotal+=hi.cc*sf;ccCount+=sf;}
-        if(hi.oc>0){ocInchTotal+=hi.oc*sf;ocCount+=sf;}
-      } else if(cat==='Spray Foam'||pname.indexOf('spray foam')>=0){
-        var isClosed=pname.indexOf('closed')>=0||a.productId==='p2';
-        var src2=spec||notes||aname;
-        var inch=getInches(src2);
-        if(isClosed){ccSqft+=sf;if(inch>0){ccInchTotal+=inch*sf;ccCount+=sf;}}
-        else{ocSqft+=sf;if(inch>0){ocInchTotal+=inch*sf;ocCount+=sf;}}
-      } else if(cat==='Mineral Wool'||pname.match(/mineral|roxul|rockwool/)){
-        roxSqft+=sf;
-      } else if(cat==='Blown-In'){
-        if(pname.indexOf('cellulose')>=0) celSqft+=sf;
-        else fbgSqft+=sf;
-      } else if(cat==='Batt'||pname.match(/fiberglass|fiber glass|batt/)){
+        var ci2=a.ccInch||0, oi2=a.ocInch||0;
+        if(ci2>0){ccInchTotal+=ci2*sf;ccCount+=sf;}
+        if(oi2>0){ocInchTotal+=oi2*sf;ocCount+=sf;}
+      } else if(mtype==='fg'){
         fbgSqft+=sf;
-      } else if(cat==='Air Barrier'||pname.match(/ignition|intumescent/)){
+      } else if(mtype==='cel'){
+        celSqft+=sf;
+      } else if(mtype==='mw'){
+        roxSqft+=sf;
+      } else if(mtype==='ign'){
         ignSqft+=sf;
-      } else if(pname.match(/fire block|fireblock/)){
+      } else if(mtype==='fb'){
         fbSqft+=sf;
+      } else {
+        // Fallback: use product category for older areas without matType
+        if(cat==='Hybrid'){ ccSqft+=sf; ocSqft+=sf; }
+        else if(cat==='Spray Foam'){
+          var pname=(pr&&pr.name)?pr.name.toLowerCase():'';
+          if(pname.indexOf('closed')>=0) ccSqft+=sf;
+          else ocSqft+=sf;
+        } else if(cat==='Mineral Wool') roxSqft+=sf;
+        else if(cat==='Blown-In'){
+          var pname2=(pr&&pr.name)?pr.name.toLowerCase():'';
+          if(pname2.indexOf('cellulose')>=0) celSqft+=sf; else fbgSqft+=sf;
+        } else if(cat==='Batt') fbgSqft+=sf;
+        else if(cat==='Air Barrier') ignSqft+=sf;
       }
-    }catch(e){ console.warn('area parse error:',e); }
+    }catch(e){ console.warn('area error:',e); }
   }
 
   var ccInchAvg=ccCount>0?Math.round(ccInchTotal/ccCount*10)/10:0;
