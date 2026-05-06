@@ -2200,17 +2200,22 @@ function sendToWorkLog() {
     return 0;
   }
 
-  // Use fieldAreas if available, otherwise fall back to estItems
-  var areasToProcess = (Array.isArray(fieldAreas)&&fieldAreas.length>0) ? fieldAreas : estItems;
+  // Process BOTH fieldAreas AND estItems to get complete material picture
+  var allAreas = [];
+  if(Array.isArray(fieldAreas)&&fieldAreas.length>0) allAreas = allAreas.concat(fieldAreas);
+  if(Array.isArray(estItems)&&estItems.length>0) allAreas = allAreas.concat(estItems);
 
-  if(Array.isArray(areasToProcess)){
-    for(var i=0;i<areasToProcess.length;i++){
-      var a=areasToProcess[i];
+  if(allAreas.length>0){
+    for(var i=0;i<allAreas.length;i++){
+      var a=allAreas[i];
       var pr=getProd(a.productId);
       var cat=pr?pr.cat:'';
       var sf=parseFloat(a.sf)||0;
-      // spec is on fieldAreas; for estItems use name+notes as spec source
-      var specSrc = a.spec || a.name || a.notes || '';
+      // spec field has inches (e.g. "3" cc 6.5" oc"), notes may have R-values
+      // Prioritize: spec > name > notes
+      var specSrc = a.spec || '';
+      if(!specSrc && a.notes) specSrc = a.notes;
+      if(!specSrc && a.name) specSrc = a.name;
       var inches=parseInches(specSrc);
       if(cat==='Spray Foam'){
         var pid=a.productId||'';
