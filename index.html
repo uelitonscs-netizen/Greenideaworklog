@@ -126,6 +126,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 /* SYNC */
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);display:inline-block;margin-right:5px;animation:pulse 2s infinite;}
 .sync-dot.off{background:var(--red);animation:none;}
+.sync-dot.connecting{background:#d97706;animation:pulse 1s infinite;}
 
 /* SUMMARY */
 .sum-period-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
@@ -213,7 +214,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="admin-logo">Work<span>Log</span></div>
     <div id="admin-profile-name" style="font-size:11px;color:#a8f0b8;font-weight:600;margin-left:4px;opacity:0.9"></div>
     <div style="margin-left:8px;display:flex;align-items:center;font-size:11px;color:#a8f0b8">
-      <span class="sync-dot" id="sync-dot"></span><span id="sync-lbl">Live</span>
+      <span class="sync-dot off" id="sync-dot"></span><span id="sync-lbl">Connecting...</span>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="exportCSV()">↓ CSV</button>
@@ -883,12 +884,45 @@ function hLink(h){return location.origin+location.pathname+'?helper='+h.id;}
 function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function setSyncStatus(ok){var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl'); if(d) d.className='sync-dot'+(ok?'':' off'); if(l) l.textContent=ok?'Live':'Offline';}
+function setSyncStatus(ok){
+  var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl');
+  if(ok){
+    // Cancel any pending offline timer
+    if(window._syncOfflineTimer){ clearTimeout(window._syncOfflineTimer); window._syncOfflineTimer=null; }
+    if(window._syncRetryTimer){ clearTimeout(window._syncRetryTimer); window._syncRetryTimer=null; }
+    if(d) d.className='sync-dot';
+    if(l) l.textContent='● Live';
+  } else {
+    // Grace period of 4s before showing Offline — avoids flicker on startup
+    if(window._syncOfflineTimer) return; // already pending
+    window._syncOfflineTimer=setTimeout(function(){
+      window._syncOfflineTimer=null;
+      var d2=document.getElementById('sync-dot'),l2=document.getElementById('sync-lbl');
+      if(l2&&l2.textContent!=='● Live'){
+        if(d2) d2.className='sync-dot off';
+        if(l2) l2.textContent='Offline';
+        // Auto-reconnect after 5s
+        window._syncRetryTimer=setTimeout(function(){
+          var l3=document.getElementById('sync-lbl'),d3=document.getElementById('sync-dot');
+          if(l3&&l3.textContent==='Offline'){
+            if(l3) l3.textContent='Reconnecting...';
+            if(d3) d3.className='sync-dot connecting';
+            if(db&&db.enableNetwork) db.enableNetwork().catch(function(){});
+          }
+        },5000);
+      }
+    },4000);
+  }
+}
 
 // ── FIREBASE LISTENERS ─────────────────────────────────
 function startListeners(){
   if(window._listenersStarted) return;
   window._listenersStarted = true;
+  // Show connecting state immediately
+  var l=document.getElementById('sync-lbl'), d=document.getElementById('sync-dot');
+  if(l) l.textContent='Connecting...';
+  if(d) d.className='sync-dot off';
   // If helper session, store their ID for security reference
   var sess = localStorage.getItem('wl_session');
   if(sess && sess.indexOf('helper:')===0){
@@ -1612,6 +1646,151 @@ function toggleLaborDrop(id){
 }
 window.toggleLaborDrop=toggleLaborDrop;
 
+// ── PROJECT REPORT EXPORT ──────────────────────────────
+function exportProjectReport(pid){
+  var p=projects.find(function(pr){return pr.id===pid;}); if(!p) return;
+  var projEntries=entries.filter(function(e){return e.projectId===pid&&e.endTime;});
+  var expenses=projectExpenses.filter(function(e){return e.projectId===pid;});
+  var lang='en'; // default, toggled in report window
+
+  // P&L calcs
+  var budget=p.budget||0;
+  var laborCost=projEntries.reduce(function(sum,e){var h=hById(e.helperId);return sum+(gMin(e)/60)*(h?h.rate:0);},0);
+  var matCost=expenses.reduce(function(s,e){return s+e.amount;},0);
+  var overhead=p.overhead||0;
+  var totalCost=laborCost+matCost+overhead;
+  var profit=budget-totalCost;
+  var margin=budget>0?(profit/budget)*100:0;
+
+  // Material budget calcs
+  var mb=p.matBudget;
+  var mbRows='';
+  if(mb){
+    function matchMat(d,kws){for(var i=0;i<kws.length;i++)if(d.indexOf(kws[i])>=0)return true;return false;}
+    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0;
+    expenses.forEach(function(e){
+      var d=(e.desc||'').toLowerCase();
+      var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
+      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/^cc[\s\d]/.test(d)) ccGal+=qty;
+      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/^oc[\s\d]/.test(d)) ocGal+=qty;
+      else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
+      else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
+      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/^fg[\s\d]/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+    });
+    var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
+    var ocBFq=(mb.oc.sqft||0)*(mb.oc.inch||0);
+    var ccBFu=mb.cc.galPerSet>0?Math.round(ccGal/mb.cc.galPerSet*mb.cc.bfPerSet):0;
+    var ocBFu=mb.oc.galPerSet>0?Math.round(ocGal/mb.oc.galPerSet*mb.oc.bfPerSet):0;
+    function mbRow(label,quoted,used,unit){
+      if(!quoted&&!used) return '';
+      var diff=used-quoted;
+      var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
+      var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
+      return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td><td><div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div></td></tr>';
+    }
+    mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
+           (ccGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ccGal+' gal used ('+Math.round(ccGal/(mb.cc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
+           (ocGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ocGal+' gal used ('+Math.round(ocGal/(mb.oc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
+           mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
+           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags');
+  }
+
+  // Labor by helper
+  var laborByHelper={};
+  projEntries.forEach(function(e){
+    var h=hById(e.helperId); var n=h?h.name:'Unknown'; var r=h?h.rate:0;
+    if(!laborByHelper[n]) laborByHelper[n]={mins:0,cost:0,entries:[]};
+    var mins=gMin(e); laborByHelper[n].mins+=mins; laborByHelper[n].cost+=(mins/60)*r;
+    laborByHelper[n].entries.push(e);
+  });
+
+  var fmtC2=function(v){return '$'+(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');};
+  var fmtD2=function(m){return Math.floor(m/60)+'h '+String(Math.round(m%60)).padStart(2,'0')+'m';};
+  var fmtDt=function(s){return s?parseLocalDate(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'-';};
+
+  var laborRows=Object.keys(laborByHelper).map(function(name){
+    var hd=laborByHelper[name];
+    var entryRows=hd.entries.sort(function(a,b){return new Date(a.startTime)-new Date(b.startTime);}).map(function(e){
+      return '<tr style="font-size:11px"><td style="padding-left:20px;color:#555">'+fmtDt(e.startTime)+'</td>'+
+        '<td style="color:#555">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</td>'+
+        '<td style="text-align:right;color:#555">'+fmtD2(gMin(e))+'</td><td style="text-align:right;color:#555">'+fmtC2((gMin(e)/60)*(hById(e.helperId)?hById(e.helperId).rate:0))+'</td></tr>';
+    }).join('');
+    return '<tr style="background:#f8fdf9"><td><strong>'+name+'</strong></td><td></td><td style="text-align:right"><strong>'+fmtD2(hd.mins)+'</strong></td><td style="text-align:right"><strong>'+fmtC2(hd.cost)+'</strong></td></tr>'+entryRows;
+  }).join('');
+
+  var expenseRows=expenses.map(function(e){
+    return '<tr><td>'+fmtDt(e.date)+'</td><td>'+e.desc+'</td><td>'+e.type+'</td><td style="text-align:right;color:#dc2626">'+fmtC2(e.amount)+'</td></tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/>'+
+  '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Inter,sans-serif;font-size:13px;color:#111;padding:32px;max-width:860px;margin:0 auto;}'+
+  'h1{font-size:22px;font-weight:800;color:#1a6b2a;}h2{font-size:15px;font-weight:700;color:#1a6b2a;margin:24px 0 10px;border-bottom:2px solid #e8f5eb;padding-bottom:6px;}'+
+  'table{width:100%;border-collapse:collapse;margin-bottom:8px;}th{background:#1a6b2a;color:#fff;padding:8px 10px;text-align:left;font-size:12px;}'+
+  'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:top;}'+
+  '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}'+
+  '.kpi{background:#f8fdf9;border:1px solid #c3e6cb;border-radius:10px;padding:14px;text-align:center;}'+
+  '.kpi-val{font-size:20px;font-weight:800;}.kpi-lbl{font-size:10px;color:#666;font-weight:600;margin-top:3px;}'+
+  '.profit{color:#16a34a;}.loss{color:#dc2626;}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:16px;border-bottom:3px solid #1a6b2a;}'+
+  '.company{}.company-name{font-size:18px;font-weight:800;color:#1a6b2a;}.company-info{font-size:11px;color:#666;margin-top:4px;line-height:1.7;}'+
+  '.proj-info{font-size:12px;text-align:right;color:#444;line-height:1.9;}'+
+  '.lang-btn{position:fixed;top:16px;right:16px;background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;}'+
+  '@media print{.lang-btn{display:none;}@page{margin:20mm;}}'+
+  '</style></head><body>'+
+  '<button class="lang-btn" onclick="toggleLang()">PT</button>'+
+  '<div class="header">'+
+    '<div class="company">'+
+      '<div class="company-name">Green Idea Insulation</div>'+
+      '<div class="company-info">238 Webster Street #3, Worcester, MA 01603<br>Phone: 774-578-7186<br>greenideainsulation@gmail.com</div>'+
+    '</div>'+
+    '<div class="proj-info">'+
+      '<strong style="font-size:16px">'+p.name+'</strong><br>'+
+      (p.client?'<span style="color:#1a6b2a;font-weight:700">'+p.client+'</span><br>':'')+
+      (p.desc?p.desc+'<br>':'')+
+      fmtDt(p.start)+(p.end?' → '+fmtDt(p.end):'')+'<br>'+
+      '<span style="background:#e8f5eb;border-radius:4px;padding:2px 8px;font-weight:700;color:#1a6b2a">'+p.status.toUpperCase()+'</span>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="kpi-grid">'+
+    '<div class="kpi"><div class="kpi-val" style="color:#2563eb">'+fmtC2(budget)+'</div><div class="kpi-lbl" data-en="CONTRACT VALUE" data-pt="VALOR DO CONTRATO">CONTRACT VALUE</div></div>'+
+    '<div class="kpi"><div class="kpi-val" style="color:#dc2626">'+fmtC2(totalCost)+'</div><div class="kpi-lbl" data-en="TOTAL COST" data-pt="CUSTO TOTAL">TOTAL COST</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(profit>=0?'profit':'loss')+'">'+fmtC2(profit)+'</div><div class="kpi-lbl" data-en="NET PROFIT" data-pt="LUCRO LÍQUIDO">NET PROFIT</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(margin>=0?'profit':'loss')+'">'+margin.toFixed(1)+'%</div><div class="kpi-lbl" data-en="MARGIN" data-pt="MARGEM">MARGIN</div></div>'+
+  '</div>'+
+
+  '<h2 data-en="📊 P&L Summary" data-pt="📊 Resumo P&L">📊 P&L Summary</h2>'+
+  '<table><tr><td data-en="Contract Value" data-pt="Valor do Contrato">Contract Value</td><td style="text-align:right;font-weight:700;color:#2563eb">'+fmtC2(budget)+'</td></tr>'+
+  '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
+  '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
+  '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
+  '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
+  '</table>'+
+
+  (mbRows?'<h2 data-en="🧱 Material Budget" data-pt="🧱 Orçamento de Materiais">🧱 Material Budget</h2>'+
+  '<table><tr><th data-en="Material" data-pt="Material">Material</th><th data-en="Quoted" data-pt="Cotado">Quoted</th><th data-en="Used" data-pt="Usado">Used</th><th data-en="Difference" data-pt="Diferença">Difference</th><th>%</th></tr>'+mbRows+'</table>':'')+
+
+  (laborRows?'<h2 data-en="👷 Labor Detail" data-pt="👷 Detalhe de Mão de Obra">👷 Labor Detail</h2>'+
+  '<table><tr><th data-en="Helper" data-pt="Funcionário">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+'</table>':'')+
+
+  (expenseRows?'<h2 data-en="📦 Expenses" data-pt="📦 Despesas">📦 Expenses</h2>'+
+  '<table><tr><th data-en="Date" data-pt="Data">Date</th><th data-en="Description" data-pt="Descrição">Description</th><th data-en="Type" data-pt="Tipo">Type</th><th style="text-align:right" data-en="Amount" data-pt="Valor">Amount</th></tr>'+expenseRows+
+  '<tr style="background:#fff5f5"><td colspan="3"><strong data-en="Total Expenses" data-pt="Total de Despesas">Total Expenses</strong></td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(matCost)+'</td></tr></table>':'')+
+
+  '<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center">'+
+  '<span data-en="Report generated by WorkLog · Green Idea Insulation" data-pt="Relatório gerado pelo WorkLog · Green Idea Insulation">Report generated by WorkLog · Green Idea Insulation</span> · '+new Date().toLocaleDateString()+'</div>'+
+
+  '<script>var lang="en";function toggleLang(){lang=lang==="en"?"pt":"en";document.querySelector(".lang-btn").textContent=lang==="en"?"PT":"EN";document.querySelectorAll("[data-en]").forEach(function(el){el.textContent=el.getAttribute("data-"+lang);});}<\/script>'+
+  '</body></html>';
+
+  var w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  showToast('Report generated! Use browser Print to save as PDF 📄');
+}
+window.exportProjectReport=exportProjectReport;
+
 function renderProjects(filter){
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
@@ -1652,6 +1831,7 @@ function renderProjects(filter){
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
     html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
+    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📄</button>';
     html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>';
     html+='</div></div>';
     // Stats 2x2
