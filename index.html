@@ -1733,11 +1733,17 @@ function renderProjects(filter){
       exps.forEach(function(e){
         var desc=(e.desc||'').toLowerCase();
         var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
-        if(desc.indexOf('closed')>=0||desc.indexOf('cc')===0||desc.indexOf('closed cell')>=0) ccGalUsed+=qty;
-        else if(desc.indexOf('open')>=0||desc.indexOf('oc')===0||desc.indexOf('open cell')>=0) ocGalUsed+=qty;
-        else if(desc.indexOf('cellulose')>=0) celUsed+=qty;
-        else if(desc.indexOf('roxul')>=0||desc.indexOf('mineral')>=0) roxUsed+=qty;
-        else if(desc.indexOf('fiberglass')>=0||desc.indexOf('fbg')>=0||desc.indexOf('fg')===0) fbgUsed+=qty;
+        function matchMat(d, keywords){ for(var ki=0;ki<keywords.length;ki++){ if(d.indexOf(keywords[ki])>=0) return true; } return false; }
+        // CC: closed cell, closedcell, close cell, cc (start or standalone), c.c., closed-cell
+        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/^cc[\s\d]/.test(desc)||desc==='cc') ccGalUsed+=qty;
+        // OC: open cell, opencell, open-cell, oc (start or standalone), o.c.
+        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/^oc[\s\d]/.test(desc)||desc==='oc') ocGalUsed+=qty;
+        // Cellulose: cellulose, celulose, celulose, cellolose, blow-in cel, blown cel
+        else if(matchMat(desc,['cellulose','celulose','cellulos','cellolose','cellulose open','open blown','open blow','dense pack','densepack','dense-pack','blown-in cel','blow cel','blown cel','cellulose blown','cellulose blow','cellulose dense','cel dense','cel open','cel blown','celulose blown','r-30 cel','r-49 cel','r-60 cel','r60 cel','r30 cel','r49 cel'])) celUsed+=qty;
+        // Roxul: roxul, roxull, roxol, mineral wool, mineralwool, mineral-wool, minwool, rockwool, rock wool, rock-wool, mineral fiber, stone wool
+        else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
+        // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
+        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/^fg[\s\d]/.test(desc)||desc==='fg'||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
       });
       // Convert gallons used to BF used
       var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
@@ -1772,7 +1778,7 @@ function renderProjects(filter){
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
-        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Add gallons to expenses with keywords: "closed cell", "open cell", "cellulose", "roxul", "fiberglass"</div>';
+        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Keywords — CC: "closed cell", "cc" · OC: "open cell", "oc" · Cellulose: "cellulose", "celulose" · Roxul: "roxul", "roxull", "mineral wool", "rock wool" · Fiberglass: "fiberglass", "fiber glass", "fg", "batt", "kraft", "unfaced", "r-13" thru "r-49"</div>';
         html+='</div>';
       }
     }
