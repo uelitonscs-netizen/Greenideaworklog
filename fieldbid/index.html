@@ -2205,21 +2205,22 @@ function sendToWorkLog() {
   if(Array.isArray(fieldAreas)&&fieldAreas.length>0) allAreas = allAreas.concat(fieldAreas);
   if(Array.isArray(estItems)&&estItems.length>0) allAreas = allAreas.concat(estItems);
 
-  if(allAreas.length>0){
+  try{ if(allAreas.length>0){
     for(var i=0;i<allAreas.length;i++){
       var a=allAreas[i];
-      var pr=getProd(a.productId);
+      if(!a) continue;
+      var pr=null; try{ pr=getProd(a.productId); }catch(e){}
       var cat=pr?pr.cat:'';
       var sf=parseFloat(a.sf)||0;
+      if(sf<=0) continue;
       // spec field has inches (e.g. "3" cc 6.5" oc"), notes may have R-values
-      // Prioritize: spec > name > notes
       var specSrc = a.spec || '';
       if(!specSrc && a.notes) specSrc = a.notes;
       if(!specSrc && a.name) specSrc = a.name;
       var inches=parseInches(specSrc);
       if(cat==='Spray Foam'){
         var pid=a.productId||'';
-        var prName=pr?pr.name.toLowerCase():'';
+        var prName=(pr&&pr.name)?pr.name.toLowerCase():'';
         if(pid==='p2'||prName.indexOf('closed')>=0){
           ccSqft+=sf; if(inches>0){ccInchTotal+=inches*sf; ccCount+=sf;}
         } else {
@@ -2282,7 +2283,7 @@ function sendToWorkLog() {
         ocSqft+=sf;
         if(ccInch>0){ccInchTotal+=ccInch*sf; ccCount+=sf;}
         if(ocInch>0){ocInchTotal+=ocInch*sf; ocCount+=sf;}
-      } else if(cat==='Mineral Wool'||(pr&&pr.name.toLowerCase().match(/mineral|roxul|rockwool/))){
+      } else if(cat==='Mineral Wool'||((pr&&pr.name)?pr.name.toLowerCase().match(/mineral|roxul|rockwool/):false)){
         roxSqft+=sf;
       } else if(cat==='Blown-In'){
         var pid2=a.productId||'';
@@ -2291,13 +2292,13 @@ function sendToWorkLog() {
         else fbgSqft+=sf;
       } else if(cat==='Batt'){
         fbgSqft+=sf;
-      } else if(cat==='Air Barrier'||(pr&&pr.name.toLowerCase().match(/ignition|intumescent|fire paint/))){
+      } else if(cat==='Air Barrier'||((pr&&pr.name)?pr.name.toLowerCase().match(/ignition|intumescent|fire paint/):false)){
         ignSqft+=sf;
-      } else if(cat==='Other'||(pr&&pr.name.toLowerCase().match(/fire block|fireblock/))){
+      } else if(cat==='Other'||((pr&&pr.name)?pr.name.toLowerCase().match(/fire block|fireblock/):false)){
         fbSqft+=sf;
       }
     }
-  }
+  }}catch(e){ console.warn('matBudget calc error:',e&&e.message); }
 
   // Weighted average inches
   var ccInchAvg=ccCount>0?Math.round(ccInchTotal/ccCount*10)/10:0;
@@ -2317,7 +2318,7 @@ function sendToWorkLog() {
 
   var btn=document.getElementById("sendWLBtn");
   var origLabel=btn?btn.textContent:"";
-  if(btn){btn.textContent="Sending..."; btn.disabled=true;}
+  if(btn){btn.textContent="Sending..."; btn.disabled=true; btn.style.opacity="0.6";}
   _wlDb.collection("projects").add({
     name:client||address,
     client:client||null,
@@ -2341,7 +2342,7 @@ function sendToWorkLog() {
   })
   .catch(function(err){
     toast("Error: "+(err&&err.message||"failed"),"err");
-    if(btn){btn.textContent=origLabel||"Send to WorkLog";btn.disabled=false;}
+    if(btn){btn.textContent=origLabel||"Send to WorkLog";btn.disabled=false;btn.style.opacity="1";}
   });
 }
 
