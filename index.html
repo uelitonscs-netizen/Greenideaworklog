@@ -1847,10 +1847,17 @@ function exportProjectReport(pid){
   '<script>var lang="en";function toggleLang(){lang=lang==="en"?"pt":"en";document.querySelector(".lang-btn").textContent=lang==="en"?"PT":"EN";document.querySelectorAll("[data-en]").forEach(function(el){el.textContent=el.getAttribute("data-"+lang);});}<\/script>'+
   '</body></html>';
 
-  var w=window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
-  showToast('Report generated! Use browser Print to save as PDF 📄');
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.target='_blank';
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},30000);
+  showToast('Report generated! Use browser Print → Save as PDF 📄');
 }
 window.exportProjectReport=exportProjectReport;
 
