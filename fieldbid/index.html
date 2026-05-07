@@ -1221,6 +1221,9 @@ function switchProjById(pid){
   saveEI();
   updateProjHeader();renderFA();renderFWO();renderEst();renderQuote();
   closeOv('projOverlay');
+  // Auto-navigate to Areas tab so user sees the project immediately
+  var ft1=document.getElementById('ft1');
+  if(ft1) showFP('areas',ft1);
   toast('📂 Switched to "'+currentProj.name+'"');
 }
 window.switchProjById=switchProjById;
@@ -1269,7 +1272,11 @@ function createProj(){
   document.getElementById('newProjAddress').value='';
   saveEI();
   updateProjHeader();renderFA();renderFWO();renderEst();renderQuote();
-  closeOv('projOverlay');toast('✅ Project "'+name+'" created');
+  closeOv('projOverlay');
+  // Auto-navigate to Areas tab
+  var ft1=document.getElementById('ft1');
+  if(ft1) showFP('areas',ft1);
+  toast('✅ Project "'+name+'" created');
 }
 function switchProj(btn){
   var pid=btn.getAttribute('data-pid');
