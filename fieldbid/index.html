@@ -1030,6 +1030,24 @@ var DEFAULTS=[
   {id:'p11',name:'Air Barrier Membrane',emoji:'🌊',cat:'Air Barrier',price:0.60,desc:'WRB layer'}
 ];
 
+// ── LAST PRICE BY TYPE ──────────────────────────────
+function getLastPrice(matType, fallback){
+  try{
+    var stored=localStorage.getItem('fb6_lp');
+    var map=stored?JSON.parse(stored):{};
+    return (matType&&map[matType]>0)?map[matType]:(fallback||0);
+  }catch(e){return fallback||0;}
+}
+function setLastPrice(matType, price){
+  if(!matType||!price||price<=0) return;
+  try{
+    var stored=localStorage.getItem('fb6_lp');
+    var map=stored?JSON.parse(stored):{};
+    map[matType]=price;
+    localStorage.setItem('fb6_lp',JSON.stringify(map));
+  }catch(e){}
+}
+
 function fmt(n){return '$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function fmtN(n){return (''+Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1924,6 +1942,17 @@ document.getElementById('eiSaveBtn').addEventListener('click',function(){
   if(!price||price<=0){toast('Enter price/SF');return;}
   var item={name:name,productId:eiProd,sf:sf,price:price,notes:notes,photos:eiPendPh.slice()};
   if(editEIIdx>=0)estItems[editEIIdx]=item;else estItems.push(item);
+  // Save last price by matType from source area
+  if(editEIIdx>=0){
+    var srcArea=null;
+    var allAreas=(Array.isArray(fieldAreas)?fieldAreas:[]).concat(Array.isArray(estItems)?[]:[]); 
+    // Try to find matType from the area that generated this item
+    // Store by productId as key
+    if(eiProd) setLastPrice('prod_'+eiProd, price);
+    // Also save by matType from the source area if available
+  } else {
+    if(eiProd) setLastPrice('prod_'+eiProd, price);
+  }
   saveEI();renderEst();closeOv('eiOverlay');toast(editEIIdx>=0?'✅ Updated':'✅ Item added');
 });
 function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(idx,1);saveEI();renderEst();toast('🗑 Deleted');});}
@@ -2084,7 +2113,11 @@ function doImport(){
       else if(src.match(/ignition|intumescent/)) pid2='p11';
       if(pid2) pr=getProd(pid2);
     }
-    estItems.push({name:a.name,productId:pr?pr.id:a.productId,sf:a.sf,price:pr?pr.price:0,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
+    // Use last saved price for this product type, fallback to product default
+    var lastP = pr ? getLastPrice('prod_'+pr.id, pr.price) : 0;
+    // Also check by matType
+    if(a.matType) lastP = getLastPrice('mat_'+a.matType, lastP)||lastP;
+    estItems.push({name:a.name,productId:pr?pr.id:a.productId,sf:a.sf,price:lastP,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
   }
   if(added>0){
     if(_importProjName){quoteInfo.client=_importProjName;}
