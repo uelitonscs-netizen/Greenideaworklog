@@ -1065,7 +1065,12 @@ function saveFA(){
   localStorage.setItem('fb6_fa',JSON.stringify(fieldAreas));
   save();
 }
-function saveEI(){localStorage.setItem('fb6_ei',JSON.stringify(estItems));localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo)); save();}
+function saveEI(){
+  localStorage.setItem('fb6_ei',JSON.stringify(estItems));
+  localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo));
+  if(currentProj) saveProjAreas();
+  save();
+}
 function saveQI(){localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo)); save();}
 function savePR(){localStorage.setItem('fb6_pr',JSON.stringify(products)); save();}
 function saveCfg(){localStorage.setItem('fb6_cfg',JSON.stringify(cfg)); save();}
@@ -1075,7 +1080,12 @@ function saveProjs(p){localStorage.setItem('fb6_projs',JSON.stringify(p)); save(
 function saveProjAreas(){
   var projs=loadProjs();
   for(var i=0;i<projs.length;i++){
-    if(projs[i].id===currentProj.id){projs[i].areas=JSON.parse(JSON.stringify(fieldAreas));break;}
+    if(projs[i].id===currentProj.id){
+      projs[i].areas=JSON.parse(JSON.stringify(fieldAreas));
+      projs[i].estItems=JSON.parse(JSON.stringify(estItems));
+      projs[i].quoteInfo=JSON.parse(JSON.stringify(quoteInfo));
+      break;
+    }
   }
   saveProjs(projs);
 }
@@ -1176,10 +1186,21 @@ function switchProjById(pid){
   if(currentProj)saveProjAreas();
   var projs=loadProjs();
   for(var i=0;i<projs.length;i++){
-    if(projs[i].id===pid){currentProj=projs[i];fieldAreas=projs[i].areas?JSON.parse(JSON.stringify(projs[i].areas)):[];break;}
+    if(projs[i].id===pid){
+      currentProj=projs[i];
+      fieldAreas=projs[i].areas?JSON.parse(JSON.stringify(projs[i].areas)):[];
+      estItems=projs[i].estItems?JSON.parse(JSON.stringify(projs[i].estItems)):[];
+      quoteInfo=projs[i].quoteInfo?JSON.parse(JSON.stringify(projs[i].quoteInfo)):{client:projs[i].name||'',address:projs[i].address||''};
+      window.fieldAreas=fieldAreas;
+      window.estItems=estItems;
+      window.quoteInfo=quoteInfo;
+      break;
+    }
   }
-  window.fieldAreas=fieldAreas;
-  updateProjHeader();renderFA();renderFWO();closeOv('projOverlay');toast('📂 Switched to "'+currentProj.name+'"');
+  saveEI();
+  updateProjHeader();renderFA();renderFWO();renderEst();renderQuote();
+  closeOv('projOverlay');
+  toast('📂 Switched to "'+currentProj.name+'"');
 }
 window.switchProjById=switchProjById;
 
@@ -1217,13 +1238,16 @@ function createProj(){
   if(!name){toast('Enter a project name');return;}
   if(currentProj)saveProjAreas();
   var projs=loadProjs();
-  var proj={id:'p_'+Date.now(),name:name,address:address||'',areas:[],created:new Date().toLocaleDateString('en-US')};
+  var proj={id:'p_'+Date.now(),name:name,address:address||'',areas:[],estItems:[],quoteInfo:{client:name,address:address||''},created:new Date().toLocaleDateString('en-US')};
   projs.unshift(proj);saveProjs(projs);
   currentProj=proj;
   fieldAreas=[];window.fieldAreas=fieldAreas;
+  estItems=[];window.estItems=estItems;
+  quoteInfo={client:name,address:address||''};window.quoteInfo=quoteInfo;
   document.getElementById('newProjName').value='';
   document.getElementById('newProjAddress').value='';
-  updateProjHeader();renderFA();renderFWO();
+  saveEI();
+  updateProjHeader();renderFA();renderFWO();renderEst();renderQuote();
   closeOv('projOverlay');toast('✅ Project "'+name+'" created');
 }
 function switchProj(btn){
