@@ -1063,12 +1063,15 @@ function parseSum(str){
 function saveFA(){
   if(currentProj){ saveProjAreas(); }
   localStorage.setItem('fb6_fa',JSON.stringify(fieldAreas));
+  localStorage.setItem('fb6_ei',JSON.stringify(estItems));
+  localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo));
   save();
 }
 function saveEI(){
+  if(currentProj){ saveProjAreas(); }
+  localStorage.setItem('fb6_fa',JSON.stringify(fieldAreas));
   localStorage.setItem('fb6_ei',JSON.stringify(estItems));
   localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo));
-  if(currentProj) saveProjAreas();
   save();
 }
 function saveQI(){localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo)); save();}
@@ -2067,6 +2070,19 @@ function doImport(){
       var mtMap={'cc':'p2','oc':'p1','hybrid':'p3','cel_blown':'p4','cel_dense':'p4','fg_r11':'p6','fg_r13':'p6','fg_r15':'p6','fg_r19':'p7','fg_r21':'p7','fg_r25':'p7','fg_r30':'p7','fg_r38':'p7','fg_r49':'p7','fg_custom':'p6','mw_r15':'p8','mw_r23':'p8','mw_r30':'p8','mw_custom':'p8','ign':'p11','fb':'p11','other':'p10'};
       var mappedId=mtMap[a.matType];
       if(mappedId) pr=getProd(mappedId);
+    }
+    // Fallback: detect from name/notes for old areas without matType
+    if(!pr&&!a.matType){
+      var src=((a.name||'')+' '+(a.notes||'')+' '+(a.spec||'')).toLowerCase();
+      var pid2=null;
+      if(src.match(/closed.cell|\bcc\b/)) pid2='p2';
+      else if(src.match(/hybrid/)) pid2='p3';
+      else if(src.match(/open.cell|\boc\b/)) pid2='p1';
+      else if(src.match(/mineral.wool|roxul|rockwool/)) pid2='p8';
+      else if(src.match(/cellulose/)) pid2='p4';
+      else if(src.match(/fiberglass|fiber.glass|batt/)) pid2='p6';
+      else if(src.match(/ignition|intumescent/)) pid2='p11';
+      if(pid2) pr=getProd(pid2);
     }
     estItems.push({name:a.name,productId:pr?pr.id:a.productId,sf:a.sf,price:pr?pr.price:0,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
   }
