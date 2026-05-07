@@ -1600,32 +1600,35 @@ function renderRows(mode){
   for(var i=0;i<rows.length;i++){
     h+='<div class="mrow" data-row="'+i+'" data-mode="'+mode+'">';
     h+='<div class="mrow-l"><div class="mrow-lbl">'+(i===0?'Length (ft)':'')+'</div>';
-    h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px"></div>';
+    h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px" oninput="updateRow(this)"></div>';
     h+='<div class="mrow-h"><div class="mrow-lbl">'+(i===0?(mode==='wall'?'Height':'Width'):'')+'</div>';
-    h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px"></div>';
-    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'">×</button>';
+    h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px" oninput="updateRow(this)"></div>';
+    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" onclick="deleteRow(this)">×</button>';
     h+='</div>';
   }
   container.innerHTML=h;
-  container.addEventListener('input',function(e){
-    var el=e.target;var row=parseInt(el.getAttribute('data-row'));
-    var field=el.getAttribute('data-field');var m=el.getAttribute('data-mode');
-    if(row<0||!field||!m)return;
-    var arr=m==='wall'?wallRows:floorRows;
-    if(arr[row])arr[row][field]=el.value;
-    recalcSF();
-  });
-  container.addEventListener('click',function(e){
-    var btn=e.target;
-    while(btn&&btn!==container){if(btn.tagName==='BUTTON'&&btn.getAttribute('data-mode'))break;btn=btn.parentNode;}
-    if(!btn||btn===container)return;
-    var row=parseInt(btn.getAttribute('data-row'));
-    var m=btn.getAttribute('data-mode');
-    var arr=m==='wall'?wallRows:floorRows;
-    arr.splice(row,1);
-    renderRows(m);recalcSF();
-  });
 }
+
+function updateRow(el){
+  var row=parseInt(el.getAttribute('data-row'));
+  var field=el.getAttribute('data-field');
+  var m=el.getAttribute('data-mode');
+  if(isNaN(row)||!field||!m) return;
+  var arr=m==='wall'?wallRows:floorRows;
+  if(arr[row]) arr[row][field]=el.value;
+  recalcSF();
+}
+window.updateRow=updateRow;
+
+function deleteRow(btn){
+  var row=parseInt(btn.getAttribute('data-row'));
+  var m=btn.getAttribute('data-mode');
+  var arr=m==='wall'?wallRows:floorRows;
+  arr.splice(row,1);
+  if(arr.length===0) arr.push({l:'',h:''});
+  renderRows(m);recalcSF();
+}
+window.deleteRow=deleteRow;
 
 function setMMode(mode,btn){
   calcMode=mode;
@@ -1686,38 +1689,7 @@ document.getElementById('addFloorRowBtn').addEventListener('click',function(){
 document.getElementById('fa_sf_m').addEventListener('input',recalcSF);
 
 // Row container listeners - set up ONCE on the static containers
-document.getElementById('mRowsContainer').addEventListener('input',function(e){
-  var el=e.target;var row=parseInt(el.getAttribute('data-row'));
-  var field=el.getAttribute('data-field');var m=el.getAttribute('data-mode');
-  if(isNaN(row)||!field||!m)return;
-  var arr=m==='wall'?wallRows:floorRows;
-  if(arr[row])arr[row][field]=el.value;
-  recalcSF();
-});
-document.getElementById('mRowsContainer').addEventListener('click',function(e){
-  var btn=e.target;
-  while(btn&&btn!==this){if(btn.tagName==='BUTTON'&&btn.getAttribute('data-row'))break;btn=btn.parentNode;}
-  if(!btn||btn===this)return;
-  var row=parseInt(btn.getAttribute('data-row'));
-  wallRows.splice(row,1);if(wallRows.length===0)wallRows.push({l:'',h:''});
-  renderRows('wall');recalcSF();
-});
-document.getElementById('mFloorRowsContainer').addEventListener('input',function(e){
-  var el=e.target;var row=parseInt(el.getAttribute('data-row'));
-  var field=el.getAttribute('data-field');var m=el.getAttribute('data-mode');
-  if(isNaN(row)||!field||!m)return;
-  var arr=m==='wall'?wallRows:floorRows;
-  if(arr[row])arr[row][field]=el.value;
-  recalcSF();
-});
-document.getElementById('mFloorRowsContainer').addEventListener('click',function(e){
-  var btn=e.target;
-  while(btn&&btn!==this){if(btn.tagName==='BUTTON'&&btn.getAttribute('data-row'))break;btn=btn.parentNode;}
-  if(!btn||btn===this)return;
-  var row=parseInt(btn.getAttribute('data-row'));
-  floorRows.splice(row,1);if(floorRows.length===0)floorRows.push({l:'',h:''});
-  renderRows('floor');recalcSF();
-});
+// Row input/click handled via oninput/onclick in renderRows
 
 // FIELD AREA MODAL
 function openFAModal(idx){
