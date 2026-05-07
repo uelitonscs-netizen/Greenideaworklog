@@ -1111,10 +1111,13 @@ function updateHelperStats(){
   else{btn.textContent='Clock In'; btn.className='btn clock-btn green'; tel.className='clock-time idle'; tel.textContent='00:00:00';}
   btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title='';
   var tm=totalMin(h.id);
+  var wm=weekMin(h.id);
+  var wpay=calcWeekPay(h.id,h.rate);
+  var weekEarned=wpay.regularPay+wpay.otPay;
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
-  document.getElementById('stat-week').textContent=fmtD(weekMin(h.id));
-  document.getElementById('stat-pay').textContent=fmtC((tm/60)*h.rate);
-  document.getElementById('stat-total').textContent=fmtD(tm);
+  document.getElementById('stat-week').textContent=fmtD(wm);
+  if(document.getElementById('stat-pay')) document.getElementById('stat-pay').textContent=fmtC(weekEarned);
+  if(document.getElementById('stat-total')) document.getElementById('stat-total').textContent=fmtD(tm);
 }
 
 function updateElapsed(st){var s=Math.floor((Date.now()-new Date(st))/1000); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; var el=document.getElementById('clock-elapsed'); if(el) el.textContent=p2(h)+':'+p2(m)+':'+p2(sc);}
@@ -1298,12 +1301,12 @@ function renderDashboard(){
   var grid=document.getElementById('dash-grid');
   if(!helpers.length){grid.innerHTML='<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:50px">No helpers yet. Go to <strong>Helpers</strong> tab.</div>'; return;}
   grid.innerHTML=helpers.map(function(h){
-    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcWeekPay(h.id,h.rate), pay=wpay.totalPay, cl=isClocked(h.id);
+    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcWeekPay(h.id,h.rate), weekEarned=wpay.regularPay+wpay.otPay, cl=isClocked(h.id);
     return '<div class="hcard'+(cl?' live':'')+'">'+
       (cl?'<span class="live-badge">● LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
-      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br>Total: '+fmtD(m)+'<br>Earned: <span style="color:var(--green2)">'+fmtC(pay)+'</span></div>'+
+      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
       '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
