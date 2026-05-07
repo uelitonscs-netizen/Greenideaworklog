@@ -845,6 +845,19 @@ function getWeekBoundaries(date){
   return {start:mon,end:sun};
 }
 
+function calcCurrentWeekPay(hid, rate){
+  var ws=weekStart(); var we=weekEnd();
+  var myEntries=entries.filter(function(e){
+    return e.helperId===hid&&e.endTime&&new Date(e.startTime)>=ws&&new Date(e.startTime)<=we;
+  });
+  var mins=myEntries.reduce(function(s,e){return s+gMin(e);},0);
+  var regMins=Math.min(mins,OT_THRESHOLD_MINS);
+  var otMins=Math.max(0,mins-OT_THRESHOLD_MINS);
+  var regPay=(regMins/60)*rate;
+  var otPay=(otMins/60)*(rate*OT_MULTIPLIER);
+  return {regMins:regMins,otMins:otMins,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
+}
+
 function calcWeekPay(hid, rate){
   // Group entries by week
   var myEntries=entries.filter(function(e){return e.helperId===hid&&e.endTime;});
@@ -1112,7 +1125,7 @@ function updateHelperStats(){
   btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title='';
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
-  var wpay=calcWeekPay(h.id,h.rate);
+  var wpay=calcCurrentWeekPay(h.id,h.rate);
   var weekEarned=wpay.totalPay||0;
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
   document.getElementById('stat-week').textContent=fmtD(wm);
@@ -1301,7 +1314,7 @@ function renderDashboard(){
   var grid=document.getElementById('dash-grid');
   if(!helpers.length){grid.innerHTML='<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:50px">No helpers yet. Go to <strong>Helpers</strong> tab.</div>'; return;}
   grid.innerHTML=helpers.map(function(h){
-    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcWeekPay(h.id,h.rate), weekEarned=wpay.totalPay||0, cl=isClocked(h.id);
+    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcCurrentWeekPay(h.id,h.rate), weekEarned=wpay.totalPay||0, cl=isClocked(h.id);
     return '<div class="hcard'+(cl?' live':'')+'">'+
       (cl?'<span class="live-badge">● LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
