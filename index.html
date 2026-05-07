@@ -846,9 +846,12 @@ function getWeekBoundaries(date){
 }
 
 function calcCurrentWeekPay(hid, rate){
-  var ws=weekStart(); var we=weekEnd();
+  var ws=weekStart();
+  var we=new Date(ws); we.setDate(ws.getDate()+7);
   var myEntries=entries.filter(function(e){
-    return e.helperId===hid&&e.endTime&&new Date(e.startTime)>=ws&&new Date(e.startTime)<=we;
+    if(!e.helperId===hid||!e.endTime) return false;
+    var st=new Date(e.startTime);
+    return e.helperId===hid&&e.endTime&&st>=ws&&st<we;
   });
   var mins=myEntries.reduce(function(s,e){return s+gMin(e);},0);
   var regMins=Math.min(mins,OT_THRESHOLD_MINS);
