@@ -1949,16 +1949,31 @@ document.getElementById('eiSaveBtn').addEventListener('click',function(){
   if(!price||price<=0){toast('Enter price/SF');return;}
   var item={name:name,productId:eiProd,sf:sf,price:price,notes:notes,photos:eiPendPh.slice()};
   if(editEIIdx>=0)estItems[editEIIdx]=item;else estItems.push(item);
-  // Save last price by matType from source area
-  if(editEIIdx>=0){
-    var srcArea=null;
-    var allAreas=(Array.isArray(fieldAreas)?fieldAreas:[]).concat(Array.isArray(estItems)?[]:[]); 
-    // Try to find matType from the area that generated this item
-    // Store by productId as key
-    if(eiProd) setLastPrice('prod_'+eiProd, price);
-    // Also save by matType from the source area if available
-  } else {
-    if(eiProd) setLastPrice('prod_'+eiProd, price);
+  // Save price by area name (most reliable - works even without matType)
+  if(eiProd) setLastPrice('prod_'+eiProd, price);
+  setLastPrice('name_'+name.trim().toLowerCase().replace(/\s+/g,'_'), price);
+  setLastPrice('name_'+name.trim().toLowerCase().replace(/\s+/g,'_')+'__prod', eiProd||'');
+  for(var _i=0;_i<fieldAreas.length;_i++){
+    if(fieldAreas[_i].name===name){
+      fieldAreas[_i].lastPrice=price;
+      fieldAreas[_i].lastProdId=eiProd;
+      break;
+    }
+  }
+  // Also save to project areas
+  if(currentProj){
+    var _projs=loadProjs();
+    for(var _j=0;_j<_projs.length;_j++){
+      if(_projs[_j].id===currentProj.id){
+        var _areas=_projs[_j].areas||[];
+        for(var _k=0;_k<_areas.length;_k++){
+          if(_areas[_k].name===name){_areas[_k].lastPrice=price;_areas[_k].lastProdId=eiProd;break;}
+        }
+        _projs[_j].areas=_areas;
+        break;
+      }
+    }
+    saveProjs(_projs);
   }
   saveEI();renderEst();closeOv('eiOverlay');toast(editEIIdx>=0?'✅ Updated':'✅ Item added');
 });
@@ -2120,11 +2135,16 @@ function doImport(){
       else if(src.match(/ignition|intumescent/)) pid2='p11';
       if(pid2) pr=getProd(pid2);
     }
-    // Use last saved price for this product type, fallback to product default
-    var lastP = pr ? getLastPrice('prod_'+pr.id, pr.price) : 0;
-    // Also check by matType
-    if(a.matType) lastP = getLastPrice('mat_'+a.matType, lastP)||lastP;
-    estItems.push({name:a.name,productId:pr?pr.id:a.productId,sf:a.sf,price:lastP,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
+    // Priority: 1) lastPrice on area object, 2) lastPrice by name, 3) lastPrice by product, 4) product default
+    var _nameKey='name_'+a.name.trim().toLowerCase().replace(/\s+/g,'_');
+    var _savedProdId=getLastPrice(_nameKey+'__prod',null);
+    var _useProd=_savedProdId?getProd(_savedProdId):(a.lastProdId?getProd(a.lastProdId):pr);
+    var lastP = 0;
+    if(a.lastPrice>0) lastP=a.lastPrice;
+    else{ lastP=getLastPrice(_nameKey, 0); }
+    if(!lastP&&_useProd) lastP=getLastPrice('prod_'+_useProd.id, _useProd.price);
+    if(!lastP&&pr) lastP=pr.price||0;
+    estItems.push({name:a.name,productId:_useProd?_useProd.id:(pr?pr.id:a.productId),sf:a.sf,price:lastP,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
   }
   if(added>0){
     if(_importProjName){quoteInfo.client=_importProjName;}
