@@ -1876,16 +1876,37 @@ document.getElementById('faCancelBtn').addEventListener('click',function(){close
 document.getElementById('faSaveBtn').addEventListener('click',function(){
   try{
   var name=document.getElementById('fa_name').value.trim();
-  var sf=parseFloat(document.getElementById('fa_sf').value)||0;
   var notes=document.getElementById('fa_notes').value.trim();
   if(!name){toast('Add an area name');return;}
+  // Sync wallRows/floorRows from DOM inputs before saving
+  var wInputs=document.querySelectorAll('#mRowsContainer input[data-row]');
+  for(var _wi=0;_wi<wInputs.length;_wi++){
+    var _el=wInputs[_wi];
+    var _r=parseInt(_el.getAttribute('data-row'));
+    var _f=_el.getAttribute('data-field');
+    if(!isNaN(_r)&&_f&&wallRows[_r]) wallRows[_r][_f]=_el.value;
+  }
+  var fInputs=document.querySelectorAll('#mFloorRowsContainer input[data-row]');
+  for(var _fi=0;_fi<fInputs.length;_fi++){
+    var _el2=fInputs[_fi];
+    var _r2=parseInt(_el2.getAttribute('data-row'));
+    var _f2=_el2.getAttribute('data-field');
+    if(!isNaN(_r2)&&_f2&&floorRows[_r2]) floorRows[_r2][_f2]=_el2.value;
+  }
+  recalcSF();
+  var sf=parseFloat(document.getElementById('fa_sf').value)||0;
   if(!sf||sf<=0){toast('Enter measurements or SF');return;}
   var spec=buildSpecFromMatCat();
   var matData=getMatCatData();
+  // Filter out completely empty rows before saving
+  var saveWallRows=wallRows.filter(function(r){return r.l||r.h;});
+  var saveFloorRows=floorRows.filter(function(r){return r.l||r.h;});
+  if(saveWallRows.length===0&&calcMode==='walls') saveWallRows=JSON.parse(JSON.stringify(wallRows));
+  if(saveFloorRows.length===0&&calcMode==='floor') saveFloorRows=JSON.parse(JSON.stringify(floorRows));
   var area=Object.assign({name:name,productId:null,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice()},matData,{
     calcMode:calcMode||'manual',
-    wallRows:(wallRows&&wallRows.length)?JSON.parse(JSON.stringify(wallRows)):[],
-    floorRows:(floorRows&&floorRows.length)?JSON.parse(JSON.stringify(floorRows)):[]});
+    wallRows:saveWallRows,
+    floorRows:saveFloorRows});
   if(editFAIdx>=0)fieldAreas[editFAIdx]=area;else fieldAreas.push(area);
   saveFA();renderFA();renderFWO();closeOv('faOverlay');
   toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
