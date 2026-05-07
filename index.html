@@ -1718,9 +1718,27 @@ function exportProjectReport(pid){
       return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td><td><div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div></td></tr>';
     }
     mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
-           (ccGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ccGal+' gal used ('+Math.round(ccGal/(mb.cc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           (function(){
+             var ccGalPerSet=mb.cc.galPerSet||55; var ccBFPerSet=mb.cc.bfPerSet||4500;
+             var ccGalQ=ccBFq>0?Math.round(ccBFq/ccBFPerSet*ccGalPerSet*10)/10:0;
+             var ccSetsQ=ccBFq>0?Math.round(ccBFq/ccBFPerSet*100)/100:0;
+             var ccSetsU=ccGal>0?Math.round(ccGal/ccGalPerSet*100)/100:0;
+             if(!ccGalQ&&!ccGal) return '';
+             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
+               '📋 Cotado: '+ccSetsQ+' sets · '+ccGalQ+' gal &nbsp;|&nbsp; '+
+               '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
+           })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
-           (ocGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ocGal+' gal used ('+Math.round(ocGal/(mb.oc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           (function(){
+             var ocGalPerSet=mb.oc.galPerSet||55; var ocBFPerSet=mb.oc.bfPerSet||17000;
+             var ocGalQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*ocGalPerSet*10)/10:0;
+             var ocSetsQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*100)/100:0;
+             var ocSetsU=ocGal>0?Math.round(ocGal/ocGalPerSet*100)/100:0;
+             if(!ocGalQ&&!ocGal) return '';
+             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
+               '📋 Cotado: '+ocSetsQ+' sets · '+ocGalQ+' gal &nbsp;|&nbsp; '+
+               '🔧 Usado: '+ocSetsU+' sets · '+ocGal+' gal</td></tr>';
+           })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
            mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
