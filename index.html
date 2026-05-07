@@ -1113,7 +1113,7 @@ function updateHelperStats(){
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
   var wpay=calcWeekPay(h.id,h.rate);
-  var weekEarned=wpay.regularPay+wpay.otPay;
+  var weekEarned=wpay.totalPay||0;
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
   document.getElementById('stat-week').textContent=fmtD(wm);
   if(document.getElementById('stat-pay')) document.getElementById('stat-pay').textContent=fmtC(weekEarned);
@@ -1301,7 +1301,7 @@ function renderDashboard(){
   var grid=document.getElementById('dash-grid');
   if(!helpers.length){grid.innerHTML='<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:50px">No helpers yet. Go to <strong>Helpers</strong> tab.</div>'; return;}
   grid.innerHTML=helpers.map(function(h){
-    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcWeekPay(h.id,h.rate), weekEarned=wpay.regularPay+wpay.otPay, cl=isClocked(h.id);
+    var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcWeekPay(h.id,h.rate), weekEarned=wpay.totalPay||0, cl=isClocked(h.id);
     return '<div class="hcard'+(cl?' live':'')+'">'+
       (cl?'<span class="live-badge">● LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
