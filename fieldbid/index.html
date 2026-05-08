@@ -686,6 +686,23 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
       </div>
       <div class="calc-bd" id="calcBD" style="font-size:11px;color:#7d8590;text-align:right;font-family:ui-monospace,monospace;line-height:1.8;max-width:160px"></div>
     </div>
+
+    <!-- Multiplier toggle -->
+    <div style="margin:8px 0 4px">
+      <button id="multToggleBtn" onclick="toggleMultiplier()" style="background:transparent;border:1px solid #444;color:#7d8590;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">× Multiplier: OFF</button>
+    </div>
+    <div id="multWrap" style="display:none;margin-bottom:8px">
+      <div class="frow">
+        <div class="fg" style="flex:0 0 auto;min-width:0">
+          <label class="fl">Units / Multiplier</label>
+          <input class="fi" id="fa_mult" type="number" placeholder="1" min="1" max="999" value="1" style="font-size:18px;width:100px" oninput="recalcSF()">
+        </div>
+        <div class="fg" style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <div style="font-size:13px;color:#7d8590">× <span id="calcSF_base" style="color:#1a6b2a;font-weight:700">0</span> SF base = <span id="calcSF_total" style="color:#f59e0b;font-weight:800;font-size:16px">0</span> SF total</div>
+        </div>
+      </div>
+    </div>
+
     <input type="hidden" id="fa_sf" value="0">
     <div class="frow">
       <div class="fg" style="flex:1">
@@ -1668,6 +1685,19 @@ function initCalc(){
   document.getElementById('fa_sf').value='0';
 }
 
+function toggleMultiplier(){
+  var wrap=document.getElementById('multWrap');
+  var btn=document.getElementById('multToggleBtn');
+  var on=wrap.style.display==='none';
+  wrap.style.display=on?'block':'none';
+  btn.textContent=on?'× Multiplier: ON':'× Multiplier: OFF';
+  btn.style.color=on?'#f59e0b':'#7d8590';
+  btn.style.borderColor=on?'#f59e0b':'#444';
+  if(!on) document.getElementById('fa_mult').value='1';
+  recalcSF();
+}
+window.toggleMultiplier=toggleMultiplier;
+
 function recalcSF(){
   var total=0;var lines=[];
   if(calcMode==='walls'){
@@ -1684,9 +1714,22 @@ function recalcSF(){
     total=parseFloat(document.getElementById('fa_sf_m').value)||0;
   }
   total=Math.round(total*10)/10;
-  document.getElementById('calcSF').textContent=total>0?total.toLocaleString():'0';
+  // Apply multiplier if active
+  var multWrap=document.getElementById('multWrap');
+  var mult=1;
+  if(multWrap&&multWrap.style.display!=='none'){
+    mult=parseFloat(document.getElementById('fa_mult').value)||1;
+    if(mult<1) mult=1;
+  }
+  var finalSF=Math.round(total*mult*10)/10;
+  document.getElementById('calcSF').textContent=finalSF>0?finalSF.toLocaleString():'0';
   document.getElementById('calcBD').textContent=lines.join('\n');
-  document.getElementById('fa_sf').value=total;
+  document.getElementById('fa_sf').value=finalSF;
+  // Update multiplier display
+  var baseEl=document.getElementById('calcSF_base');
+  var totEl=document.getElementById('calcSF_total');
+  if(baseEl) baseEl.textContent=total.toLocaleString();
+  if(totEl) totEl.textContent=finalSF.toLocaleString();
 }
 
 document.getElementById('addRowBtn').addEventListener('click',function(){
@@ -1711,6 +1754,19 @@ function openFAModal(idx){
     var a=fieldAreas[idx];
     document.getElementById('fa_name').value=a.name;
     restoreMatCatFields(a);
+    // Restore multiplier
+    var multToggleEl=document.getElementById('multToggleBtn');
+    var multWrapEl2=document.getElementById('multWrap');
+    var multInEl=document.getElementById('fa_mult');
+    if(a.mult&&a.mult>1){
+      if(multWrapEl2) multWrapEl2.style.display='block';
+      if(multToggleEl){multToggleEl.textContent='× Multiplier: ON';multToggleEl.style.color='#f59e0b';multToggleEl.style.borderColor='#f59e0b';}
+      if(multInEl) multInEl.value=a.mult;
+    } else {
+      if(multWrapEl2) multWrapEl2.style.display='none';
+      if(multToggleEl){multToggleEl.textContent='× Multiplier: OFF';multToggleEl.style.color='#7d8590';multToggleEl.style.borderColor='#444';}
+      if(multInEl) multInEl.value=1;
+    }
     document.getElementById('fa_notes').value=a.notes||'';
 
     faPendPh=a.photos?a.photos.slice():[];
@@ -1737,6 +1793,11 @@ function openFAModal(idx){
     document.getElementById('fa_name').value='';
     var matCatEl=document.getElementById('fa_mat_cat');if(matCatEl)matCatEl.value='cc';
     onMatCatChange();
+    // Reset multiplier
+    var mWrap=document.getElementById('multWrap');var mBtn=document.getElementById('multToggleBtn');var mIn=document.getElementById('fa_mult');
+    if(mWrap) mWrap.style.display='none';
+    if(mBtn){mBtn.textContent='× Multiplier: OFF';mBtn.style.color='#7d8590';mBtn.style.borderColor='#444';}
+    if(mIn) mIn.value=1;
     document.getElementById('fa_cc_inch').value='';
     document.getElementById('fa_oc_inch').value='';
     document.getElementById('fa_notes').value='';
@@ -1947,12 +2008,14 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   if(!sf||sf<=0){toast('Enter measurements or SF');return;}
   var spec=buildSpecFromMatCat();
   var matData=getMatCatData();
+  var multWrapEl=document.getElementById('multWrap');
+  var multVal=(multWrapEl&&multWrapEl.style.display!=='none')?parseFloat(document.getElementById('fa_mult').value)||1:1;
   // Filter out completely empty rows before saving
   var saveWallRows=wallRows.filter(function(r){return r.l||r.h;});
   var saveFloorRows=floorRows.filter(function(r){return r.l||r.h;});
   if(saveWallRows.length===0&&calcMode==='walls') saveWallRows=JSON.parse(JSON.stringify(wallRows));
   if(saveFloorRows.length===0&&calcMode==='floor') saveFloorRows=JSON.parse(JSON.stringify(floorRows));
-  var area=Object.assign({name:name,productId:null,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice()},matData,{
+  var area=Object.assign({name:name,productId:null,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice(),mult:multVal},matData,{
     calcMode:calcMode||'manual',
     wallRows:saveWallRows,
     floorRows:saveFloorRows});
