@@ -3108,27 +3108,5 @@ function showInstallBanner(){
     <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
   </div>
 </div>
-<script>
-// Block pull-to-refresh - only when at very top of page
-(function(){
-  var startY=0;
-  document.addEventListener('touchstart',function(e){
-    startY=e.touches[0].pageY;
-  },{passive:true});
-  document.addEventListener('touchmove',function(e){
-    var el=e.target;
-    // Walk up to find scrollable parent
-    while(el&&el!==document.body){
-      if(el.scrollTop>0) return; // inside a scrollable element, allow
-      el=el.parentNode;
-    }
-    var pageY=e.touches[0].pageY;
-    var scrollTop=window.pageYOffset||document.documentElement.scrollTop||0;
-    if(scrollTop<=0&&pageY>startY){
-      e.preventDefault();
-    }
-  },{passive:false});
-})();
-</script>
 </body>
 </html>
