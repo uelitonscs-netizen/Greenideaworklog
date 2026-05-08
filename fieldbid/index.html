@@ -1714,6 +1714,7 @@ function recalcSF(){
     total=parseFloat(document.getElementById('fa_sf_m').value)||0;
   }
   total=Math.round(total*10)/10;
+  // For manual mode, trigger recalc when sf_m changes
   // Apply multiplier if active
   var multWrap=document.getElementById('multWrap');
   var mult=1;
@@ -1774,20 +1775,21 @@ function openFAModal(idx){
     var savedMode=a.calcMode||'manual';
     if(savedMode==='walls'&&a.wallRows&&a.wallRows.length>0&&window.wallRows!==undefined){
       wallRows=JSON.parse(JSON.stringify(a.wallRows));
-      floorRows=a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):[{l:'',h:''}];
+      floorRows=a.floorRows&&a.floorRows.length?JSON.parse(JSON.stringify(a.floorRows)):[{l:'',h:''}];
       setMMode('walls',document.getElementById('mm1'));
-      renderRows('wall');renderRows('floor');recalcSF();
+      renderRows('wall');renderRows('floor');
+      setTimeout(function(){recalcSF();},50);
     } else if(savedMode==='floor'&&a.floorRows&&a.floorRows.length>0){
       floorRows=JSON.parse(JSON.stringify(a.floorRows));
-      wallRows=a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):[{l:'',h:''}];
+      wallRows=a.wallRows&&a.wallRows.length?JSON.parse(JSON.stringify(a.wallRows)):[{l:'',h:''}];
       setMMode('floor',document.getElementById('mm2'));
-      renderRows('wall');renderRows('floor');recalcSF();
+      renderRows('wall');renderRows('floor');
+      setTimeout(function(){recalcSF();},50);
     } else {
-      // Manual mode or no rows saved - show SF directly
       setMMode('manual',document.getElementById('mm3'));
-      document.getElementById('fa_sf_m').value=a.sf||0;
-      document.getElementById('fa_sf').value=a.sf||0;
-      document.getElementById('calcSF').textContent=a.sf?(+a.sf).toLocaleString():'0';
+      var restoreBase=a.sfBase||(a.mult&&a.mult>1?Math.round((a.sf/a.mult)*10)/10:a.sf)||0;
+      document.getElementById('fa_sf_m').value=restoreBase;
+      setTimeout(function(){recalcSF();},50);
     }
   } else {
     document.getElementById('fa_name').value='';
@@ -2010,12 +2012,14 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   var matData=getMatCatData();
   var multWrapEl=document.getElementById('multWrap');
   var multVal=(multWrapEl&&multWrapEl.style.display!=='none')?parseFloat(document.getElementById('fa_mult').value)||1:1;
+  // Save the BASE sf (before multiplier) for manual mode restore
+  var sfBase=calcMode==='manual'?parseFloat(document.getElementById('fa_sf_m').value)||0:Math.round(sf/multVal*10)/10;
   // Filter out completely empty rows before saving
   var saveWallRows=wallRows.filter(function(r){return r.l||r.h;});
   var saveFloorRows=floorRows.filter(function(r){return r.l||r.h;});
   if(saveWallRows.length===0&&calcMode==='walls') saveWallRows=JSON.parse(JSON.stringify(wallRows));
   if(saveFloorRows.length===0&&calcMode==='floor') saveFloorRows=JSON.parse(JSON.stringify(floorRows));
-  var area=Object.assign({name:name,productId:null,sf:sf,spec:spec,notes:notes,photos:faPendPh.slice(),mult:multVal},matData,{
+  var area=Object.assign({name:name,productId:null,sf:sf,sfBase:sfBase,spec:spec,notes:notes,photos:faPendPh.slice(),mult:multVal},matData,{
     calcMode:calcMode||'manual',
     wallRows:saveWallRows,
     floorRows:saveFloorRows});
