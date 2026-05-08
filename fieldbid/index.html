@@ -695,6 +695,8 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
             <option value="cc">Closed Cell Spray Foam</option>
             <option value="oc">Open Cell Spray Foam</option>
             <option value="hybrid">Hybrid — CC + OC</option>
+            <option value="hybrid_foam_fg">Hybrid — Foam + Fiberglass</option>
+            <option value="hybrid_foam_mw">Hybrid — Foam + Mineral Wool</option>
           </optgroup>
           <optgroup label="🧶 Fiberglass Batts">
             <option value="fg_r11">Fiberglass R-11 (3.5")</option>
@@ -1426,8 +1428,8 @@ function renderFA(){
   if(expBtn)expBtn.style.display=fieldAreas.length?'block':'none';
   checkImportBar();
   if(!fieldAreas.length){list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-title">No areas yet</div><div class="empty-body">Tap + to measure your first area</div></div>';return;}
-  var matEmoji={'cc':'🫧','oc':'💧','hybrid':'🔀','fg_r11':'🧶','fg_r13':'🧶','fg_r15':'🧶','fg_r19':'🧶','fg_r21':'🧶','fg_r25':'🧶','fg_r30':'🧶','fg_r38':'🧶','fg_r49':'🧶','fg_custom':'🧶','cel_blown':'📦','cel_dense':'📦','mw_r15':'🪨','mw_r23':'🪨','mw_r30':'🪨','mw_custom':'🪨','ign':'🔥','fb':'🧱','other':'📦'};
-  var matLabel={'cc':'Closed Cell','oc':'Open Cell','hybrid':'Hybrid CC+OC','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel_blown':'Cellulose Blown','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','other':'Other'};
+  var matEmoji={'cc':'🫧','oc':'💧','hybrid':'🔀','hybrid_foam_fg':'🔀','hybrid_foam_mw':'🔀','fg_r11':'🧶','fg_r13':'🧶','fg_r15':'🧶','fg_r19':'🧶','fg_r21':'🧶','fg_r25':'🧶','fg_r30':'🧶','fg_r38':'🧶','fg_r49':'🧶','fg_custom':'🧶','cel_blown':'📦','cel_dense':'📦','mw_r15':'🪨','mw_r23':'🪨','mw_r30':'🪨','mw_custom':'🪨','ign':'🔥','fb':'🧱','other':'📦'};
+  var matLabel={'cc':'Closed Cell','oc':'Open Cell','hybrid':'Hybrid CC+OC','hybrid_foam_fg':'Hybrid Foam+Fiberglass','hybrid_foam_mw':'Hybrid Foam+Mineral Wool','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel_blown':'Cellulose Blown','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','other':'Other'};
   var h='';
   for(var i=0;i<fieldAreas.length;i++){
     var a=fieldAreas[i];var pr=getProd(a.productId);
@@ -1747,6 +1749,8 @@ var MAT_CAT_DATA = {
   'cc':       {label:'Closed Cell Spray Foam', type:'cc', ccInch:0, ocInch:0},
   'oc':       {label:'Open Cell Spray Foam',   type:'oc', ccInch:0, ocInch:0},
   'hybrid':   {label:'Hybrid CC+OC',           type:'hybrid', ccInch:0, ocInch:0},
+  'hybrid_foam_fg':{label:'Hybrid Foam+Fiberglass', type:'hybrid_foam_fg', ccInch:0, fgR:0, fgInch:0},
+  'hybrid_foam_mw':{label:'Hybrid Foam+Mineral Wool', type:'hybrid_foam_mw', ccInch:0, mwR:0},
   'fg_r11':   {label:'Fiberglass R-11', type:'fg', r:11,  inch:3.5},
   'fg_r13':   {label:'Fiberglass R-13', type:'fg', r:13,  inch:3.5},
   'fg_r15':   {label:'Fiberglass R-15', type:'fg', r:15,  inch:3.5},
@@ -1781,6 +1785,30 @@ function onMatCatChange(){
     document.getElementById('mat_foam_fields').style.display='block';
     document.getElementById('mat_cc_wrap').style.display=d.type==='oc'?'none':'block';
     document.getElementById('mat_oc_wrap').style.display=d.type==='cc'?'none':'block';
+  } else if(d.type==='hybrid_foam_fg'){
+    document.getElementById('mat_foam_fields').style.display='block';
+    document.getElementById('mat_cc_wrap').style.display='block';
+    document.getElementById('mat_oc_wrap').style.display='none';
+    document.getElementById('mat_fg_fields').style.display='block';
+    if(d.fgR) document.getElementById('fa_fg_r').value=d.fgR;
+    if(d.fgInch) document.getElementById('fa_fg_inch').value=d.fgInch;
+  } else if(d.type==='hybrid_foam_mw'){
+    document.getElementById('mat_foam_fields').style.display='block';
+    document.getElementById('mat_cc_wrap').style.display='block';
+    document.getElementById('mat_oc_wrap').style.display='none';
+    document.getElementById('mat_mw_fields').style.display='block';
+    if(d.mwR) document.getElementById('fa_mw_r').value=d.mwR;
+  } else if(d.type==='hybrid_foam_fg'){
+    var cc=document.getElementById('fa_cc_inch').value;
+    var r=document.getElementById('fa_fg_r').value;
+    var inch=document.getElementById('fa_fg_inch').value;
+    spec=(cc?cc+'" foam ':'')+''+(r?'R-'+r+' ':'')+''+(inch?inch+'"':'');
+    if(!spec.trim()) spec=d.label;
+  } else if(d.type==='hybrid_foam_mw'){
+    var cc2=document.getElementById('fa_cc_inch').value;
+    var mwr=document.getElementById('fa_mw_r').value;
+    spec=(cc2?cc2+'" foam ':'')+''+(mwr?'Mineral Wool R-'+mwr:'');
+    if(!spec.trim()) spec=d.label;
   } else if(d.type==='fg'){
     document.getElementById('mat_fg_fields').style.display='block';
     if(d.r) document.getElementById('fa_fg_r').value=d.r;
@@ -1840,6 +1868,13 @@ function getMatCatData(){
   else if(d.type==='hybrid'){
     result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
     result.ocInch=parseFloat(document.getElementById('fa_oc_inch').value)||0;
+  } else if(d.type==='hybrid_foam_fg'){
+    result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
+    result.fgR=parseFloat(document.getElementById('fa_fg_r').value)||0;
+    result.fgInch=parseFloat(document.getElementById('fa_fg_inch').value)||0;
+  } else if(d.type==='hybrid_foam_mw'){
+    result.ccInch=parseFloat(document.getElementById('fa_cc_inch').value)||0;
+    result.mwR=parseFloat(document.getElementById('fa_mw_r').value)||0;
   } else if(d.type==='fg'){
     result.fgR=parseFloat(document.getElementById('fa_fg_r').value)||d.r||0;
     result.fgInch=parseFloat(document.getElementById('fa_fg_inch').value)||d.inch||0;
@@ -1864,6 +1899,13 @@ function restoreMatCatFields(area){
   else if(d.type==='hybrid'){
     document.getElementById('fa_cc_inch').value=area.ccInch||'';
     document.getElementById('fa_oc_inch').value=area.ocInch||'';
+  } else if(d.type==='hybrid_foam_fg'){
+    document.getElementById('fa_cc_inch').value=area.ccInch||'';
+    document.getElementById('fa_fg_r').value=area.fgR||'';
+    document.getElementById('fa_fg_inch').value=area.fgInch||'';
+  } else if(d.type==='hybrid_foam_mw'){
+    document.getElementById('fa_cc_inch').value=area.ccInch||'';
+    document.getElementById('fa_mw_r').value=area.mwR||'';
   } else if(d.type==='fg'){
     document.getElementById('fa_fg_r').value=area.fgR||d.r||'';
     document.getElementById('fa_fg_inch').value=area.fgInch||d.inch||'';
@@ -2609,6 +2651,14 @@ function sendToWorkLog(){
         var ci2=a.ccInch||0, oi2=a.ocInch||0;
         if(ci2>0){ccInchTotal+=ci2*sf;ccCount+=sf;}
         if(oi2>0){ocInchTotal+=oi2*sf;ocCount+=sf;}
+      } else if(mtype==='hybrid_foam_fg'){
+        ccSqft+=sf; fbgSqft+=sf;
+        var ci3=a.ccInch||0;
+        if(ci3>0){ccInchTotal+=ci3*sf;ccCount+=sf;}
+      } else if(mtype==='hybrid_foam_mw'){
+        ccSqft+=sf; roxSqft+=sf;
+        var ci4=a.ccInch||0;
+        if(ci4>0){ccInchTotal+=ci4*sf;ccCount+=sf;}
       } else if(mtype==='fg'){
         fbgSqft+=sf;
       } else if(mtype==='cel'){
