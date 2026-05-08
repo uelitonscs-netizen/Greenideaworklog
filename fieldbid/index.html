@@ -2814,5 +2814,23 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <!-- Firebase moved to main script block -->
+
+<script>
+// Block pull-to-refresh on Android Chrome
+(function(){
+  var lastY=0;
+  document.addEventListener('touchstart',function(e){
+    lastY=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    var y=e.touches[0].clientY;
+    var scrollTop=document.scrollingElement?document.scrollingElement.scrollTop:document.documentElement.scrollTop;
+    if(scrollTop===0&&y>lastY){
+      e.preventDefault();
+    }
+    lastY=y;
+  },{passive:false});
+})();
+</script>
 </body>
 </html>
