@@ -3109,19 +3109,24 @@ function showInstallBanner(){
   </div>
 </div>
 <script>
-// Block pull-to-refresh on Android Chrome
+// Block pull-to-refresh - only when at very top of page
 (function(){
-  var lastY=0;
+  var startY=0;
   document.addEventListener('touchstart',function(e){
-    lastY=e.touches[0].clientY;
+    startY=e.touches[0].pageY;
   },{passive:true});
   document.addEventListener('touchmove',function(e){
-    var y=e.touches[0].clientY;
-    var scrollTop=document.scrollingElement?document.scrollingElement.scrollTop:document.documentElement.scrollTop;
-    if(scrollTop===0&&y>lastY){
+    var el=e.target;
+    // Walk up to find scrollable parent
+    while(el&&el!==document.body){
+      if(el.scrollTop>0) return; // inside a scrollable element, allow
+      el=el.parentNode;
+    }
+    var pageY=e.touches[0].pageY;
+    var scrollTop=window.pageYOffset||document.documentElement.scrollTop||0;
+    if(scrollTop<=0&&pageY>startY){
       e.preventDefault();
     }
-    lastY=y;
   },{passive:false});
 })();
 </script>
