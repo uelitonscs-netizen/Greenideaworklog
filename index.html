@@ -3065,6 +3065,10 @@ if(!checkRoute()){
 </script>
 <script>
 if('serviceWorker' in navigator){
+  // Unregister any old service workers first to prevent stale cache issues
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.unregister();});
+  });
   window.addEventListener('load',function(){
     navigator.serviceWorker.register('/Greenideaworklog/sw.js').catch(function(){});
   });
