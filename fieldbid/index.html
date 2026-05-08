@@ -464,6 +464,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
       </div>
     </div>
     <button class="hd-action" id="btnOpenProj">+ Project</button>
+    <button class="back-btn" onclick="location.reload()" style="padding:8px 10px;font-size:16px" title="Refresh">↺</button>
   </div>
   <div class="tabs">
     <button class="tab on f" id="ft1">📐 Areas</button>
@@ -499,6 +500,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="hd-icon est">💼</div>
     <div class="hd-info"><div class="hd-title">Estimator</div><div class="hd-sub">Quote #<span id="estQNum">1001</span></div></div>
     <button class="hd-action" id="newEstBtn">New</button>
+    <button class="back-btn" onclick="location.reload()" style="padding:8px 10px;font-size:16px" title="Refresh">↺</button>
   </div>
   <div class="tabs">
     <button class="tab on" id="et1">📋 Items</button>
@@ -1361,7 +1363,9 @@ function exportField(){
   for(var i=0;i<fieldAreas.length;i++){
     var a=fieldAreas[i];var pr=getProd(a.productId);
     lines.push((i+1)+'. '+a.name);
-    lines.push('   Product: '+(pr?pr.name:'Unknown'));
+    var matLabelMap={'cc':'Closed Cell Spray Foam','oc':'Open Cell Spray Foam','hybrid':'Hybrid CC+OC','hybrid_foam_fg':'Hybrid Foam+Fiberglass','hybrid_foam_mw':'Hybrid Foam+Mineral Wool','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel_blown':'Cellulose Open Blown','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','other':'Other'};
+    var productName=a.matCat?matLabelMap[a.matCat]:(pr?pr.name:'Unknown');
+    lines.push('   Product: '+productName);
     lines.push('   SF: '+fmtN(a.sf)+(a.spec?' | '+a.spec:''));
     var dims=formatDimText(a,'   ');
     for(var di=0;di<dims.length;di++)lines.push(dims[di]);
