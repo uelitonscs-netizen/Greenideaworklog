@@ -3036,11 +3036,11 @@ document.getElementById('loading').style.display='none';
 if(!checkRoute()){
   var _session=localStorage.getItem('wl_session');
   if(_session==='admin'){
-    // Verify still authenticated
+    // Start listeners immediately — don't wait for auth callback
+    startListeners();
     auth.onAuthStateChanged(function(user){
       if(user){
         currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
-        startListeners();
         showScreen('admin');
         currentAdminTab='dashboard';
         renderAdminProfileBadge();
@@ -3048,9 +3048,14 @@ if(!checkRoute()){
       } else {
         localStorage.removeItem('wl_session');
         showScreen('login');
-        startListeners();
       }
     });
+    // Show admin screen immediately from session
+    currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+    showScreen('admin');
+    currentAdminTab='dashboard';
+    renderAdminProfileBadge();
+    renderDashboard();
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
     // Start listeners immediately, sign in anonymously in background
