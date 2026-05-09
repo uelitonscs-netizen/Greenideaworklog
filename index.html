@@ -20,7 +20,7 @@
   --red:#dc2626;--blue:#2563eb;--amber:#f59e0b;
   --font-d:'Inter',sans-serif;--font-m:'Inter',sans-serif;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font-m);min-height:100vh;font-size:14px;letter-spacing:-0.1px;overscroll-behavior-y:contain;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-m);min-height:100vh;font-size:14px;letter-spacing:-0.1px;}
 *{-webkit-tap-highlight-color:transparent;}
 
 /* BUTTONS */
@@ -218,7 +218,6 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="exportCSV()">↓ CSV</button>
-      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="location.reload()" title="Refresh">↺</button>
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="adminLogout()">⏻ Logout</button>
     </div>
   </div>
