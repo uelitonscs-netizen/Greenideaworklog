@@ -2145,7 +2145,14 @@ window.addProject=addProject;
 function updateProjStatus(id,status){db.collection('projects').doc(id).update({status:status}); showToast('Status updated!');}
 window.updateProjStatus=updateProjStatus;
 
-function delProject(id){db.collection('projects').doc(id).delete(); showToast('Project deleted');}
+function delProject(id){
+  var proj=null;
+  for(var i=0;i<projects.length;i++){if(projects[i].id===id){proj=projects[i];break;}}
+  var name=proj?proj.name:'this project';
+  document.getElementById('delProjName').textContent=name;
+  document.getElementById('delProjConfirmBtn').setAttribute('data-id',id);
+  document.getElementById('modal-del-project').classList.add('open');
+}
 window.delProject=delProject;
 
 function toggleAssign(projId,helperId){
@@ -3114,6 +3121,20 @@ function showInstallBanner(){
       <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
     </div>
     <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
+  </div>
+</div>
+
+<div id="modal-del-project" class="modal-overlay">
+  <div class="modal" style="max-width:340px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div class="modal-title" style="text-align:center">Delete Project?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">This will permanently delete:</div>
+    <div id="delProjName" style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:16px;padding:8px;background:#fff5f5;border-radius:8px"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px">All expenses, hours and photos associated with this project will be removed.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="document.getElementById('modal-del-project').classList.remove('open')">Cancel</button>
+      <button id="delProjConfirmBtn" class="btn" style="background:var(--red)" onclick="(function(){var id=document.getElementById('delProjConfirmBtn').getAttribute('data-id');db.collection('projects').doc(id).delete();document.getElementById('modal-del-project').classList.remove('open');showToast('Project deleted');})()">Delete</button>
+    </div>
   </div>
 </div>
 </body>
