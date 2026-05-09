@@ -1715,12 +1715,34 @@ function exportProjectReport(pid){
       var diff=used-quoted;
       var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
       var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
-      return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td><td><div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div></td></tr>';
+      var filled=Math.round(Math.min(pct,100)/10); var empty=10-filled;
+      var bar='';for(var _b=0;_b<filled;_b++)bar+='█';for(var _e=0;_e<empty;_e++)bar+='░';
+      var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
+      return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td>'+
+        '<td><span class="bar-screen">'+cssBar+'</span><span class="bar-print" style="font-family:monospace;font-size:11px;color:'+color+'">'+bar+' '+pct+'%</span></td></tr>';
     }
     mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
-           (ccGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ccGal+' gal used ('+Math.round(ccGal/(mb.cc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           (function(){
+             var ccGalPerSet=mb.cc.galPerSet||55; var ccBFPerSet=mb.cc.bfPerSet||4500;
+             var ccGalQ=ccBFq>0?Math.round(ccBFq/ccBFPerSet*ccGalPerSet*10)/10:0;
+             var ccSetsQ=ccBFq>0?Math.round(ccBFq/ccBFPerSet*100)/100:0;
+             var ccSetsU=ccGal>0?Math.round(ccGal/ccGalPerSet*100)/100:0;
+             if(!ccGalQ&&!ccGal) return '';
+             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
+               '📋 Cotado: '+ccSetsQ+' sets · '+ccGalQ+' gal &nbsp;|&nbsp; '+
+               '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
+           })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
-           (ocGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ocGal+' gal used ('+Math.round(ocGal/(mb.oc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           (function(){
+             var ocGalPerSet=mb.oc.galPerSet||55; var ocBFPerSet=mb.oc.bfPerSet||17000;
+             var ocGalQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*ocGalPerSet*10)/10:0;
+             var ocSetsQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*100)/100:0;
+             var ocSetsU=ocGal>0?Math.round(ocGal/ocGalPerSet*100)/100:0;
+             if(!ocGalQ&&!ocGal) return '';
+             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
+               '📋 Cotado: '+ocSetsQ+' sets · '+ocGalQ+' gal &nbsp;|&nbsp; '+
+               '🔧 Usado: '+ocSetsU+' sets · '+ocGal+' gal</td></tr>';
+           })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
            mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
@@ -1776,7 +1798,8 @@ function exportProjectReport(pid){
   '.company{}.company-name{font-size:18px;font-weight:800;color:#1a6b2a;}.company-info{font-size:11px;color:#666;margin-top:4px;line-height:1.7;}'+
   '.proj-info{font-size:12px;text-align:right;color:#444;line-height:1.9;}'+
   '.lang-btn{position:fixed;top:16px;right:16px;background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;}'+
-  '@media print{.lang-btn{display:none;}@page{margin:20mm;}}'+
+  '.bar-print{display:none;}.bar-screen{display:inline;}'+
+  '@media print{.lang-btn{display:none;}.bar-print{display:inline !important;}.bar-screen{display:none !important;}@page{margin:20mm;}}'+
   '</style></head><body>'+
   '<button class="lang-btn" onclick="toggleLang()">PT</button>'+
   '<div class="header">'+
@@ -1829,10 +1852,23 @@ function exportProjectReport(pid){
   '<script>var lang="en";function toggleLang(){lang=lang==="en"?"pt":"en";document.querySelector(".lang-btn").textContent=lang==="en"?"PT":"EN";document.querySelectorAll("[data-en]").forEach(function(el){el.textContent=el.getAttribute("data-"+lang);});}<\/script>'+
   '</body></html>';
 
+  // Add download/print button inside report
+  html=html.replace('<button class="lang-btn"','<button onclick="window.print()" style="position:fixed;top:16px;right:80px;background:#2563eb;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">🖨️ Print / PDF</button><button class="lang-btn"');
+
   var w=window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
-  showToast('Report generated! Use browser Print to save as PDF 📄');
+  if(w){
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // Fallback: Blob download
+    var blob=new Blob([html],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='report-'+p.name.replace(/[^a-z0-9]/gi,'_')+'.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},5000);
+  }
+  showToast('Report generated! Tap 🖨️ Print → Save as PDF 📄');
 }
 window.exportProjectReport=exportProjectReport;
 
@@ -2033,7 +2069,7 @@ function renderProjects(filter){
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
         if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
-        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Keywords — CC: "closed cell", "cc" · OC: "open cell", "oc" · Cellulose: "cellulose", "celulose" · Roxul: "roxul", "roxull", "mineral wool", "rock wool" · Fiberglass: "fiberglass", "fiber glass", "fg", "batt", "kraft", "unfaced", "r-13" thru "r-49"</div>';
+        html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
       }
     }
@@ -2051,14 +2087,6 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
     // Assigned helpers
-    html+='<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">ASSIGNED HELPERS</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
-    if(!helpers.length) html+='<div style="color:var(--muted);font-size:12px">No helpers yet.</div>';
-    else html+=helpers.map(function(h){
-      var assigned=(p.helpers||[]).indexOf(h.id)>=0;
-      var hMin=entries.filter(function(e){return e.helperId===h.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
-      return '<button data-pid="'+p.id+'" data-hid="'+h.id+'" onclick="toggleAssign(this.dataset.pid,this.dataset.hid)" style="background:'+(assigned?'var(--green)':'#f0f0f0')+';color:'+(assigned?'#fff':'var(--muted)')+';border:1px solid '+(assigned?'var(--green)':'#ccc')+';border-radius:99px;padding:5px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">'+h.name+(assigned&&hMin>0?' · '+fmtD(hMin):'')+'</button>';
-    }).join('');
-    html+='</div></div>';
     // Photos
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
@@ -3059,5 +3087,24 @@ function showInstallBanner(){
   document.body.appendChild(banner);
 }
 </script>
+<!-- Keywords Modal -->
+<div id="kwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-weight:800;font-size:16px;color:#1a1a1a">📋 Expense Keywords</div>
+      <button onclick="document.getElementById('kwModal').style.display='none'" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
+    </div>
+    <div style="font-size:12px;color:#444;line-height:2">
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🫧 Closed Cell</strong><br>"closed cell", "closedcell", "close cell", "closed-cell", "c.c.", "cc"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">💧 Open Cell</strong><br>"open cell", "opencell", "open-cell", "o.c.", "oc"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">📦 Cellulose</strong><br>"cellulose", "celulose", "open blown", "dense pack", "densepack"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🪨 Roxul / Mineral Wool</strong><br>"roxul", "roxull", "mineral wool", "mineralwool", "rockwool", "rock wool", "stone wool"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🧶 Fiberglass</strong><br>"fiberglass", "fiber glass", "fibreglass", "fg", "batt", "batts", "kraft", "unfaced", "r-13" thru "r-49"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🔥 Ignition Barrier</strong><br>"ignition barrier", "ignition bar", "intumescent", "ignition paint", "fire paint", "ign barrier"</div>
+      <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
+    </div>
+    <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
+  </div>
+</div>
 </body>
 </html>
