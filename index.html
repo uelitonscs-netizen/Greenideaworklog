@@ -2033,7 +2033,7 @@ function renderProjects(filter){
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
         if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
-        html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
+        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Keywords — CC: "closed cell", "cc" · OC: "open cell", "oc" · Cellulose: "cellulose", "celulose" · Roxul: "roxul", "roxull", "mineral wool", "rock wool" · Fiberglass: "fiberglass", "fiber glass", "fg", "batt", "kraft", "unfaced", "r-13" thru "r-49"</div>';
         html+='</div>';
       }
     }
@@ -2051,6 +2051,14 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
     // Assigned helpers
+    html+='<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">ASSIGNED HELPERS</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    if(!helpers.length) html+='<div style="color:var(--muted);font-size:12px">No helpers yet.</div>';
+    else html+=helpers.map(function(h){
+      var assigned=(p.helpers||[]).indexOf(h.id)>=0;
+      var hMin=entries.filter(function(e){return e.helperId===h.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
+      return '<button data-pid="'+p.id+'" data-hid="'+h.id+'" onclick="toggleAssign(this.dataset.pid,this.dataset.hid)" style="background:'+(assigned?'var(--green)':'#f0f0f0')+';color:'+(assigned?'#fff':'var(--muted)')+';border:1px solid '+(assigned?'var(--green)':'#ccc')+';border-radius:99px;padding:5px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">'+h.name+(assigned&&hMin>0?' · '+fmtD(hMin):'')+'</button>';
+    }).join('');
+    html+='</div></div>';
     // Photos
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
@@ -3051,24 +3059,5 @@ function showInstallBanner(){
   document.body.appendChild(banner);
 }
 </script>
-<!-- Keywords Modal -->
-<div id="kwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-weight:800;font-size:16px;color:#1a1a1a">📋 Expense Keywords</div>
-      <button onclick="document.getElementById('kwModal').style.display='none'" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
-    </div>
-    <div style="font-size:12px;color:#444;line-height:2">
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🫧 Closed Cell</strong><br>"closed cell", "closedcell", "close cell", "closed-cell", "c.c.", "cc"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">💧 Open Cell</strong><br>"open cell", "opencell", "open-cell", "o.c.", "oc"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">📦 Cellulose</strong><br>"cellulose", "celulose", "open blown", "dense pack", "densepack"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🪨 Roxul / Mineral Wool</strong><br>"roxul", "roxull", "mineral wool", "mineralwool", "rockwool", "rock wool", "stone wool"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🧶 Fiberglass</strong><br>"fiberglass", "fiber glass", "fibreglass", "fg", "batt", "batts", "kraft", "unfaced", "r-13" thru "r-49"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🔥 Ignition Barrier</strong><br>"ignition barrier", "ignition bar", "intumescent", "ignition paint", "fire paint", "ign barrier"</div>
-      <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
-    </div>
-    <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
-  </div>
-</div>
 </body>
 </html>
