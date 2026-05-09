@@ -46,7 +46,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* SCREENS */
-.screen{display:none;min-height:100vh;flex-direction:column;overflow-y:auto;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
 .screen.active{display:flex;}
 
 /* LOADING */
@@ -64,13 +64,15 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 .landing-btns .btn{width:100%;padding:14px;font-size:15px;}
 
 /* ADMIN */
-.admin-header{background:var(--green);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.admin-header{background:var(--green);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:fixed;top:0;left:0;right:0;z-index:201;}
+.admin-header-spacer{height:60px;flex-shrink:0;}
 .admin-logo{font-family:var(--font-d);font-weight:800;font-size:18px;color:#fff;letter-spacing:-1px;}
 .admin-logo span{color:#a8f0b8;}
-.admin-nav{display:flex;gap:4px;overflow-x:auto;padding:6px 12px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:100;}
+.admin-nav{display:flex;gap:4px;overflow-x:auto;padding:6px 12px;background:var(--surface);border-bottom:2px solid var(--border);flex-shrink:0;position:fixed;top:60px;left:0;right:0;z-index:200;}
+.admin-nav-spacer{height:48px;flex-shrink:0;}
 .nav-btn{background:transparent;border:none;color:var(--muted);padding:8px 12px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border-radius:6px;}
 .nav-btn.active{background:var(--green);color:#fff;}
-.admin-body{flex:1;padding:20px;max-width:960px;margin:0 auto;width:100%;}
+.admin-body{flex:1;overflow-y:auto;padding:20px;max-width:960px;margin:0 auto;width:100%;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
 .section-title{font-family:var(--font-d);font-size:20px;font-weight:800;color:var(--green);margin-bottom:16px;}
@@ -124,6 +126,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 /* SYNC */
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);display:inline-block;margin-right:5px;animation:pulse 2s infinite;}
 .sync-dot.off{background:var(--red);animation:none;}
+.sync-dot.connecting{background:#d97706;animation:pulse 1s infinite;}
 
 /* SUMMARY */
 .sum-period-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
@@ -161,7 +164,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 @media(max-width:480px){.admin-body{padding:14px;}.helper-body{padding:12px;}.clock-time{font-size:40px;}}
 
 @media print {
-  .admin-nav, .admin-header button, #tab-qr > button { display: none !important; }
+  .admin-nav, .admin-header, .admin-nav-spacer, .admin-header-spacer, .admin-header button, #tab-qr > button { display: none !important; }
   .tab-content { display: block !important; }
   #tab-qr { display: block !important; }
   body { background: white; }
@@ -205,11 +208,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
 <!-- ADMIN -->
 <div id="screen-admin" class="screen">
+  <div class="admin-header-spacer"></div>
   <div class="admin-header">
     <img src="icon-192.png" style="width:30px;height:30px;border-radius:6px;object-fit:cover"/>
     <div class="admin-logo">Work<span>Log</span></div>
+    <div id="admin-profile-name" style="font-size:11px;color:#a8f0b8;font-weight:600;margin-left:4px;opacity:0.9"></div>
     <div style="margin-left:8px;display:flex;align-items:center;font-size:11px;color:#a8f0b8">
-      <span class="sync-dot" id="sync-dot"></span><span id="sync-lbl">Live</span>
+      <span class="sync-dot off" id="sync-dot"></span><span id="sync-lbl">Connecting...</span>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="exportCSV()">↓ CSV</button>
@@ -219,14 +224,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="admin-nav">
     <button class="nav-btn active" onclick="aTab('dashboard',this)">⊞ Dashboard</button>
     <button class="nav-btn" onclick="aTab('helpers',this)">👥 Helpers</button>
-    <button class="nav-btn" onclick="aTab('entries',this)">📋 Entries</button>
-    <button class="nav-btn" onclick="aTab('summary',this)">💰 Summary</button>
-    <button class="nav-btn" onclick="aTab('payments',this)">💳 Payments</button>
-    <button class="nav-btn" onclick="aTab('absences',this)">🗓 Absences</button>
+    <button class="nav-btn" onclick="aTab('reports',this)">📋 Reports</button>
     <button class="nav-btn" onclick="aTab('projects',this)">📁 Projects</button>
     <button class="nav-btn" onclick="aTab('analytics',this)">📊 Analytics</button>
     <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
   </div>
+  <div class="admin-nav-spacer"></div>
   <div class="admin-body">
 
     <!-- DASHBOARD -->
@@ -255,81 +258,94 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button class="btn" onclick="addHelper()">+ Add Helper</button>
       </div>
       <div id="helpers-list"></div>
+
+      <!-- ABSENCES section inside Helpers -->
+      <div style="margin-top:24px">
+        <div class="section-title">🗓 Absences & Days Off</div>
+        <div class="card" style="margin-bottom:18px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD ABSENCE</div>
+          <div class="form-row">
+            <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
+            <div class="fg" style="max-width:150px"><label>Type</label>
+              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label>Date</label><input type="date" id="abs-date"/></div>
+            <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
+          </div>
+          <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        </div>
+        <div id="absences-list"></div>
+      </div>
     </div>
 
     <!-- ENTRIES -->
-    <div id="tab-entries" class="tab-panel">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-        <div class="section-title" style="margin:0">All Entries</div>
-        <div class="range-btns" style="margin-left:auto">
-          <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
-          <button class="range-btn" onclick="setRange('month',this)">Month</button>
-          <button class="range-btn" onclick="setRange('all',this)">All</button>
-        </div>
+    <!-- REPORTS (Entries + Summary merged) -->
+    <div id="tab-reports" class="tab-panel">
+      <!-- Toggle -->
+      <div style="display:flex;gap:0;background:#f0f0f0;border-radius:10px;padding:3px;margin-bottom:16px">
+        <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
+        <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
+        <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
       </div>
-      <div id="entries-week-lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--font-m)"></div>
-      <div id="entries-list"></div>
-    </div>
 
-    <!-- SUMMARY -->
-    <div id="tab-summary" class="tab-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="section-title" style="margin:0">Summary</div>
-        <div class="sum-period-btns">
-          <button class="speriod-btn active" onclick="setSumPeriod('week',this)">This Week</button>
-          <button class="speriod-btn" onclick="setSumPeriod('last2',this)">Last 2 Weeks</button>
-          <button class="speriod-btn" onclick="setSumPeriod('month',this)">This Month</button>
-          <button class="speriod-btn" onclick="setSumPeriod('all',this)">All Time</button>
-        </div>
-      </div>
-      <div id="sum-period-lbl" style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:var(--font-m)"></div>
-      <div id="sum-list"></div>
-      <div class="sum-total">
-        <span style="font-family:var(--font-d);font-weight:800;font-size:16px">Total</span>
-        <div style="text-align:right">
-          <div id="sum-total-hrs" style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)"></div>
-          <div id="sum-total-pay" style="font-size:13px;font-weight:700;color:var(--green2)"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAYMENTS -->
-    <div id="tab-payments" class="tab-panel">
-      <div class="section-title">Payment History</div>
-      <div class="card" style="margin-bottom:18px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">RECORD PAYMENT</div>
-        <div class="form-row">
-          <div class="fg"><label>Helper</label><select id="pay-helper"><option value="">-- Select --</option></select></div>
-          <div class="fg" style="max-width:140px"><label>Amount ($)</label><input id="pay-amount" type="number" placeholder="0.00"/></div>
-        </div>
-        <div class="form-row">
-          <div class="fg"><label>Date</label><input type="date" id="pay-date"/></div>
-          <div class="fg"><label>Note (optional)</label><input id="pay-note" placeholder="e.g. Week of Apr 1"/></div>
-        </div>
-        <button class="btn" onclick="addPayment()">✓ Mark as Paid</button>
-      </div>
-      <div id="payments-list"></div>
-    </div>
-
-    <!-- ABSENCES -->
-    <div id="tab-absences" class="tab-panel">
-      <div class="section-title">Absences & Days Off</div>
-      <div class="card" style="margin-bottom:18px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD ABSENCE</div>
-        <div class="form-row">
-          <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
-          <div class="fg" style="max-width:150px"><label>Type</label>
-            <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+      <!-- Entries panel -->
+      <div id="rep-entries">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="section-title" style="margin:0">All Entries</div>
+          <div class="range-btns" style="margin-left:auto">
+            <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
+            <button class="range-btn" onclick="setRange('month',this)">Month</button>
+            <button class="range-btn" onclick="setRange('all',this)">All</button>
           </div>
         </div>
-        <div class="form-row">
-          <div class="fg"><label>Date</label><input type="date" id="abs-date"/></div>
-          <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
-        </div>
-        <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        <div id="entries-week-lbl" style="font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--font-m)"></div>
+        <div id="entries-list"></div>
       </div>
-      <div id="absences-list"></div>
+
+      <!-- Summary panel -->
+      <div id="rep-summary" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div class="section-title" style="margin:0">Summary</div>
+          <div class="sum-period-btns">
+            <button class="speriod-btn active" onclick="setSumPeriod('week',this)">This Week</button>
+            <button class="speriod-btn" onclick="setSumPeriod('last2',this)">Last 2 Weeks</button>
+            <button class="speriod-btn" onclick="setSumPeriod('month',this)">This Month</button>
+            <button class="speriod-btn" onclick="setSumPeriod('all',this)">All Time</button>
+          </div>
+        </div>
+        <div id="sum-period-lbl" style="font-size:12px;color:var(--muted);margin-bottom:14px;font-family:var(--font-m)"></div>
+        <div id="sum-list"></div>
+        <div class="sum-total">
+          <span style="font-family:var(--font-d);font-weight:800;font-size:16px">Total</span>
+          <div style="text-align:right">
+            <div id="sum-total-hrs" style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)"></div>
+            <div id="sum-total-pay" style="font-size:13px;font-weight:700;color:var(--green2)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payments panel -->
+      <div id="rep-payments" style="display:none">
+        <div class="section-title">Payment History</div>
+        <div class="card" style="margin-bottom:18px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">RECORD PAYMENT</div>
+          <div class="form-row">
+            <div class="fg"><label>Helper</label><select id="pay-helper"><option value="">-- Select --</option></select></div>
+            <div class="fg" style="max-width:140px"><label>Amount ($)</label><input id="pay-amount" type="number" placeholder="0.00"/></div>
+          </div>
+          <div class="form-row">
+            <div class="fg"><label>Date</label><input type="date" id="pay-date"/></div>
+            <div class="fg"><label>Note (optional)</label><input id="pay-note" placeholder="e.g. Week of Apr 1"/></div>
+          </div>
+          <button class="btn" onclick="addPayment()">✓ Mark as Paid</button>
+        </div>
+        <div id="payments-list"></div>
+      </div>
     </div>
+
+
 
     <!-- ANALYTICS -->
     <div id="tab-analytics" class="tab-panel">
@@ -493,6 +509,39 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           <div class="fg"><label>Start Date</label><input type="date" id="proj-start"/></div>
           <div class="fg"><label>End Date</label><input type="date" id="proj-end"/></div>
         </div>
+        <!-- Material Budget -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET (optional)</div>
+        <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
+          <!-- Spray Foam -->
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--muted)">Closed Cell — Sq Ft</label><input id="proj-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--muted)">Open Cell — Sq Ft</label><input id="proj-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-oc-inch" type="number" placeholder="3.5" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+          </div>
+          <!-- Set config -->
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600">SET CONFIGURATION (adjust per brand)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div><label style="font-size:9px;color:var(--muted)">CC BF/set</label><input id="proj-cc-bf" type="number" placeholder="4500" value="4500" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">CC Gal/set</label><input id="proj-cc-gal" type="number" placeholder="55" value="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">OC BF/set</label><input id="proj-oc-bf" type="number" placeholder="17000" value="17000" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="proj-oc-gal" type="number" placeholder="55" value="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
+          <!-- Other materials -->
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
+            <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="proj-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="proj-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="proj-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+            <div><label style="font-size:9px;color:var(--muted)">Ignition Barrier (sq ft)</label><input id="proj-ign-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Fire Blocking (sq ft)</label><input id="proj-fb-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+          </div>
+        </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
       </div>
       <div id="projects-list"></div>
@@ -521,10 +570,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="helper-body">
     <div class="helper-tabs">
       <button class="htab active" onclick="hTab('clock',this)">⏱ Clock</button>
-      <button class="htab" onclick="hTab('manual',this)">✏️ Manual</button>
       <button class="htab" onclick="hTab('history',this)">📋 History</button>
       <button class="htab" onclick="hTab('jobs',this)">📁 Jobs</button>
-      <button class="htab" onclick="hTab('mypay',this)">💳 Pay</button>
     </div>
 
     <!-- CLOCK -->
@@ -541,8 +588,6 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label">TODAY</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label">THIS WEEK</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-pay">$0.00</div><div class="stat-label">TOTAL EARNED</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-total">0h 00m</div><div class="stat-label">ALL TIME</div></div>
       </div>
     </div>
 
@@ -591,8 +636,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 <div id="modal-helper-select" class="modal-overlay">
   <div class="modal">
     <div class="modal-title">Who are you?</div>
-    <div class="fg"><label>Select your name</label><select id="helper-sel-dd"><option value="">-- Choose --</option></select></div>
-    <div id="no-helpers-msg" style="display:none;color:var(--muted);font-size:13px">No helpers set up yet.</div>
+    <div id="helper-sel-loading" style="text-align:center;padding:12px 0;color:var(--muted);font-size:13px">⏳ Loading helpers...</div>
+    <div id="helper-sel-content" style="display:none">
+      <div class="fg"><label>Select your name</label><select id="helper-sel-dd"><option value="">-- Choose --</option></select></div>
+      <div id="no-helpers-msg" style="display:none;color:var(--muted);font-size:13px">No helpers set up yet.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="selectHelper()">Open My View</button>
       <button class="btn ghost" onclick="closeModal('modal-helper-select')">Cancel</button>
@@ -687,6 +735,36 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
     </div>
+    <!-- Material Budget in Edit -->
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>
+    <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:10px;color:var(--muted)">Closed Cell Sq Ft</label><input id="ep-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+        <div><label style="font-size:10px;color:var(--muted)">CC Thickness (in)</label><input id="ep-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="font-size:10px;color:var(--muted)">Open Cell Sq Ft</label><input id="ep-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+        <div><label style="font-size:10px;color:var(--muted)">OC Thickness (in)</label><input id="ep-oc-inch" type="number" placeholder="3.5" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600">SET CONFIG (adjust per brand)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+        <div><label style="font-size:9px;color:var(--muted)">CC BF/set</label><input id="ep-cc-bf" type="number" placeholder="4500" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">CC Gal/set</label><input id="ep-cc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">OC BF/set</label><input id="ep-oc-bf" type="number" placeholder="17000" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="ep-oc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="ep-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="ep-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="ep-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label style="font-size:9px;color:var(--muted)">Ignition Barrier (sq ft)</label><input id="ep-ign-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+        <div><label style="font-size:9px;color:var(--muted)">Fire Blocking (sq ft)</label><input id="ep-fb-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="saveEditProject()">✓ Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-project')">Cancel</button>
@@ -727,6 +805,7 @@ var DAILY_OVERHEAD = (MONTHLY_OVERHEAD / WORKING_DAYS) / NUM_TEAMS; // $484.88/t
 var DEPOT_LNG = -71.8356176;
 var DEPOT_RADIUS = 50; // meters
 var geofenceWatcher = null;
+var currentAdminProfile=null;
 var currentHelper=null, liveInterval=null, adminRange='current-week', sumPeriod='week';
 var pendingDeleteId=null, editingProjId=null, quickHoursHelperId=null, currentAdminTab='dashboard';
 var OT_THRESHOLD_MINS = 40*60;
@@ -766,12 +845,20 @@ function getWeekBoundaries(date){
   return {start:mon,end:sun};
 }
 
-function calcCurrentWeekPay(hid,rate){
-  var ws=weekStart(),we=new Date(ws);we.setDate(ws.getDate()+7);
-  var myEntries=entries.filter(function(e){return e.helperId===hid&&e.endTime&&new Date(e.startTime)>=ws&&new Date(e.startTime)<we;});
+function calcCurrentWeekPay(hid, rate){
+  var ws=weekStart();
+  var we=new Date(ws); we.setDate(ws.getDate()+7);
+  var myEntries=entries.filter(function(e){
+    if(!e.helperId===hid||!e.endTime) return false;
+    var st=new Date(e.startTime);
+    return e.helperId===hid&&e.endTime&&st>=ws&&st<we;
+  });
   var mins=myEntries.reduce(function(s,e){return s+gMin(e);},0);
-  var reg=Math.min(mins,OT_THRESHOLD_MINS),ot=Math.max(0,mins-OT_THRESHOLD_MINS);
-  return{regMins:reg,otMins:ot,regPay:(reg/60)*rate,otPay:(ot/60)*(rate*OT_MULTIPLIER),totalPay:(reg/60)*rate+(ot/60)*(rate*OT_MULTIPLIER)};
+  var regMins=Math.min(mins,OT_THRESHOLD_MINS);
+  var otMins=Math.max(0,mins-OT_THRESHOLD_MINS);
+  var regPay=(regMins/60)*rate;
+  var otPay=(otMins/60)*(rate*OT_MULTIPLIER);
+  return {regMins:regMins,otMins:otMins,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
 }
 
 function calcWeekPay(hid, rate){
@@ -821,17 +908,64 @@ function hLink(h){return location.origin+location.pathname+'?helper='+h.id;}
 function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function setSyncStatus(ok){var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl'); if(d) d.className='sync-dot'+(ok?'':' off'); if(l) l.textContent=ok?'Live':'Offline';}
+function setSyncStatus(ok){
+  var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl');
+  if(ok){
+    // Cancel any pending offline timer
+    if(window._syncOfflineTimer){ clearTimeout(window._syncOfflineTimer); window._syncOfflineTimer=null; }
+    if(window._syncRetryTimer){ clearTimeout(window._syncRetryTimer); window._syncRetryTimer=null; }
+    if(d) d.className='sync-dot'; d.style.display='none';
+    if(l) l.textContent='● Live';
+  } else {
+    // Grace period of 4s before showing Offline — avoids flicker on startup
+    if(window._syncOfflineTimer) return; // already pending
+    window._syncOfflineTimer=setTimeout(function(){
+      window._syncOfflineTimer=null;
+      var d2=document.getElementById('sync-dot'),l2=document.getElementById('sync-lbl');
+      if(l2&&l2.textContent!=='● Live'){
+        if(d2) { d2.className='sync-dot off'; d2.style.display='inline-block'; }
+        if(l2) l2.textContent='Offline';
+        // Auto-reconnect after 5s
+        window._syncRetryTimer=setTimeout(function(){
+          var l3=document.getElementById('sync-lbl'),d3=document.getElementById('sync-dot');
+          if(l3&&l3.textContent==='Offline'){
+            if(l3) l3.textContent='Reconnecting...';
+            if(d3) { d3.className='sync-dot connecting'; d3.style.display='inline-block'; }
+            if(db&&db.enableNetwork) db.enableNetwork().catch(function(){});
+          }
+        },5000);
+      }
+    },4000);
+  }
+}
 
 // ── FIREBASE LISTENERS ─────────────────────────────────
 function startListeners(){
+  if(window._listenersStarted) return;
+  window._listenersStarted = true;
+  // Show connecting state immediately
+  var l=document.getElementById('sync-lbl'), d=document.getElementById('sync-dot');
+  if(l) l.textContent='Connecting...';
+  if(d) d.className='sync-dot off';
   // If helper session, store their ID for security reference
   var sess = localStorage.getItem('wl_session');
   if(sess && sess.indexOf('helper:')===0){
     var hid = sess.replace('helper:','');
     window._currentHelperId = hid;
   }
-  db.collection('helpers').onSnapshot(function(s){helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){setSyncStatus(false);});
+  db.collection('helpers').onSnapshot(function(s){
+    helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    setSyncStatus(true);
+    refreshView();
+    populateHelperSelectDD();
+    // If waiting for a helper session, resolve immediately
+    if(window._pendingHelperSession){
+      var hid = window._pendingHelperSession;
+      var h = hById(hid);
+      if(h){ window._pendingHelperSession=null; openHelperView(hid); }
+    }
+    if(window._pendingQR){ window._pendingQR=false; showQRHelperModal(); }
+  },function(){setSyncStatus(false);});
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -846,7 +980,7 @@ function refreshView(){
   if(!active) return;
   if(active.id==='screen-admin') renderAdminTab(currentAdminTab);
   else if(active.id==='screen-helper') updateHelperStats();
-  if(currentAdminTab==='analytics') renderAnalytics();
+  if(currentAdminTab==='helpers') renderAbsences();
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
@@ -888,11 +1022,8 @@ window.aTab=aTab;
 
 function renderAdminTab(n){
   if(n==='dashboard') renderDashboard();
-  else if(n==='helpers') renderHelpersList();
-  else if(n==='entries') renderEntriesList();
-  else if(n==='summary') renderSummary();
-  else if(n==='payments') renderPayments();
-  else if(n==='absences') renderAbsences();
+  else if(n==='helpers'){ renderHelpersList(); renderAbsences(); }
+  else if(n==='reports'){ renderEntriesList(); }
   else if(n==='projects') renderProjects();
   else if(n==='analytics') renderAnalytics();
   else if(n==='settings') renderSettings();
@@ -911,13 +1042,38 @@ window.hTab=hTab;
 
 // ── HELPER SELECT ──────────────────────────────────────
 function showHelperModal(){
-  var sel=document.getElementById('helper-sel-dd');
-  sel.innerHTML='<option value="">-- Choose --</option>';
-  helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
-  document.getElementById('no-helpers-msg').style.display=helpers.length===0?'block':'none';
+  // Reset to loading state in case helpers not loaded yet
+  var loading = document.getElementById('helper-sel-loading');
+  var content = document.getElementById('helper-sel-content');
+  if(helpers.length > 0){
+    if(loading) loading.style.display = 'none';
+    if(content) content.style.display = 'block';
+    populateHelperSelectDD();
+  } else {
+    if(loading) loading.style.display = 'block';
+    if(content) content.style.display = 'none';
+  }
   document.getElementById('modal-helper-select').classList.add('open');
 }
 window.showHelperModal=showHelperModal;
+
+function populateHelperSelectDD(){
+  var sel = document.getElementById('helper-sel-dd');
+  var loading = document.getElementById('helper-sel-loading');
+  var content = document.getElementById('helper-sel-content');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- Choose --</option>';
+  helpers.forEach(function(h){
+    var o = document.createElement('option');
+    o.value = h.id; o.textContent = h.name;
+    sel.appendChild(o);
+  });
+  document.getElementById('no-helpers-msg').style.display = helpers.length===0 ? 'block' : 'none';
+  // Show content, hide loading
+  if(loading) loading.style.display = 'none';
+  if(content) content.style.display = 'block';
+}
+window.populateHelperSelectDD = populateHelperSelectDD;
 
 function selectHelper(){
   var id=document.getElementById('helper-sel-dd').value;
@@ -940,7 +1096,7 @@ function openHelperView(hid){
   document.getElementById('helper-name-display').textContent=h.name;
   document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('active',i===0);});
   document.querySelectorAll('.hpanel').forEach(function(p,i){p.classList.toggle('active',i===0);});
-  document.getElementById('m-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('m-date').value=localDateStr();
   document.getElementById('m-start').value='09:00';
   document.getElementById('m-end').value='17:00';
   document.getElementById('m-note').value='';
@@ -971,10 +1127,13 @@ function updateHelperStats(){
   else{btn.textContent='Clock In'; btn.className='btn clock-btn green'; tel.className='clock-time idle'; tel.textContent='00:00:00';}
   btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title='';
   var tm=totalMin(h.id);
+  var wm=weekMin(h.id);
+  var wpay=calcCurrentWeekPay(h.id,h.rate);
+  var weekEarned=wpay.totalPay||0;
   document.getElementById('stat-today').textContent=fmtD(todayMin(h.id));
-  document.getElementById('stat-week').textContent=fmtD(weekMin(h.id));
-  document.getElementById('stat-pay').textContent=fmtC((tm/60)*h.rate);
-  document.getElementById('stat-total').textContent=fmtD(tm);
+  document.getElementById('stat-week').textContent=fmtD(wm);
+  if(document.getElementById('stat-pay')) document.getElementById('stat-pay').textContent=fmtC(weekEarned);
+  if(document.getElementById('stat-total')) document.getElementById('stat-total').textContent=fmtD(tm);
 }
 
 function updateElapsed(st){var s=Math.floor((Date.now()-new Date(st))/1000); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; var el=document.getElementById('clock-elapsed'); if(el) el.textContent=p2(h)+':'+p2(m)+':'+p2(sc);}
@@ -1016,13 +1175,79 @@ window.addManualEntry=addManualEntry;
 
 function renderHelperHistory(){
   if(!currentHelper) return;
-  var list=document.getElementById('helper-history-list');
-  var ents=entries.filter(function(e){return e.helperId===currentHelper.id&&e.endTime;}).slice(0,30);
-  if(!ents.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No entries yet.</div>'; return;}
-  list.innerHTML=ents.map(function(e){
-    var iL=e.clockInLocation?'https://www.google.com/maps?q='+e.clockInLocation.lat+','+e.clockInLocation.lng:null;
-    var oL=e.clockOutLocation?'https://www.google.com/maps?q='+e.clockOutLocation.lat+','+e.clockOutLocation.lng:null;
-    return '<div class="entry-row"><div style="flex:1"><div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString()+'</div><div class="entry-meta">'+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+(e.note?' · '+e.note:'')+'</div>'+(iL||oL?'<div style="margin-top:3px;display:flex;gap:8px">'+(iL?'<a href="'+iL+'" target="_blank" style="font-size:11px;color:var(--green)">📍 In</a>':'')+(oL?'<a href="'+oL+'" target="_blank" style="font-size:11px;color:var(--red)">📍 Out</a>':'')+'</div>':'')+'</div><div class="entry-dur">'+fmtD(gMin(e))+'</div></div>';
+  var list = document.getElementById('helper-history-list');
+  var rate = currentHelper.rate || 0;
+  var ents = entries.filter(function(e){ return e.helperId===currentHelper.id && e.endTime; });
+  if(!ents.length){ list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No entries yet.</div>'; return; }
+
+  // Group by week (Monday-based)
+  function getWeekStart(d){
+    var dt = new Date(d);
+    var day = dt.getDay();
+    var diff = (day===0)?-6:1-day;
+    var mon = new Date(dt); mon.setDate(dt.getDate()+diff); mon.setHours(0,0,0,0);
+    return mon;
+  }
+  var weekMap = {};
+  ents.forEach(function(e){
+    var ws = localDateStr(getWeekStart(e.startTime));
+    if(!weekMap[ws]) weekMap[ws] = [];
+    weekMap[ws].push(e);
+  });
+  var weeks = Object.keys(weekMap).sort(function(a,b){ return b>a?1:-1; });
+
+  list.innerHTML = weeks.map(function(ws){
+    var wEnts = weekMap[ws].sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); });
+    var totalMins = wEnts.reduce(function(s,e){ return s+gMin(e); }, 0);
+    var regMins = Math.min(totalMins, OT_THRESHOLD_MINS);
+    var otMins = Math.max(0, totalMins - OT_THRESHOLD_MINS);
+    var regPay = (regMins/60)*rate;
+    var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
+    var totalPay = regPay + otPay;
+    var weEnd = new Date(ws); weEnd.setDate(weEnd.getDate()+6);
+    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+    var rows = wEnts.map(function(e){
+      var mins = gMin(e);
+      var pay = (mins/60)*rate;
+      var proj = e.projectId ? projects.find(function(p){return p.id===e.projectId;}) : null;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border);font-size:12px">'+
+        '<div>'+
+          '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+          '<div style="color:var(--muted);margin-top:1px">'+
+            new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
+            ' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
+            (proj?' · <span style="color:var(--green);font-weight:600">'+proj.name+'</span>':'')+(e.note?' · '+e.note:'')+
+          '</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0;margin-left:10px">'+
+          '<div style="font-weight:700;font-family:var(--font-d)">'+fmtD(mins)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+fmtC(pay)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">'+
+      // Week header
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fdf9">'+
+        '<div>'+
+          '<div style="font-weight:800;font-size:13px">📅 '+wLabel+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+wEnts.length+' entr'+(wEnts.length===1?'y':'ies')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-family:var(--font-d);font-weight:800;font-size:16px;color:var(--green)">'+fmtD(totalMins)+'</div>'+
+          (otMins>0?
+            '<div style="font-size:11px;color:var(--muted)">'+fmtC(regPay)+' reg + <span style="color:#d97706;font-weight:700">'+fmtC(otPay)+' OT</span></div>':
+            '<div style="font-size:11px;color:var(--muted)">'+fmtC(totalPay)+'</div>')+
+        '</div>'+
+      '</div>'+
+      rows+
+      // Week total footer
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-top:1px solid var(--border)">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--muted)">WEEK TOTAL</span>'+
+        '<span style="font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--green2)">'+fmtC(totalPay)+'</span>'+
+      '</div>'+
+    '</div>';
   }).join('');
 }
 
@@ -1034,7 +1259,7 @@ function renderHelperJobs(){
   list.innerHTML=myP.map(function(p){
     var myMin=entries.filter(function(e){return e.helperId===currentHelper.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
     var stCol=p.status==='active'?'var(--green)':p.status==='completed'?'var(--amber)':'var(--muted)';
-    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+new Date(p.start).toLocaleDateString()+(p.end?' → '+new Date(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+p.status+'</span></div>';
+    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+p.status+'</span></div>';
     html+='<div style="background:#f0f8f0;border-radius:8px;padding:10px;text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(myMin)+'</div><div style="font-size:10px;color:var(--muted)">MY HOURS</div></div>';
     // Photo section
     var projPhotos=projectPhotos.filter(function(ph){return ph.projectId===p.id;});
@@ -1069,7 +1294,7 @@ function renderHelperPay(){
   var list=document.getElementById('mypay-list');
   var myP=payments.filter(function(p){return p.helperId===h.id;});
   if(!myP.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">No payments yet.</div>'; return;}
-  list.innerHTML=myP.map(function(p){return '<div class="entry-row"><div style="flex:1"><div style="font-weight:600">'+new Date(p.date).toLocaleDateString()+'</div><div class="entry-meta">'+(p.note||'Payment')+'</div></div><div style="font-family:var(--font-d);font-size:14px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div></div>';}).join('');
+  list.innerHTML=myP.map(function(p){return '<div class="entry-row"><div style="flex:1"><div style="font-weight:600">'+parseLocalDate(p.date).toLocaleDateString()+'</div><div class="entry-meta">'+(p.note||'Payment')+'</div></div><div style="font-family:var(--font-d);font-size:14px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div></div>';}).join('');
 }
 
 // ── DASHBOARD ─────────────────────────────────────────
@@ -1144,7 +1369,7 @@ function openHelperViewAdmin(id){
   document.getElementById('helper-name-display').textContent=h.name;
   document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('active',i===0);});
   document.querySelectorAll('.hpanel').forEach(function(p,i){p.classList.toggle('active',i===0);});
-  document.getElementById('m-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('m-date').value=localDateStr();
   document.getElementById('m-start').value='09:00';
   document.getElementById('m-end').value='17:00';
   document.getElementById('m-note').value='';
@@ -1168,6 +1393,24 @@ function confirmDeleteHelper(){
 window.confirmDeleteHelper=confirmDeleteHelper;
 
 // ── ENTRIES ────────────────────────────────────────────
+var currentReport = 'entries';
+function switchReport(panel, btn){
+  currentReport = panel;
+  document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
+  document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
+  document.getElementById('rep-payments').style.display = panel==='payments'?'block':'none';
+  var be = document.getElementById('rep-toggle-entries');
+  var bs = document.getElementById('rep-toggle-summary');
+  var bp = document.getElementById('rep-toggle-payments');
+  if(be){ be.style.background=panel==='entries'?'var(--green)':'transparent'; be.style.color=panel==='entries'?'#fff':'var(--muted)'; }
+  if(bs){ bs.style.background=panel==='summary'?'var(--green)':'transparent'; bs.style.color=panel==='summary'?'#fff':'var(--muted)'; }
+  if(bp){ bp.style.background=panel==='payments'?'var(--green)':'transparent'; bp.style.color=panel==='payments'?'#fff':'var(--muted)'; }
+  if(panel==='entries') renderEntriesList();
+  else if(panel==='summary') renderSummary();
+  else renderPayments();
+}
+window.switchReport=switchReport;
+
 function setRange(r,btn){adminRange=r; document.querySelectorAll('.range-btn').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); renderEntriesList();}
 window.setRange=setRange;
 
@@ -1380,10 +1623,10 @@ function renderSummary(){
 // ── PAYMENTS ──────────────────────────────────────────
 function renderPayments(){
   var sel=document.getElementById('pay-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
-  var pd=document.getElementById('pay-date'); if(pd&&!pd.value) pd.value=new Date().toISOString().slice(0,10);
+  var pd=document.getElementById('pay-date'); if(pd&&!pd.value) pd.value=localDateStr();
   var el=document.getElementById('payments-list');
   if(!payments.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No payments recorded yet.</div>'; return;}
-  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+new Date(p.date).toLocaleDateString()+(p.note?' · '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
+  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+parseLocalDate(p.date).toLocaleDateString()+(p.note?' · '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
 }
 function addPayment(){
   var hid=document.getElementById('pay-helper').value, amount=parseFloat(document.getElementById('pay-amount').value), date=document.getElementById('pay-date').value, note=document.getElementById('pay-note').value;
@@ -1402,10 +1645,10 @@ window.delPayment=delPayment;
 var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
 function renderAbsences(){
   var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
-  var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=new Date().toISOString().slice(0,10);
+  var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
   var el=document.getElementById('absences-list');
   if(!absences.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No absences recorded yet.</div>'; return;}
-  el.innerHTML=absences.map(function(a){var h=hById(a.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+' <span style="font-size:12px;color:var(--muted)">'+(absLabels[a.type]||a.type)+'</span></div><div class="entry-meta">'+new Date(a.date).toLocaleDateString()+(a.note?' · '+a.note:'')+'</div></div><button data-aid="'+a.id+'" onclick="delAbsence(this.dataset.aid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
+  el.innerHTML=absences.map(function(a){var h=hById(a.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+' <span style="font-size:12px;color:var(--muted)">'+(absLabels[a.type]||a.type)+'</span></div><div class="entry-meta">'+parseLocalDate(a.date).toLocaleDateString()+(a.note?' · '+a.note:'')+'</div></div><button data-aid="'+a.id+'" onclick="delAbsence(this.dataset.aid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
 }
 function addAbsence(){
   var hid=document.getElementById('abs-helper').value, type=document.getElementById('abs-type').value, date=document.getElementById('abs-date').value, note=document.getElementById('abs-note').value;
@@ -1430,8 +1673,171 @@ function toggleLaborDrop(id){
 }
 window.toggleLaborDrop=toggleLaborDrop;
 
+// ── PROJECT REPORT EXPORT ──────────────────────────────
+function exportProjectReport(pid){
+  var p=projects.find(function(pr){return pr.id===pid;}); if(!p) return;
+  var projEntries=entries.filter(function(e){return e.projectId===pid&&e.endTime;});
+  var expenses=projectExpenses.filter(function(e){return e.projectId===pid;});
+  var lang='en'; // default, toggled in report window
+
+  // P&L calcs
+  var budget=p.budget||0;
+  var laborCost=projEntries.reduce(function(sum,e){var h=hById(e.helperId);return sum+(gMin(e)/60)*(h?h.rate:0);},0);
+  var matCost=expenses.reduce(function(s,e){return s+e.amount;},0);
+  var overhead=p.overhead||0;
+  var totalCost=laborCost+matCost+overhead;
+  var profit=budget-totalCost;
+  var margin=budget>0?(profit/budget)*100:0;
+
+  // Material budget calcs
+  var mb=p.matBudget;
+  var mbRows='';
+  if(mb){
+    function matchMat(d,kws){for(var i=0;i<kws.length;i++)if(d.indexOf(kws[i])>=0)return true;return false;}
+    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0,ignU=0,fbkU=0;
+    expenses.forEach(function(e){
+      var d=(e.desc||'').toLowerCase();
+      var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
+      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/^cc[\s\d]/.test(d)) ccGal+=qty;
+      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/^oc[\s\d]/.test(d)) ocGal+=qty;
+      else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
+      else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
+      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/^fg[\s\d]/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
+      else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
+    });
+    var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
+    var ocBFq=(mb.oc.sqft||0)*(mb.oc.inch||0);
+    var ccBFu=mb.cc.galPerSet>0?Math.round(ccGal/mb.cc.galPerSet*mb.cc.bfPerSet):0;
+    var ocBFu=mb.oc.galPerSet>0?Math.round(ocGal/mb.oc.galPerSet*mb.oc.bfPerSet):0;
+    function mbRow(label,quoted,used,unit){
+      if(!quoted&&!used) return '';
+      var diff=used-quoted;
+      var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
+      var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
+      return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td><td><div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div></td></tr>';
+    }
+    mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
+           (ccGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ccGal+' gal used ('+Math.round(ccGal/(mb.cc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
+           (ocGal>0?'<tr><td colspan="5" style="padding-left:20px;color:#888;font-size:11px">'+ocGal+' gal used ('+Math.round(ocGal/(mb.oc.galPerSet||55)*10)/10+' sets)</td></tr>':'')+
+           mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
+           mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
+           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
+           mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
+           mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
+  }
+
+  // Labor by helper
+  var laborByHelper={};
+  projEntries.forEach(function(e){
+    var h=hById(e.helperId); var n=h?h.name:'Unknown'; var r=h?h.rate:0;
+    if(!laborByHelper[n]) laborByHelper[n]={mins:0,cost:0,entries:[]};
+    var mins=gMin(e); laborByHelper[n].mins+=mins; laborByHelper[n].cost+=(mins/60)*r;
+    laborByHelper[n].entries.push(e);
+  });
+
+  var totalMins=projEntries.reduce(function(s,e){return s+gMin(e);},0);
+  // Get number of teams from overhead days config, fallback to Settings
+  var numTeams = 1;
+  if(p.ohDays&&p.ohDays.length&&p.ohDays[0].teams) numTeams = parseInt(p.ohDays[0].teams)||1;
+  else { var saved=JSON.parse(localStorage.getItem('wl_settings')||'{}'); numTeams=parseInt(saved.numTeams)||1; }
+  var peoplePerTeam = 2;
+  var totalPeople = numTeams * peoplePerTeam;
+  var totalDays=Math.round(totalMins/60/(totalPeople*8)*10)/10;
+
+  var fmtC2=function(v){return '$'+(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');};
+  var fmtD2=function(m){return Math.floor(m/60)+'h '+String(Math.round(m%60)).padStart(2,'0')+'m';};
+  var fmtDt=function(s){return s?parseLocalDate(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'-';};
+
+  var laborRows=Object.keys(laborByHelper).map(function(name){
+    var hd=laborByHelper[name];
+    var entryRows=hd.entries.sort(function(a,b){return new Date(a.startTime)-new Date(b.startTime);}).map(function(e){
+      return '<tr style="font-size:11px"><td style="padding-left:20px;color:#555">'+fmtDt(e.startTime)+'</td>'+
+        '<td style="color:#555">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</td>'+
+        '<td style="text-align:right;color:#555">'+fmtD2(gMin(e))+'</td><td style="text-align:right;color:#555">'+fmtC2((gMin(e)/60)*(hById(e.helperId)?hById(e.helperId).rate:0))+'</td></tr>';
+    }).join('');
+    return '<tr style="background:#f8fdf9"><td><strong>'+name+'</strong></td><td></td><td style="text-align:right"><strong>'+fmtD2(hd.mins)+'</strong></td><td style="text-align:right"><strong>'+fmtC2(hd.cost)+'</strong></td></tr>'+entryRows;
+  }).join('');
+
+  var expenseRows=expenses.map(function(e){
+    return '<tr><td>'+fmtDt(e.date)+'</td><td>'+e.desc+'</td><td>'+e.type+'</td><td style="text-align:right;color:#dc2626">'+fmtC2(e.amount)+'</td></tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"/>'+
+  '<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Inter,sans-serif;font-size:13px;color:#111;padding:32px;max-width:860px;margin:0 auto;}'+
+  'h1{font-size:22px;font-weight:800;color:#1a6b2a;}h2{font-size:15px;font-weight:700;color:#1a6b2a;margin:24px 0 10px;border-bottom:2px solid #e8f5eb;padding-bottom:6px;}'+
+  'table{width:100%;border-collapse:collapse;margin-bottom:8px;}th{background:#1a6b2a;color:#fff;padding:8px 10px;text-align:left;font-size:12px;}'+
+  'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:top;}'+
+  '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}'+
+  '.kpi{background:#f8fdf9;border:1px solid #c3e6cb;border-radius:10px;padding:14px;text-align:center;}'+
+  '.kpi-val{font-size:20px;font-weight:800;}.kpi-lbl{font-size:10px;color:#666;font-weight:600;margin-top:3px;}'+
+  '.profit{color:#16a34a;}.loss{color:#dc2626;}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:16px;border-bottom:3px solid #1a6b2a;}'+
+  '.company{}.company-name{font-size:18px;font-weight:800;color:#1a6b2a;}.company-info{font-size:11px;color:#666;margin-top:4px;line-height:1.7;}'+
+  '.proj-info{font-size:12px;text-align:right;color:#444;line-height:1.9;}'+
+  '.lang-btn{position:fixed;top:16px;right:16px;background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;}'+
+  '@media print{.lang-btn{display:none;}@page{margin:20mm;}}'+
+  '</style></head><body>'+
+  '<button class="lang-btn" onclick="toggleLang()">PT</button>'+
+  '<div class="header">'+
+    '<div class="company">'+
+      '<div class="company-name">Green Idea Insulation</div>'+
+      '<div class="company-info">238 Webster Street #3, Worcester, MA 01603<br>Phone: 774-578-7186<br>greenideainsulation@gmail.com</div>'+
+    '</div>'+
+    '<div class="proj-info">'+
+      '<strong style="font-size:16px">'+p.name+'</strong><br>'+
+      (p.client?'<span style="color:#1a6b2a;font-weight:700">'+p.client+'</span><br>':'')+
+      (p.desc?p.desc+'<br>':'')+
+      fmtDt(p.start)+(p.end?' → '+fmtDt(p.end):'')+'<br>'+
+      '<span style="background:#e8f5eb;border-radius:4px;padding:2px 8px;font-weight:700;color:#1a6b2a">'+p.status.toUpperCase()+'</span>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="kpi-grid">'+
+    '<div class="kpi"><div class="kpi-val" style="color:#2563eb">'+fmtC2(budget)+'</div><div class="kpi-lbl" data-en="CONTRACT VALUE" data-pt="VALOR DO CONTRATO">CONTRACT VALUE</div></div>'+
+    '<div class="kpi"><div class="kpi-val" style="color:#dc2626">'+fmtC2(totalCost)+'</div><div class="kpi-lbl" data-en="TOTAL COST" data-pt="CUSTO TOTAL">TOTAL COST</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(profit>=0?'profit':'loss')+'">'+fmtC2(profit)+'</div><div class="kpi-lbl" data-en="NET PROFIT" data-pt="LUCRO LÍQUIDO">NET PROFIT</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(margin>=0?'profit':'loss')+'">'+margin.toFixed(1)+'%</div><div class="kpi-lbl" data-en="MARGIN" data-pt="MARGEM">MARGIN</div></div>'+
+    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#1a6b2a">'+fmtD2(totalMins)+'</div><div style="font-size:12px;color:#888;margin-top:2px">= '+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> ('+numTeams+' <span data-en="team" data-pt="equipe'+(numTeams>1?'s':'')+'">team'+(numTeams>1?'s':'')+'</span> × '+totalPeople+' <span data-en="people" data-pt="pessoas">people</span>)</div><div class="kpi-lbl" data-en="TOTAL LABOR HOURS" data-pt="TOTAL DE HORAS">TOTAL LABOR HOURS</div></div>'+
+    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#111">'+projEntries.length+'</div><div class="kpi-lbl" data-en="ENTRIES" data-pt="REGISTROS">ENTRIES</div></div>'+
+  '</div>'+
+
+  '<h2 data-en="📊 P&L Summary" data-pt="📊 Resumo P&L">📊 P&L Summary</h2>'+
+  '<table><tr><td data-en="Contract Value" data-pt="Valor do Contrato">Contract Value</td><td style="text-align:right;font-weight:700;color:#2563eb">'+fmtC2(budget)+'</td></tr>'+
+  '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
+  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> · '+numTeams+' team'+(numTeams>1?'s':'')+' × '+totalPeople+' people)</td></tr>'+
+  '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
+  '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
+  '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
+  '</table>'+
+
+  (mbRows?'<h2 data-en="🧱 Material Budget" data-pt="🧱 Orçamento de Materiais">🧱 Material Budget</h2>'+
+  '<table><tr><th data-en="Material" data-pt="Material">Material</th><th data-en="Quoted" data-pt="Cotado">Quoted</th><th data-en="Used" data-pt="Usado">Used</th><th data-en="Difference" data-pt="Diferença">Difference</th><th>%</th></tr>'+mbRows+'</table>':'')+
+
+  (laborRows?'<h2 data-en="👷 Labor Detail" data-pt="👷 Detalhe de Mão de Obra">👷 Labor Detail</h2>'+
+  '<table><tr><th data-en="Helper" data-pt="Funcionário">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+
+  '<tr style="background:#f8fdf9"><td colspan="2"><strong data-en="TOTAL" data-pt="TOTAL">TOTAL</strong> <span style="font-size:11px;color:#888">('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span>)</span></td><td style="text-align:right;font-weight:800;color:#1a6b2a">'+fmtD2(totalMins)+'</td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(laborCost)+'</td></tr>'+
+  '</table>':'')+
+
+  (expenseRows?'<h2 data-en="📦 Expenses" data-pt="📦 Despesas">📦 Expenses</h2>'+
+  '<table><tr><th data-en="Date" data-pt="Data">Date</th><th data-en="Description" data-pt="Descrição">Description</th><th data-en="Type" data-pt="Tipo">Type</th><th style="text-align:right" data-en="Amount" data-pt="Valor">Amount</th></tr>'+expenseRows+
+  '<tr style="background:#fff5f5"><td colspan="3"><strong data-en="Total Expenses" data-pt="Total de Despesas">Total Expenses</strong></td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(matCost)+'</td></tr></table>':'')+
+
+  '<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center">'+
+  '<span data-en="Report generated by WorkLog · Green Idea Insulation" data-pt="Relatório gerado pelo WorkLog · Green Idea Insulation">Report generated by WorkLog · Green Idea Insulation</span> · '+new Date().toLocaleDateString()+'</div>'+
+
+  '<script>var lang="en";function toggleLang(){lang=lang==="en"?"pt":"en";document.querySelector(".lang-btn").textContent=lang==="en"?"PT":"EN";document.querySelectorAll("[data-en]").forEach(function(el){el.textContent=el.getAttribute("data-"+lang);});}<\/script>'+
+  '</body></html>';
+
+  var w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  showToast('Report generated! Use browser Print to save as PDF 📄');
+}
+window.exportProjectReport=exportProjectReport;
+
 function renderProjects(filter){
-  var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=new Date().toISOString().slice(0,10);
+  var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
   // Sort: active first, then paused, then completed
@@ -1461,15 +1867,16 @@ function renderProjects(filter){
     var expenses=projectExpenses.filter(function(e){return e.projectId===p.id;});
     var photos=projectPhotos.filter(function(ph){return ph.projectId===p.id;});
     var hist=projectHistory.filter(function(h){return h.projId===p.id;});
-    var today=new Date().toISOString().slice(0,10);
+    var today=localDateStr();
 
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+new Date(p.start).toLocaleDateString()+(p.end?' → '+new Date(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
     html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
+    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📄</button>';
     html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>';
     html+='</div></div>';
     // Stats 2x2
@@ -1540,8 +1947,99 @@ function renderProjects(filter){
       html += '</div>';
     }
 
+    // Material Budget Section
+    var mb=p.matBudget;
+    if(mb){
+      var ccBF=Math.round((mb.cc.sqft||0)*(mb.cc.inch||0)); // board feet quoted CC
+      var ocBF=Math.round((mb.oc.sqft||0)*(mb.oc.inch||0)); // board feet quoted OC
+      // Calculate gallons used from expenses (match keywords)
+      var exps=projectExpenses.filter(function(e){return e.projectId===p.id;});
+      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0,ignUsed=0,fbkUsed=0;
+      exps.forEach(function(e){
+        var desc=(e.desc||'').toLowerCase();
+        var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
+        function matchMat(d, keywords){ for(var ki=0;ki<keywords.length;ki++){ if(d.indexOf(keywords[ki])>=0) return true; } return false; }
+        // CC: closed cell, closedcell, close cell, cc (start or standalone), c.c., closed-cell
+        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/^cc[\s\d]/.test(desc)||desc==='cc') ccGalUsed+=qty;
+        // OC: open cell, opencell, open-cell, oc (start or standalone), o.c.
+        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/^oc[\s\d]/.test(desc)||desc==='oc') ocGalUsed+=qty;
+        // Cellulose: cellulose, celulose, celulose, cellolose, blow-in cel, blown cel
+        else if(matchMat(desc,['cellulose','celulose','cellulos','cellolose','cellulose open','open blown','open blow','dense pack','densepack','dense-pack','blown-in cel','blow cel','blown cel','cellulose blown','cellulose blow','cellulose dense','cel dense','cel open','cel blown','celulose blown','r-30 cel','r-49 cel','r-60 cel','r60 cel','r30 cel','r49 cel'])) celUsed+=qty;
+        // Roxul: roxul, roxull, roxol, mineral wool, mineralwool, mineral-wool, minwool, rockwool, rock wool, rock-wool, mineral fiber, stone wool
+        else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
+        // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
+        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/^fg[\s\d]/.test(desc)||desc==='fg'||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
+        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=qty;
+        else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
+      });
+      // Convert gallons used to BF used
+      var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
+      var ocBFUsed = mb.oc.galPerSet>0 ? Math.round(ocGalUsed/mb.oc.galPerSet*mb.oc.bfPerSet) : 0;
+
+      var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
+      if(hasMat){
+        html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
+        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
+
+        function matRow(label, quoted, used, unit){
+          if(quoted===0&&used===0) return '';
+          var diff=used-quoted;
+          var pct=quoted>0?Math.min(200,Math.round(used/quoted*100)):0;
+          var over=diff>0;
+          var barColor=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
+          var html2='<div style="margin-bottom:8px">';
+          html2+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">';
+          html2+='<span>'+label+'</span>';
+          html2+='<span style="color:'+(over?'var(--red)':used>0?'var(--green)':'var(--muted)')+'">'+used+' / '+quoted+' '+unit+(over?' <span style="background:#fee2e2;color:var(--red);border-radius:4px;padding:1px 5px;font-size:10px">+'+diff+' over</span>':diff<0?' <span style="background:#dcfce7;color:var(--green2);border-radius:4px;padding:1px 5px;font-size:10px">'+Math.abs(diff)+' left</span>':'')+'</span>';
+          html2+='</div>';
+          if(quoted>0){
+            html2+='<div style="background:#e0e0e0;border-radius:99px;height:5px;overflow:hidden">';
+            html2+='<div style="height:5px;border-radius:99px;width:'+Math.min(100,pct)+'%;background:'+barColor+'"></div></div>';
+          }
+          html2+='</div>';
+          return html2;
+        }
+
+        if((mb.cc&&mb.cc.sqft>0)||ccGalUsed>0){
+          var ccLabel = ccBF>0 ? matRow('🫧 Closed Cell',ccBF,ccBFUsed,'BF') : matRow('🫧 Closed Cell (sq ft)',mb.cc.sqft||0,0,'sq ft');
+          html+=ccLabel;
+          var ccGalPerSet=mb.cc.galPerSet||55;
+          var ccBFPerSet=mb.cc.bfPerSet||4500;
+          var ccGalQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*ccGalPerSet*10)/10:0;
+          var ccSetsQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*100)/100:0;
+          var ccSetsUsed=ccGalUsed>0?Math.round(ccGalUsed/ccGalPerSet*100)/100:0;
+          html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
+          if(ccGalQuoted>0) html+='📋 Cotado: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
+          if(ccGalUsed>0) html+='🔧 Usado: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
+          html+='</div>';
+          if(mb.cc.inch===0&&ccBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+        }
+        if((mb.oc&&mb.oc.sqft>0)||ocGalUsed>0){
+          var ocLabel = ocBF>0 ? matRow('🫧 Open Cell',ocBF,ocBFUsed,'BF') : matRow('🫧 Open Cell (sq ft)',mb.oc.sqft||0,0,'sq ft');
+          html+=ocLabel;
+          var ocGalPerSet=mb.oc.galPerSet||55;
+          var ocBFPerSet=mb.oc.bfPerSet||17000;
+          var ocGalQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*ocGalPerSet*10)/10:0;
+          var ocSetsQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*100)/100:0;
+          var ocSetsUsed=ocGalUsed>0?Math.round(ocGalUsed/ocGalPerSet*100)/100:0;
+          html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
+          if(ocGalQuoted>0) html+='📋 Cotado: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
+          if(ocGalUsed>0) html+='🔧 Usado: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
+          html+='</div>';
+          if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+        }
+        if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
+        if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
+        if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
+        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
+        html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">* Keywords — CC: "closed cell", "cc" · OC: "open cell", "oc" · Cellulose: "cellulose", "celulose" · Roxul: "roxul", "roxull", "mineral wool", "rock wool" · Fiberglass: "fiberglass", "fiber glass", "fg", "batt", "kraft", "unfaced", "r-13" thru "r-49"</div>';
+        html+='</div>';
+      }
+    }
+
     // Expenses
-    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+new Date(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
+    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
     // Add expense
     html+='<button data-pid="'+p.id+'" onclick="toggleExpForm(this.dataset.pid)" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;margin-bottom:8px">+ Add Expense</button>';
     html+='<div id="expf-'+p.id+'" style="display:none;background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">';
@@ -1552,6 +2050,15 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>🧱 Materials</option><option>📦 General</option><option>🔧 Other</option></select></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
+    // Assigned helpers
+    html+='<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">ASSIGNED HELPERS</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    if(!helpers.length) html+='<div style="color:var(--muted);font-size:12px">No helpers yet.</div>';
+    else html+=helpers.map(function(h){
+      var assigned=(p.helpers||[]).indexOf(h.id)>=0;
+      var hMin=entries.filter(function(e){return e.helperId===h.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
+      return '<button data-pid="'+p.id+'" data-hid="'+h.id+'" onclick="toggleAssign(this.dataset.pid,this.dataset.hid)" style="background:'+(assigned?'var(--green)':'#f0f0f0')+';color:'+(assigned?'#fff':'var(--muted)')+';border:1px solid '+(assigned?'var(--green)':'#ccc')+';border-radius:99px;padding:5px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">'+h.name+(assigned&&hMin>0?' · '+fmtD(hMin):'')+'</button>';
+    }).join('');
+    html+='</div></div>';
     // Photos
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
@@ -1564,7 +2071,7 @@ function renderProjects(filter){
     // History
     if(hist.length){
       html+='<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;cursor:pointer" onclick="toggleHist(\''+p.id+'\')">📋 ASSIGNMENT HISTORY <span id="ha-'+p.id+'">▼</span></div>';
-      html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'➕ Assigned':'➖ Removed')+'</span></div><span style="color:var(--muted)">'+new Date(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
+      html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'➕ Assigned':'➖ Removed')+'</span></div><span style="color:var(--muted)">'+parseLocalDate(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
     }
     html+='</div>';
     return html;
@@ -1577,8 +2084,20 @@ function addProject(){
   if(!start) return showToast('Select a start date','err');
   var ohDays=getOHDays('proj');
   var overhead=calcOHTotal(ohDays);
-  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],createdAt:new Date().toISOString()});
+  var matBudget={
+    cc:{sqft:parseFloat(document.getElementById('proj-cc-sqft').value)||0, inch:parseFloat(document.getElementById('proj-cc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('proj-cc-bf').value)||4500, galPerSet:parseFloat(document.getElementById('proj-cc-gal').value)||55},
+    oc:{sqft:parseFloat(document.getElementById('proj-oc-sqft').value)||0, inch:parseFloat(document.getElementById('proj-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('proj-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('proj-oc-gal').value)||55},
+    celBags:parseFloat(document.getElementById('proj-cel-bags').value)||0,
+    roxBags:parseFloat(document.getElementById('proj-rox-bags').value)||0,
+    fbgBags:parseFloat(document.getElementById('proj-fbg-bags').value)||0,
+    ignSqft:parseFloat(document.getElementById('proj-ign-sqft').value)||0,
+    fbSqft:parseFloat(document.getElementById('proj-fb-sqft').value)||0
+  };
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
+  document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
+  document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
+  document.getElementById('proj-ign-sqft').value=''; document.getElementById('proj-fb-sqft').value='';
   document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
   showToast('Project created! 📁');
@@ -1626,7 +2145,7 @@ function openEditExpense(id){
   document.getElementById('ee-desc').value=exp.desc||'';
   document.getElementById('ee-amount').value=exp.amount||'';
   document.getElementById('ee-type').value=exp.type||'📦 General';
-  document.getElementById('ee-date').value=exp.date||new Date().toISOString().slice(0,10);
+  document.getElementById('ee-date').value = exp.date ? localDateStr(parseLocalDate(exp.date)) : localDateStr();
   document.getElementById('modal-edit-expense').classList.add('open');
 }
 window.openEditExpense=openEditExpense;
@@ -1659,13 +2178,27 @@ function openEditProj(id){
   epList.innerHTML='';
   var ohDays=p.ohDays||[];
   if(ohDays.length===0&&p.workingDays){
-    // Migrate old format
     for(var di=0;di<p.workingDays;di++) ohDays.push({date:'',teams:p.teamsOnJob||1});
   }
   ohDays.forEach(function(d){ addOHDayRow('ep',d.date,d.teams); });
   updateOHPreview('ep');
-  document.getElementById('ep-start').value=p.start||'';
-  document.getElementById('ep-end').value=p.end||'';
+  document.getElementById('ep-start').value=p.start?localDateStr(parseLocalDate(p.start)):'';
+  document.getElementById('ep-end').value=p.end?localDateStr(parseLocalDate(p.end)):'';
+  // Material budget
+  var mb=p.matBudget||{cc:{sqft:0,inch:0,bfPerSet:4500,galPerSet:55},oc:{sqft:0,inch:0,bfPerSet:17000,galPerSet:55},celBags:0,roxBags:0,fbgBags:0,ignSqft:0,fbSqft:0};
+  document.getElementById('ep-cc-sqft').value=mb.cc&&mb.cc.sqft||'';
+  document.getElementById('ep-cc-inch').value=mb.cc&&mb.cc.inch||'';
+  document.getElementById('ep-cc-bf').value=mb.cc&&mb.cc.bfPerSet||4500;
+  document.getElementById('ep-cc-gal').value=mb.cc&&mb.cc.galPerSet||55;
+  document.getElementById('ep-oc-sqft').value=mb.oc&&mb.oc.sqft||'';
+  document.getElementById('ep-oc-inch').value=mb.oc&&mb.oc.inch||'';
+  document.getElementById('ep-oc-bf').value=mb.oc&&mb.oc.bfPerSet||17000;
+  document.getElementById('ep-oc-gal').value=mb.oc&&mb.oc.galPerSet||55;
+  document.getElementById('ep-cel-bags').value=mb.celBags||'';
+  document.getElementById('ep-rox-bags').value=mb.roxBags||'';
+  document.getElementById('ep-fbg-bags').value=mb.fbgBags||'';
+  document.getElementById('ep-ign-sqft').value=mb.ignSqft||'';
+  document.getElementById('ep-fb-sqft').value=mb.fbSqft||'';
   document.getElementById('modal-edit-project').classList.add('open');
 }
 window.openEditProj=openEditProj;
@@ -1676,7 +2209,16 @@ function saveEditProject(){
   var ohDays=getOHDays('ep');
   var overhead=calcOHTotal(ohDays);
   if(!name) return showToast('Enter a name','err');
-  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null});
+  var matBudget={
+    cc:{sqft:parseFloat(document.getElementById('ep-cc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-cc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-cc-bf').value)||4500, galPerSet:parseFloat(document.getElementById('ep-cc-gal').value)||55},
+    oc:{sqft:parseFloat(document.getElementById('ep-oc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('ep-oc-gal').value)||55},
+    celBags:parseFloat(document.getElementById('ep-cel-bags').value)||0,
+    roxBags:parseFloat(document.getElementById('ep-rox-bags').value)||0,
+    fbgBags:parseFloat(document.getElementById('ep-fbg-bags').value)||0,
+    ignSqft:parseFloat(document.getElementById('ep-ign-sqft').value)||0,
+    fbSqft:parseFloat(document.getElementById('ep-fb-sqft').value)||0
+  };
+  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
@@ -1731,7 +2273,7 @@ window.delPhoto=delPhoto;
 function openQuickHours(hid,name){
   quickHoursHelperId=hid;
   document.getElementById('qh-title').textContent='+ Hours for '+name;
-  document.getElementById('qh-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('qh-date').value=localDateStr();
   document.getElementById('qh-start').value='08:00';
   document.getElementById('qh-end').value='17:00';
   document.getElementById('qh-note').value='';
@@ -1818,13 +2360,13 @@ function checkRoute(){
   // QR Code scan - no helper yet, show modal to select name then clock in
   if(action==='clockin'&&!hid){
     startListeners();
+    auth.signInAnonymously().catch(function(){});
     showScreen('landing');
-    // Show helper select modal after listeners load
-    var done=false;
-    var wait=setInterval(function(){
-      if(helpers.length>0){ clearInterval(wait); if(!done){ done=true; showQRHelperModal(); }}
-    },300);
-    setTimeout(function(){clearInterval(wait);},5000);
+    if(helpers.length>0){ showQRHelperModal(); }
+    else {
+      window._pendingQR = true;
+      setTimeout(function(){ window._pendingQR=false; },5000);
+    }
     return true;
   }
   // Direct helper link
@@ -1971,7 +2513,7 @@ function addOHDayRow(prefix, date, teams){
   var row = document.createElement('div');
   row.id = prefix+'-ohrow-'+idx;
   row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
-  var today = new Date().toISOString().slice(0,10);
+  var today = localDateStr();
   // Build row using createElement to avoid quote issues
   var dateIn = document.createElement('input');
   dateIn.type = 'date';
@@ -2108,7 +2650,7 @@ function renderAnalytics(){
   var yearSel = document.getElementById('analytics-year');
   // Populate year options
   var years = {};
-  projects.forEach(function(p){ if(p.start) years[new Date(p.start).getFullYear()]=1; });
+  projects.forEach(function(p){ if(p.start) years[parseLocalDate(p.start).getFullYear()]=1; });
   var yearKeys = Object.keys(years).sort().reverse();
   var currentOpts = yearSel.innerHTML;
   var newOpts = '<option value="all">All Time</option>'+yearKeys.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
@@ -2118,7 +2660,7 @@ function renderAnalytics(){
   // Filter projects by year
   var filteredProjects = projects.filter(function(p){
     if(selYear==='all') return true;
-    return p.start && new Date(p.start).getFullYear() == selYear;
+    return p.start && parseLocalDate(p.start).getFullYear() == selYear;
   });
 
   // Build per-project P&L
@@ -2204,12 +2746,12 @@ function renderAnalytics(){
   clientsEl.innerHTML = clients.map(function(c){
     var margin = c.totalBudget>0?(c.totalProfit/c.totalBudget)*100:0;
     var marginColor = margin>=20?'#16a34a':margin>=10?'#d97706':margin>=0?'#f59e0b':'#dc2626';
-    var projRows = c.projects.sort(function(a,b){ return new Date(b.start)-new Date(a.start); }).map(function(p){
+    var projRows = c.projects.sort(function(a,b){ return parseLocalDate(b.start)-parseLocalDate(a.start); }).map(function(p){
       var mc = p.budget>0?(p.profit/p.budget)*100:0;
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">'+
         '<div>'+
           '<div style="font-weight:600">'+p.name+'</div>'+
-          '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+new Date(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+
+          '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+parseLocalDate(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+
         '</div>'+
         '<div style="text-align:right">'+
           '<div style="font-weight:700;color:'+(mc>=0?'#16a34a':'#dc2626')+'">'+fmtC(p.profit)+'</div>'+
@@ -2350,10 +2892,42 @@ function saveSettings(){
 window.saveSettings=saveSettings;
 window.renderSettings=renderSettings;
 
-// ── AUTH ───────────────────────────────────────────────
+// Parse YYYY-MM-DD as LOCAL date (avoids UTC timezone shift bug)
+function parseLocalDate(str){
+  if(!str) return new Date();
+  var parts = str.split('-');
+  if(parts.length===3) return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  return new Date(str);
+}
+window.parseLocalDate=parseLocalDate;
+function localDateStr(d){
+  var dt = d||new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+window.localDateStr=localDateStr;
 var auth = firebase.auth();
 // Enable anonymous auth persistence
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
+
+var ADMIN_PROFILES = {
+  'Yzis0313': {name:'Ueliton Silva', initials:'US'},
+  'Soeusei13':  {name:'Rafael Gazel',  initials:'RG'}
+};
+
+// ── ADMIN PROFILE ─────────────────────────────────────
+function renderAdminProfileBadge(){
+  var profile = currentAdminProfile || JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+  if(!profile) return;
+  var name = document.getElementById('admin-profile-name');
+  if(name) name.textContent = profile.name;
+}
+window.renderAdminProfileBadge = renderAdminProfileBadge;
+
+function getAdminName(){
+  var profile = currentAdminProfile || JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+  return profile ? profile.name : 'Admin';
+}
+window.getAdminName = getAdminName;
 
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
@@ -2361,13 +2935,21 @@ function doLogin(){
   var btn = document.getElementById('login-btn');
   var err = document.getElementById('login-error');
   if(!email||!pass){ err.textContent='Please enter email and password.'; err.style.display='block'; return; }
+  // Identify profile by password
+  var profile = ADMIN_PROFILES[pass];
+  if(!profile){ err.textContent='Invalid email or password.'; err.style.display='block'; return; }
   btn.disabled=true; btn.textContent='Signing in...'; err.style.display='none';
-  auth.signInWithEmailAndPassword(email, pass)
+  // Always sign in with the real Firebase password (Ueliton's)
+  var firebasePass = 'Yzis0313';
+  auth.signInWithEmailAndPassword(email, firebasePass)
     .then(function(){
       btn.disabled=false; btn.textContent='Sign In';
+      currentAdminProfile = profile;
       localStorage.setItem('wl_session','admin');
+      localStorage.setItem('wl_admin_profile', JSON.stringify(profile));
       showScreen('admin');
       currentAdminTab='dashboard';
+      renderAdminProfileBadge();
       renderDashboard();
     })
     .catch(function(e){
@@ -2399,6 +2981,7 @@ goLanding = function(){
 function adminLogout(){
   auth.signOut().then(function(){
     localStorage.removeItem('wl_session');
+    window._listenersStarted = false;
     showScreen('login');
   });
 }
@@ -2411,9 +2994,11 @@ if(!checkRoute()){
     // Verify still authenticated
     auth.onAuthStateChanged(function(user){
       if(user){
+        currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
         startListeners();
         showScreen('admin');
         currentAdminTab='dashboard';
+        renderAdminProfileBadge();
         renderDashboard();
       } else {
         localStorage.removeItem('wl_session');
@@ -2423,22 +3008,28 @@ if(!checkRoute()){
     });
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
+    // Start listeners immediately, sign in anonymously in background
     startListeners();
-    var _done=false;
-    var _wait=setInterval(function(){
-      if(helpers.length>0){
-        clearInterval(_wait);
-        if(!_done){_done=true;
-          var _h=hById(_hid);
-          if(_h) openHelperView(_hid);
-          else{localStorage.removeItem('wl_session'); showScreen('landing');}
+    auth.signInAnonymously().catch(function(){});
+    if(helpers.length>0){
+      var _h=hById(_hid);
+      if(_h) openHelperView(_hid);
+      else{localStorage.removeItem('wl_session'); showScreen('landing');}
+    } else {
+      window._pendingHelperSession=_hid;
+      showScreen('landing');
+      setTimeout(function(){
+        if(window._pendingHelperSession){
+          window._pendingHelperSession=null;
+          localStorage.removeItem('wl_session');
         }
-      }
-    },300);
-    setTimeout(function(){clearInterval(_wait); if(!_done){_done=true; localStorage.removeItem('wl_session'); showScreen('landing');}},5000);
+      },5000);
+    }
   } else {
     showScreen('landing');
+    // Start listeners immediately for fast helper load, then sign in anonymously
     startListeners();
+    auth.signInAnonymously().catch(function(){});
   }
 }
 </script>
