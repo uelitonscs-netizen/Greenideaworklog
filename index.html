@@ -499,8 +499,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div style="position:relative;margin-bottom:14px">
         <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
       </div>
-      <div class="card" style="margin-bottom:18px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
+      <div class="card" style="margin-bottom:18px;padding:0;overflow:hidden">
+        <button onclick="(function(){var b=document.getElementById('cpForm');var a=document.getElementById('cpArrow');var open=b.style.display==='block';b.style.display=open?'none':'block';a.textContent=open?'▼':'▲';})()" style="width:100%;background:transparent;border:none;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:var(--font-d);font-weight:700;font-size:13px;color:var(--green)">
+          <span>+ New Project</span>
+          <span id="cpArrow" style="font-size:11px;color:var(--muted)">▼</span>
+        </button>
+        <div id="cpForm" style="display:none;padding:0 16px 16px">
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
         <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
         <div class="fg"><label>Description</label><input id="proj-desc" placeholder="Brief description"/></div>
@@ -543,7 +547,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           </div>
         </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
-      </div>
+        </div>
       <div id="projects-list"></div>
     </div>
 
