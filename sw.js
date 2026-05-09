@@ -1,21 +1,28 @@
-var CACHE = 'worklog-v2';
-var URLS = [
+const CACHE_NAME = 'greenidea-v10';
+const urlsToCache = [
   '/Greenideaworklog/',
-  '/Greenideaworklog/index.html',
-  '/Greenideaworklog/manifest.json',
-  '/Greenideaworklog/icon-192.png',
-  '/Greenideaworklog/icon-512.png'
+  '/Greenideaworklog/index.html'
 ];
 self.addEventListener('install', function(e) {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(urlsToCache);
+    })
+  );
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(URLS); }));
 });
 self.addEventListener('activate', function(e) {
-  e.waitUntil(caches.keys().then(function(keys) {
-    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));
-  }));
-  return self.clients.claim();
+  e.waitUntil(
+    caches.keys().then(function(names) {
+      return Promise.all(names.filter(function(n){return n!==CACHE_NAME;}).map(function(n){return caches.delete(n);}));
+    })
+  );
+  self.clients.claim();
 });
 self.addEventListener('fetch', function(e) {
-  e.respondWith(caches.match(e.request).then(function(r) { return r || fetch(e.request); }));
+  e.respondWith(
+    fetch(e.request).catch(function() {
+      return caches.match(e.request);
+    })
+  );
 });
