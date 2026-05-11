@@ -2660,19 +2660,28 @@ function sendToWorkLog(){
 
   // ── MATERIAL BUDGET CALC ──
   var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
-  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32;
-  // Fiberglass coverage per bag by R-value (average of 15" and 23" widths, midpoint of range)
-  function getFgSqftPerBag(r){
-    var map={11:204, 13:142, 15:89, 19:104, 21:89, 25:75, 30:65, 38:47, 49:38};
+  var CEL_SQFT_BAG=40;
+  // Roxul/Rockwool coverage per bag by R-value (15.25" width)
+  function getRoxSqftPerBag(r){
+    var map={13:59.7, 15:59.7, 21:39.8, 23:39, 30:29.86};
     var rv=Math.round(parseFloat(r)||0);
     if(map[rv]) return map[rv];
-    // Fallback: interpolate or use nearest
     var keys=Object.keys(map).map(Number).sort(function(a,b){return a-b;});
     var nearest=keys.reduce(function(prev,curr){return Math.abs(curr-rv)<Math.abs(prev-rv)?curr:prev;});
-    return map[nearest]||45;
+    return map[nearest]||32;
+  }
+  // Fiberglass coverage per bag by R-value (15" on center, midpoint of manufacturer range)
+  function getFgSqftPerBag(r){
+    var map={11:162, 13:113, 15:71, 19:81, 21:71, 25:65, 30:51, 38:35, 49:30};
+    var rv=Math.round(parseFloat(r)||0);
+    if(map[rv]) return map[rv];
+    var keys=Object.keys(map).map(Number).sort(function(a,b){return a-b;});
+    var nearest=keys.reduce(function(prev,curr){return Math.abs(curr-rv)<Math.abs(prev-rv)?curr:prev;});
+    return map[nearest]||51;
   }
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
-  var celSqft=0, roxSqft=0, fbgBagsTotal=0, ignSqft=0, fbSqft=0;
+  var IGN_SQFT_BUCKET=450; // 1 bucket covers 450 sq ft
+  var celSqft=0, roxBagsTotal=0, fbgBagsTotal=0, ignSqft=0, ignBuckets=0, fbSqft=0;
 
   function getInches(spec){
     var m=(spec||'').match(/(\d+\.?\d*)\s*(?:in|inch|inches|")/i);
@@ -2737,7 +2746,7 @@ function sendToWorkLog(){
         var ci3=a.ccInch||0;
         if(ci3>0){ccInchTotal+=ci3*sf;ccCount+=sf;}
       } else if(mtype==='hybrid_foam_mw'){
-        ccSqft+=sf; roxSqft+=sf;
+        ccSqft+=sf; roxBagsTotal+=Math.ceil(sf/getRoxSqftPerBag(a.mwR||0));
         var ci4=a.ccInch||0;
         if(ci4>0){ccInchTotal+=ci4*sf;ccCount+=sf;}
       } else if(mtype==='fg'){
@@ -2745,9 +2754,9 @@ function sendToWorkLog(){
       } else if(mtype==='cel'){
         celSqft+=sf;
       } else if(mtype==='mw'){
-        roxSqft+=sf;
+        roxBagsTotal+=Math.ceil(sf/getRoxSqftPerBag(a.mwR||0));
       } else if(mtype==='ign'){
-        ignSqft+=sf;
+        ignSqft+=sf; ignBuckets+=Math.ceil(sf/IGN_SQFT_BUCKET);
       } else if(mtype==='fb'){
         fbSqft+=sf;
       } else {
@@ -2757,12 +2766,12 @@ function sendToWorkLog(){
           var pname=(pr&&pr.name)?pr.name.toLowerCase():'';
           if(pname.indexOf('closed')>=0) ccSqft+=sf;
           else ocSqft+=sf;
-        } else if(cat==='Mineral Wool') roxSqft+=sf;
+        } else if(cat==='Mineral Wool') roxBagsTotal+=Math.ceil(sf/getRoxSqftPerBag(0));
         else if(cat==='Blown-In'){
           var pname2=(pr&&pr.name)?pr.name.toLowerCase():'';
           if(pname2.indexOf('cellulose')>=0) celSqft+=sf; else fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(0));
         } else if(cat==='Batt') fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(0));
-        else if(cat==='Air Barrier') ignSqft+=sf;
+        else if(cat==='Air Barrier'){ignSqft+=sf; ignBuckets+=Math.ceil(sf/IGN_SQFT_BUCKET);}
       }
     }catch(e){ console.warn('area error:',e); }
   }
@@ -2773,9 +2782,10 @@ function sendToWorkLog(){
     cc:{sqft:Math.round(ccSqft),inch:ccInchAvg,bfPerSet:CC_BF_SET,galPerSet:CC_GAL_SET},
     oc:{sqft:Math.round(ocSqft),inch:ocInchAvg,bfPerSet:OC_BF_SET,galPerSet:OC_GAL_SET},
     celBags:celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0,
-    roxBags:roxSqft>0?Math.ceil(roxSqft/ROX_SQFT_BAG):0,
+    roxBags:roxBagsTotal,
     fbgBags:fbgBagsTotal,
     ignSqft:Math.round(ignSqft),
+    ignBuckets:ignBuckets,
     fbSqft:Math.round(fbSqft),
     source:'fieldbid'
   };
