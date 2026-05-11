@@ -1782,6 +1782,7 @@ function exportProjectReport(pid){
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
            mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
            mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
+           (mb.ignSqft>0||ignU>0?'<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">📋 Cotado: '+Math.ceil((mb.ignSqft||0)/450)+' bucket(s) &nbsp;|&nbsp; 🔧 Usado: '+Math.ceil(ignU/450)+' bucket(s)</td></tr>':'')+
            mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
   }
 
@@ -2102,7 +2103,12 @@ function renderProjects(filter){
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
-        if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
+        if(mb.ignSqft>0||ignUsed>0){
+          html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
+          var ignBuckets=mb.ignSqft>0?Math.ceil(mb.ignSqft/450):0;
+          var ignBucketsUsed=ignUsed>0?Math.ceil(ignUsed/450):0;
+          if(ignBuckets>0||ignBucketsUsed>0) html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">📋 Cotado: '+ignBuckets+' bucket'+(ignBuckets!==1?'s':'')+' &nbsp;|&nbsp; 🔧 Usado: '+ignBucketsUsed+' bucket'+(ignBucketsUsed!==1?'s':'')+'</div>';
+        }
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
