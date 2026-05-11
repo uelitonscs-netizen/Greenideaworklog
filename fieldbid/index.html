@@ -2660,9 +2660,19 @@ function sendToWorkLog(){
 
   // ── MATERIAL BUDGET CALC ──
   var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
-  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32, FBG_SQFT_BAG=45;
+  var CEL_SQFT_BAG=40, ROX_SQFT_BAG=32;
+  // Fiberglass coverage per bag by R-value (average of 15" and 23" widths, midpoint of range)
+  function getFgSqftPerBag(r){
+    var map={11:204, 13:142, 15:89, 19:104, 21:89, 25:75, 30:65, 38:47, 49:38};
+    var rv=Math.round(parseFloat(r)||0);
+    if(map[rv]) return map[rv];
+    // Fallback: interpolate or use nearest
+    var keys=Object.keys(map).map(Number).sort(function(a,b){return a-b;});
+    var nearest=keys.reduce(function(prev,curr){return Math.abs(curr-rv)<Math.abs(prev-rv)?curr:prev;});
+    return map[nearest]||45;
+  }
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
-  var celSqft=0, roxSqft=0, fbgSqft=0, ignSqft=0, fbSqft=0;
+  var celSqft=0, roxSqft=0, fbgBagsTotal=0, ignSqft=0, fbSqft=0;
 
   function getInches(spec){
     var m=(spec||'').match(/(\d+\.?\d*)\s*(?:in|inch|inches|")/i);
@@ -2723,7 +2733,7 @@ function sendToWorkLog(){
         if(ci2>0){ccInchTotal+=ci2*sf;ccCount+=sf;}
         if(oi2>0){ocInchTotal+=oi2*sf;ocCount+=sf;}
       } else if(mtype==='hybrid_foam_fg'){
-        ccSqft+=sf; fbgSqft+=sf;
+        ccSqft+=sf; fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(a.fgR||0));
         var ci3=a.ccInch||0;
         if(ci3>0){ccInchTotal+=ci3*sf;ccCount+=sf;}
       } else if(mtype==='hybrid_foam_mw'){
@@ -2731,7 +2741,7 @@ function sendToWorkLog(){
         var ci4=a.ccInch||0;
         if(ci4>0){ccInchTotal+=ci4*sf;ccCount+=sf;}
       } else if(mtype==='fg'){
-        fbgSqft+=sf;
+        fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(a.fgR||0));
       } else if(mtype==='cel'){
         celSqft+=sf;
       } else if(mtype==='mw'){
@@ -2750,8 +2760,8 @@ function sendToWorkLog(){
         } else if(cat==='Mineral Wool') roxSqft+=sf;
         else if(cat==='Blown-In'){
           var pname2=(pr&&pr.name)?pr.name.toLowerCase():'';
-          if(pname2.indexOf('cellulose')>=0) celSqft+=sf; else fbgSqft+=sf;
-        } else if(cat==='Batt') fbgSqft+=sf;
+          if(pname2.indexOf('cellulose')>=0) celSqft+=sf; else fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(0));
+        } else if(cat==='Batt') fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(0));
         else if(cat==='Air Barrier') ignSqft+=sf;
       }
     }catch(e){ console.warn('area error:',e); }
@@ -2764,7 +2774,7 @@ function sendToWorkLog(){
     oc:{sqft:Math.round(ocSqft),inch:ocInchAvg,bfPerSet:OC_BF_SET,galPerSet:OC_GAL_SET},
     celBags:celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0,
     roxBags:roxSqft>0?Math.ceil(roxSqft/ROX_SQFT_BAG):0,
-    fbgBags:fbgSqft>0?Math.ceil(fbgSqft/FBG_SQFT_BAG):0,
+    fbgBags:fbgBagsTotal,
     ignSqft:Math.round(ignSqft),
     fbSqft:Math.round(fbSqft),
     source:'fieldbid'
@@ -2815,22 +2825,5 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <!-- Firebase moved to main script block -->
 
-<script>
-// Block pull-to-refresh on Android Chrome
-(function(){
-  var lastY=0;
-  document.addEventListener('touchstart',function(e){
-    lastY=e.touches[0].clientY;
-  },{passive:true});
-  document.addEventListener('touchmove',function(e){
-    var y=e.touches[0].clientY;
-    var scrollTop=document.scrollingElement?document.scrollingElement.scrollTop:document.documentElement.scrollTop;
-    if(scrollTop===0&&y>lastY){
-      e.preventDefault();
-    }
-    lastY=y;
-  },{passive:false});
-})();
-</script>
 </body>
 </html>
