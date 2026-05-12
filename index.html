@@ -2400,6 +2400,7 @@ function checkRoute(){
   // Direct helper link
   if(hid){
     startListeners();
+    auth.signInAnonymously().catch(function(){});
     var done=false;
     var wait=setInterval(function(){
       if(helpers.length>0){
@@ -2407,7 +2408,7 @@ function checkRoute(){
         if(!done){ done=true; var h=hById(hid); if(h) openHelperView(hid); else showScreen('landing'); }
       }
     },300);
-    setTimeout(function(){clearInterval(wait); if(!done){done=true; showScreen('landing');}},5000);
+    setTimeout(function(){clearInterval(wait); if(!done){done=true; showScreen('landing');}},10000);
     return true;
   }
   return false;
