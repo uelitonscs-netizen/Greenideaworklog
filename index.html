@@ -181,10 +181,10 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div style="width:100%;max-width:380px;padding:32px 24px;text-align:center">
     <div style="margin-bottom:14px"><img src="icon-192.png" style="width:72px;height:72px;border-radius:14px;object-fit:cover"/></div>
     <div style="font-family:var(--font-d);font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:4px">Work<span style="color:var(--green)">Log</span></div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:32px">Admin Login · Green Idea Insulation</div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:32px">Admin Login Â· Green Idea Insulation</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;text-align:left">
       <div class="fg"><label>Email</label><input id="login-email" type="email" placeholder="admin@email.com" autocomplete="email"/></div>
-      <div class="fg"><label>Password</label><input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+      <div class="fg"><label>Password</label><input id="login-password" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="current-password"/></div>
       <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></div>
       <button id="login-btn" class="btn" style="width:100%;padding:13px;font-size:15px" onclick="doLogin()">Sign In</button>
     </div>
@@ -197,11 +197,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
   <div class="landing-box">
     <div style="margin-bottom:14px"><img src="icon-192.png" style="width:72px;height:72px;border-radius:14px;object-fit:cover"/></div>
     <div class="landing-logo">Work<span>Log</span></div>
-    <p class="landing-sub">Green Idea Insulation — Team Hours</p>
+    <p class="landing-sub">Green Idea Insulation â Team Hours</p>
     <div class="landing-btns">
-      <button class="btn" style="font-size:15px" onclick="showScreen('login')">⊞ Admin Dashboard</button>
-      <div style="color:var(--muted);font-size:12px;margin:4px 0">— or —</div>
-      <button class="btn ghost" onclick="showHelperModal()">👤 I'm a Helper</button>
+      <button class="btn" style="font-size:15px" onclick="showScreen('login')">â Admin Dashboard</button>
+      <div style="color:var(--muted);font-size:12px;margin:4px 0">â or â</div>
+      <button class="btn ghost" onclick="showHelperModal()">ð¤ I'm a Helper</button>
     </div>
   </div>
 </div>
@@ -217,17 +217,17 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <span class="sync-dot off" id="sync-dot"></span><span id="sync-lbl">Connecting...</span>
     </div>
     <div style="margin-left:auto;display:flex;gap:6px">
-      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="exportCSV()">↓ CSV</button>
-      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="adminLogout()">⏻ Logout</button>
+      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="exportCSV()">â CSV</button>
+      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="adminLogout()">â» Logout</button>
     </div>
   </div>
   <div class="admin-nav">
-    <button class="nav-btn active" onclick="aTab('dashboard',this)">⊞ Dashboard</button>
-    <button class="nav-btn" onclick="aTab('helpers',this)">👥 Helpers</button>
-    <button class="nav-btn" onclick="aTab('reports',this)">📋 Reports</button>
-    <button class="nav-btn" onclick="aTab('projects',this)">📁 Projects</button>
-    <button class="nav-btn" onclick="aTab('analytics',this)">📊 Analytics</button>
-    <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
+    <button class="nav-btn active" onclick="aTab('dashboard',this)">â Dashboard</button>
+    <button class="nav-btn" onclick="aTab('helpers',this)">ð¥ Helpers</button>
+    <button class="nav-btn" onclick="aTab('reports',this)">ð Reports</button>
+    <button class="nav-btn" onclick="aTab('projects',this)">ð Projects</button>
+    <button class="nav-btn" onclick="aTab('analytics',this)">ð Analytics</button>
+    <button class="nav-btn" onclick="aTab('settings',this)">âï¸ Settings</button>
   </div>
   <div class="admin-nav-spacer"></div>
   <div class="admin-body">
@@ -236,7 +236,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div id="tab-dashboard" class="tab-panel active">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0" id="dash-week-lbl">Dashboard</div>
-        <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">📷 Depot QR</button>
+        <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">ð· Depot QR</button>
       </div>
       <div id="no-proj-alert"></div>
       <div id="dash-grid" class="helpers-grid"></div>
@@ -261,13 +261,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
       <!-- ABSENCES section inside Helpers -->
       <div style="margin-top:24px">
-        <div class="section-title">🗓 Absences & Days Off</div>
+        <div class="section-title">ð Absences & Days Off</div>
         <div class="card" style="margin-bottom:18px">
           <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD ABSENCE</div>
           <div class="form-row">
             <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
             <div class="fg" style="max-width:150px"><label>Type</label>
-              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+              <select id="abs-type"><option value="absent">ð« Absent</option><option value="dayoff">ð´ Day Off</option><option value="sick">ð¤ Sick</option><option value="holiday">ð Holiday</option></select>
             </div>
           </div>
           <div class="form-row">
@@ -285,9 +285,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div id="tab-reports" class="tab-panel">
       <!-- Toggle -->
       <div style="display:flex;gap:0;background:#f0f0f0;border-radius:10px;padding:3px;margin-bottom:16px">
-        <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
-        <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
-        <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
+        <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">ð Entries</button>
+        <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">ð° Summary</button>
+        <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">ð³ Payments</button>
       </div>
 
       <!-- Entries panel -->
@@ -339,7 +339,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
             <div class="fg"><label>Date</label><input type="date" id="pay-date"/></div>
             <div class="fg"><label>Note (optional)</label><input id="pay-note" placeholder="e.g. Week of Apr 1"/></div>
           </div>
-          <button class="btn" onclick="addPayment()">✓ Mark as Paid</button>
+          <button class="btn" onclick="addPayment()">â Mark as Paid</button>
         </div>
         <div id="payments-list"></div>
       </div>
@@ -350,7 +350,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <!-- ANALYTICS -->
     <div id="tab-analytics" class="tab-panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div class="section-title" style="margin-bottom:0">📊 Profit Analytics</div>
+        <div class="section-title" style="margin-bottom:0">ð Profit Analytics</div>
         <select id="analytics-year" onchange="renderAnalytics()" style="background:#fff;border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:13px;font-family:var(--font-d);font-weight:600">
           <option value="all">All Time</option>
         </select>
@@ -377,16 +377,16 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           <div id="settings-avatar" style="width:56px;height:56px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:20px;color:#fff;flex-shrink:0">A</div>
           <div>
             <div style="font-weight:700;font-size:16px" id="settings-name-display">Admin</div>
-            <div style="font-size:12px;color:var(--muted)" id="settings-email-display">—</div>
+            <div style="font-size:12px;color:var(--muted)" id="settings-email-display">â</div>
           </div>
         </div>
         <div style="padding:0 6px">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--border)">
-            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">🏢</span><span style="font-weight:600;font-size:14px">Company</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">ð¢</span><span style="font-weight:600;font-size:14px">Company</span></div>
             <span style="font-size:13px;color:var(--muted)">Green Idea Insulation</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px">
-            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">⏻</span><span style="font-weight:600;font-size:14px">Sign Out</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="font-size:18px">â»</span><span style="font-weight:600;font-size:14px">Sign Out</span></div>
             <button onclick="adminLogout()" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Logout</button>
           </div>
         </div>
@@ -412,7 +412,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <input id="set-ot-mult" type="number" value="1.5" min="1" max="3" step="0.25" style="width:64px;text-align:center;padding:6px 8px;font-size:14px;font-weight:700;border:1px solid var(--border2);border-radius:8px;background:#f9f9f9"/>
-            <span style="font-size:12px;color:var(--muted)">×</span>
+            <span style="font-size:12px;color:var(--muted)">Ã</span>
           </div>
         </div>
       </div>
@@ -461,7 +461,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         </div>
         <div style="padding:14px 14px;display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-weight:600;font-size:14px">📷 Depot QR Code</div>
+            <div style="font-weight:600;font-size:14px">ð· Depot QR Code</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Print for clock-in at depot entrance</div>
           </div>
           <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Show QR</button>
@@ -488,7 +488,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       </div>
 
       <!-- Save button -->
-      <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
+      <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">â Save Settings</button>
     </div>
 
     <!-- PROJECTS -->
@@ -497,7 +497,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <div class="section-title" style="margin:0">Projects</div>
       </div>
       <div style="position:relative;margin-bottom:14px">
-        <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
+        <input id="proj-search" placeholder="ð Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
       </div>
       <div class="card" style="margin-bottom:18px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
@@ -510,16 +510,16 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           <div class="fg"><label>End Date</label><input type="date" id="proj-end"/></div>
         </div>
         <!-- Material Budget -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET (optional)</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">ð§± MATERIAL BUDGET (optional)</div>
         <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
           <!-- Spray Foam -->
-          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">ð«§ Spray Foam</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <div><label style="font-size:10px;color:var(--muted)">Closed Cell — Sq Ft</label><input id="proj-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Closed Cell â Sq Ft</label><input id="proj-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
             <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <div><label style="font-size:10px;color:var(--muted)">Open Cell — Sq Ft</label><input id="proj-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
+            <div><label style="font-size:10px;color:var(--muted)">Open Cell â Sq Ft</label><input id="proj-oc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
             <div><label style="font-size:10px;color:var(--muted)">Thickness (inches)</label><input id="proj-oc-inch" type="number" placeholder="3.5" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
           </div>
           <!-- Set config -->
@@ -531,7 +531,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
             <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="proj-oc-gal" type="number" placeholder="55" value="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
           </div>
           <!-- Other materials -->
-          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">ð¦ Other Materials</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
             <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="proj-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
             <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="proj-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
@@ -554,8 +554,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 <div id="screen-helper" class="screen">
   <!-- Admin Preview Banner -->
   <div id="admin-preview-banner" style="display:none;background:#f59e0b;color:#fff;padding:8px 16px;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;">
-    <span>👁 Admin Preview Mode</span>
-    <button onclick="exitAdminPreview()" style="background:rgba(0,0,0,0.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">← Back</button>
+    <span>ð Admin Preview Mode</span>
+    <button onclick="exitAdminPreview()" style="background:rgba(0,0,0,0.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer">â Back</button>
   </div>
   <div class="helper-header">
     <div>
@@ -564,14 +564,14 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <div id="helper-live-badge"></div>
-      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="goLanding()">✕</button>
+      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="goLanding()">â</button>
     </div>
   </div>
   <div class="helper-body">
     <div class="helper-tabs">
-      <button class="htab active" onclick="hTab('clock',this)">⏱ Clock</button>
-      <button class="htab" onclick="hTab('history',this)">📋 History</button>
-      <button class="htab" onclick="hTab('jobs',this)">📁 Jobs</button>
+      <button class="htab active" onclick="hTab('clock',this)">â± Clock</button>
+      <button class="htab" onclick="hTab('history',this)">ð History</button>
+      <button class="htab" onclick="hTab('jobs',this)">ð Jobs</button>
     </div>
 
     <!-- CLOCK -->
@@ -636,7 +636,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 <div id="modal-helper-select" class="modal-overlay">
   <div class="modal">
     <div class="modal-title">Who are you?</div>
-    <div id="helper-sel-loading" style="text-align:center;padding:12px 0;color:var(--muted);font-size:13px">⏳ Loading helpers...</div>
+    <div id="helper-sel-loading" style="text-align:center;padding:12px 0;color:var(--muted);font-size:13px">â³ Loading helpers...</div>
     <div id="helper-sel-content" style="display:none">
       <div class="fg"><label>Select your name</label><select id="helper-sel-dd"><option value="">-- Choose --</option></select></div>
       <div id="no-helpers-msg" style="display:none;color:var(--muted);font-size:13px">No helpers set up yet.</div>
@@ -651,7 +651,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 <div id="modal-qr" class="modal-overlay">
   <div class="modal" style="text-align:center">
     <div class="modal-title" id="qr-title">QR Code</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Cole na entrada do depósito — qualquer helper aponta a câmera, seleciona o nome e dá clock in</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Cole na entrada do depÃ³sito â qualquer helper aponta a cÃ¢mera, seleciona o nome e dÃ¡ clock in</p>
     <div id="qr-container" style="display:flex;justify-content:center;margin-bottom:16px"></div>
     <div id="qr-link" style="font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:12px"></div>
     <div class="modal-actions">
@@ -682,7 +682,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div class="fg"><label>Note (optional)</label><input id="qh-note" placeholder="Added by admin"/></div>
     <div id="qh-dur" style="font-family:var(--font-d);font-size:16px;font-weight:800;color:var(--green);text-align:center;padding:8px;background:#f0f8f0;border-radius:8px;display:none"></div>
     <div class="modal-actions">
-      <button class="btn" onclick="saveQuickHours()">✓ Save Hours</button>
+      <button class="btn" onclick="saveQuickHours()">â Save Hours</button>
       <button class="btn ghost" onclick="closeModal('modal-quick-hours')">Cancel</button>
     </div>
   </div>
@@ -694,7 +694,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
     <div id="ehr-current" style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
     <div class="fg"><label>New Rate ($/hr)</label><input id="ehr-rate" type="number" min="0" step="0.25"/></div>
     <div class="modal-actions">
-      <button class="btn" onclick="saveHelperRate()">✓ Save</button>
+      <button class="btn" onclick="saveHelperRate()">â Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-helper-rate')">Cancel</button>
     </div>
   </div>
@@ -702,19 +702,19 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
 <div id="modal-edit-expense" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title">✏️ Edit Expense</div>
+    <div class="modal-title">âï¸ Edit Expense</div>
     <div class="fg"><label>Description</label><input id="ee-desc"/></div>
     <div class="fg"><label>Amount ($)</label><input id="ee-amount" type="number" min="0" step="0.01"/></div>
     <div class="fg"><label>Type</label>
       <select id="ee-type" style="background:#f9f9f9;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:14px;font-family:var(--font-d);width:100%">
-        <option>🧱 Materials</option>
-        <option>📦 General</option>
-        <option>🔧 Other</option>
+        <option>ð§± Materials</option>
+        <option>ð¦ General</option>
+        <option>ð§ Other</option>
       </select>
     </div>
     <div class="fg"><label>Date</label><input id="ee-date" type="date"/></div>
     <div class="modal-actions">
-      <button class="btn" onclick="saveEditExpense()">✓ Save</button>
+      <button class="btn" onclick="saveEditExpense()">â Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-expense')">Cancel</button>
     </div>
   </div>
@@ -722,23 +722,23 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 
 <div id="modal-edit-project" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title">✏️ Edit Project</div>
+    <div class="modal-title">âï¸ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
     <div class="fg"><label>Client / Company</label><input id="ep-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">⚙️ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">âï¸ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
         <div id="ep-days-list"></div>
         <button type="button" onclick="addOHDay('ep')" style="background:transparent;border:1px dashed #ccc;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;width:100%;margin-bottom:4px">+ Add Day</button>
-        <div id="ep-overhead-preview" style="font-size:12px;color:#1a6b2a;font-weight:700;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">⚙️ Total Overhead: <strong id="ep-overhead-val"></strong></div>
+        <div id="ep-overhead-preview" style="font-size:12px;color:#1a6b2a;font-weight:700;padding:6px 10px;background:#f0f8f0;border-radius:6px;display:none">âï¸ Total Overhead: <strong id="ep-overhead-val"></strong></div>
     <div class="form-row">
       <div class="fg"><label>Start</label><input type="date" id="ep-start"/></div>
       <div class="fg"><label>End</label><input type="date" id="ep-end"/></div>
     </div>
     <!-- Material Budget in Edit -->
-    <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>
+    <div style="font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 8px;letter-spacing:.5px">ð§± MATERIAL BUDGET</div>
     <div style="background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">🫧 Spray Foam</div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">ð«§ Spray Foam</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div><label style="font-size:10px;color:var(--muted)">Closed Cell Sq Ft</label><input id="ep-cc-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
         <div><label style="font-size:10px;color:var(--muted)">CC Thickness (in)</label><input id="ep-cc-inch" type="number" placeholder="2" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:12px;width:100%"/></div>
@@ -754,7 +754,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <div><label style="font-size:9px;color:var(--muted)">OC BF/set</label><input id="ep-oc-bf" type="number" placeholder="17000" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
         <div><label style="font-size:9px;color:var(--muted)">OC Gal/set</label><input id="ep-oc-gal" type="number" placeholder="55" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
       </div>
-      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">📦 Other Materials</div>
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">ð¦ Other Materials</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
         <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="ep-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
         <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="ep-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
@@ -766,7 +766,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn" onclick="saveEditProject()">✓ Save</button>
+      <button class="btn" onclick="saveEditProject()">â Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-project')">Cancel</button>
     </div>
   </div>
@@ -793,10 +793,10 @@ var _app = firebase.initializeApp({
 });
 var db = firebase.firestore();
 
-// ── STATE ──────────────────────────────────────────────
+// ââ STATE ââââââââââââââââââââââââââââââââââââââââââââââ
 var helpers=[], entries=[], payments=[], absences=[], projects=[], projectExpenses=[], projectPhotos=[], projectHistory=[];
 
-// ── DEPOT LOCATION ─────────────────────────────────────
+// ââ DEPOT LOCATION âââââââââââââââââââââââââââââââââââââ
 var DEPOT_LAT = 42.2304418;
 var MONTHLY_OVERHEAD = 21314.48;
 var WORKING_DAYS = 22;
@@ -822,7 +822,7 @@ var OT_MULTIPLIER = 1.5;
   if(saved.otMult) OT_MULTIPLIER = saved.otMult;
 })();
 
-// ── UTILS ──────────────────────────────────────────────
+// ââ UTILS ââââââââââââââââââââââââââââââââââââââââââââââ
 function p2(n){return String(n).padStart(2,'0');}
 function fmtD(m){return Math.floor(m/60)+'h '+p2(m%60)+'m';}
 function fmtC(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);}
@@ -904,7 +904,7 @@ function calcPeriodPay(hid, rate, startDate, endDate){
   return {regMins:totalReg,otMins:totalOT,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
 }
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
-function hLink(h){return location.origin+location.pathname+'?helper='+h.id;}
+function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
 function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -915,14 +915,14 @@ function setSyncStatus(ok){
     if(window._syncOfflineTimer){ clearTimeout(window._syncOfflineTimer); window._syncOfflineTimer=null; }
     if(window._syncRetryTimer){ clearTimeout(window._syncRetryTimer); window._syncRetryTimer=null; }
     if(d) d.className='sync-dot'; d.style.display='none';
-    if(l) l.textContent='● Live';
+    if(l) l.textContent='â Live';
   } else {
-    // Grace period of 4s before showing Offline — avoids flicker on startup
+    // Grace period of 4s before showing Offline â avoids flicker on startup
     if(window._syncOfflineTimer) return; // already pending
     window._syncOfflineTimer=setTimeout(function(){
       window._syncOfflineTimer=null;
       var d2=document.getElementById('sync-dot'),l2=document.getElementById('sync-lbl');
-      if(l2&&l2.textContent!=='● Live'){
+      if(l2&&l2.textContent!=='â Live'){
         if(d2) { d2.className='sync-dot off'; d2.style.display='inline-block'; }
         if(l2) l2.textContent='Offline';
         // Auto-reconnect after 5s
@@ -939,7 +939,7 @@ function setSyncStatus(ok){
   }
 }
 
-// ── FIREBASE LISTENERS ─────────────────────────────────
+// ââ FIREBASE LISTENERS âââââââââââââââââââââââââââââââââ
 function startListeners(){
   if(window._listenersStarted) return;
   window._listenersStarted = true;
@@ -983,7 +983,7 @@ function refreshView(){
   if(currentAdminTab==='helpers') renderAbsences();
 }
 
-// ── NAVIGATION ─────────────────────────────────────────
+// ââ NAVIGATION âââââââââââââââââââââââââââââââââââââââââ
 function goLanding(){
   stopLiveClock();
   currentHelper=null;
@@ -1040,7 +1040,7 @@ function hTab(name,btn){
 }
 window.hTab=hTab;
 
-// ── HELPER SELECT ──────────────────────────────────────
+// ââ HELPER SELECT ââââââââââââââââââââââââââââââââââââââ
 function showHelperModal(){
   // Reset to loading state in case helpers not loaded yet
   var loading = document.getElementById('helper-sel-loading');
@@ -1084,7 +1084,7 @@ function selectHelper(){
 window.selectHelper=selectHelper;
 window.closeModal=closeModal;
 
-// ── HELPER VIEW ────────────────────────────────────────
+// ââ HELPER VIEW ââââââââââââââââââââââââââââââââââââââââ
 function openHelperView(hid){
   localStorage.setItem('wl_session','helper:'+hid);
   // Sign in anonymously so Firestore rules can identify the session
@@ -1110,7 +1110,7 @@ function updateHelperStats(){
   if(!currentHelper) return;
   var h=hById(currentHelper.id)||currentHelper; currentHelper=h;
   var open=getOpen(h.id);
-  document.getElementById('helper-live-badge').innerHTML=open?'<span style="background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite">● LIVE</span>':'';
+  document.getElementById('helper-live-badge').innerHTML=open?'<span style="background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite">â LIVE</span>':'';
   // Project selector
   var wrap=document.getElementById('proj-selector-wrap'), sel=document.getElementById('clock-proj-select');
   if(!open){
@@ -1151,11 +1151,11 @@ function toggleClock(){
     btn.disabled=false;
     if(open){
       db.collection('entries').doc(open.id).update({endTime:new Date().toISOString(),clockOutLocation:loc||null});
-      showToast(loc?'Clocked out! 📍':'Clocked out! ✅');
+      showToast(loc?'Clocked out! ð':'Clocked out! â');
     } else {
       var projId=document.getElementById('clock-proj-select').value||null;
       db.collection('entries').add({helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:projId});
-      showToast(loc?'Clocked in! 📍':'Clocked in! ⏱');
+      showToast(loc?'Clocked in! ð':'Clocked in! â±');
     }
   });
 }
@@ -1205,7 +1205,7 @@ function renderHelperHistory(){
     var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
     var totalPay = regPay + otPay;
     var weEnd = new Date(ws); weEnd.setDate(weEnd.getDate()+6);
-    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' â '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
     var rows = wEnts.map(function(e){
       var mins = gMin(e);
@@ -1216,8 +1216,8 @@ function renderHelperHistory(){
           '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
           '<div style="color:var(--muted);margin-top:1px">'+
             new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
-            ' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
-            (proj?' · <span style="color:var(--green);font-weight:600">'+proj.name+'</span>':'')+(e.note?' · '+e.note:'')+
+            ' â '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
+            (proj?' Â· <span style="color:var(--green);font-weight:600">'+proj.name+'</span>':'')+(e.note?' Â· '+e.note:'')+
           '</div>'+
         '</div>'+
         '<div style="text-align:right;flex-shrink:0;margin-left:10px">'+
@@ -1231,7 +1231,7 @@ function renderHelperHistory(){
       // Week header
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fdf9">'+
         '<div>'+
-          '<div style="font-weight:800;font-size:13px">📅 '+wLabel+'</div>'+
+          '<div style="font-weight:800;font-size:13px">ð '+wLabel+'</div>'+
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+wEnts.length+' entr'+(wEnts.length===1?'y':'ies')+'</div>'+
         '</div>'+
         '<div style="text-align:right">'+
@@ -1259,15 +1259,15 @@ function renderHelperJobs(){
   list.innerHTML=myP.map(function(p){
     var myMin=entries.filter(function(e){return e.helperId===currentHelper.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
     var stCol=p.status==='active'?'var(--green)':p.status==='completed'?'var(--amber)':'var(--muted)';
-    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+p.status+'</span></div>';
+    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">ð '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' â '+parseLocalDate(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+p.status+'</span></div>';
     html+='<div style="background:#f0f8f0;border-radius:8px;padding:10px;text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(myMin)+'</div><div style="font-size:10px;color:var(--muted)">MY HOURS</div></div>';
     // Photo section
     var projPhotos=projectPhotos.filter(function(ph){return ph.projectId===p.id;});
-    html+='<div style="margin-top:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
+    html+='<div style="margin-top:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">ð¸ PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
     html+='<select id="hphcat-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"><option>Incident</option><option>Progress</option><option>Material Delivered</option><option>Completion</option></select>';
     html+='<input id="hphnote-'+p.id+'" placeholder="Note" style="flex:1;min-width:80px;background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"/>';
-    html+='<button onclick="addPhoto(\''+p.id+'\',true)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">📷</button></div>';
+    html+='<button onclick="addPhoto(\''+p.id+'\',true)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">ð·</button></div>';
     if(projPhotos.length){html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+projPhotos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="openPhoto(\''+ph.id+'\')"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'</div></div>';}).join('')+'</div>';}
     else{html+='<div style="color:var(--muted);font-size:12px">No photos yet.</div>';}
     html+='</div></div>';
@@ -1284,8 +1284,8 @@ function renderHelperPay(){
   if(earnEl){
     earnEl.innerHTML=fmtC(pay.totalPay)+
       '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.8;font-family:var(--font-m)">'+
-      'Regular: '+fmtD(pay.regMins)+' × $'+h.rate+'/hr = '+fmtC(pay.regPay)+
-      (pay.otMins>0?'<br><span style="color:#d97706">Overtime: '+fmtD(pay.otMins)+' × $'+(h.rate*1.5).toFixed(2)+'/hr = '+fmtC(pay.otPay)+'</span>':'')+
+      'Regular: '+fmtD(pay.regMins)+' Ã $'+h.rate+'/hr = '+fmtC(pay.regPay)+
+      (pay.otMins>0?'<br><span style="color:#d97706">Overtime: '+fmtD(pay.otMins)+' Ã $'+(h.rate*1.5).toFixed(2)+'/hr = '+fmtC(pay.otPay)+'</span>':'')+
       '</div>';
   }
   document.getElementById('mypay-paid').textContent=fmtC(paid);
@@ -1297,11 +1297,11 @@ function renderHelperPay(){
   list.innerHTML=myP.map(function(p){return '<div class="entry-row"><div style="flex:1"><div style="font-weight:600">'+parseLocalDate(p.date).toLocaleDateString()+'</div><div class="entry-meta">'+(p.note||'Payment')+'</div></div><div style="font-family:var(--font-d);font-size:14px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div></div>';}).join('');
 }
 
-// ── DASHBOARD ─────────────────────────────────────────
+// ââ DASHBOARD âââââââââââââââââââââââââââââââââââââââââ
 function renderDashboard(){
   var ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
   var lbl=document.getElementById('dash-week-lbl');
-  if(lbl) lbl.innerHTML='Dashboard <span style="font-size:11px;color:var(--muted);font-family:var(--font-m);font-weight:400;margin-left:6px">📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>';
+  if(lbl) lbl.innerHTML='Dashboard <span style="font-size:11px;color:var(--muted);font-family:var(--font-m);font-weight:400;margin-left:6px">ð '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' â '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>';
 
   // No-project alert
   var alert=document.getElementById('no-proj-alert');
@@ -1310,7 +1310,7 @@ function renderDashboard(){
     if(noProj.length>0){
       var ap=projects.filter(function(p){return p.status==='active';});
       var opts='<option value="">Assign project...</option>'+ap.map(function(p){return '<option value="'+p.id+'">'+p.name+'</option>';}).join('');
-      alert.innerHTML='<div class="no-proj-alert"><div style="font-family:var(--font-d);font-weight:800;color:#92400e;margin-bottom:8px">⚠️ '+noProj.length+' helper(s) working without a project!</div>'+noProj.map(function(e){var h=hById(e.helperId); var mins=Math.round((Date.now()-new Date(e.startTime))/60000); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f59e0b33;flex-wrap:wrap;gap:6px"><span style="font-size:13px;color:#92400e"><strong>'+(h?h.name:'?')+'</strong> · '+Math.floor(mins/60)+'h '+p2(mins%60)+'m</span><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid var(--amber);border-radius:6px;padding:4px 8px;font-size:11px;color:#92400e">'+opts+'</select></div>';}).join('')+'</div>';
+      alert.innerHTML='<div class="no-proj-alert"><div style="font-family:var(--font-d);font-weight:800;color:#92400e;margin-bottom:8px">â ï¸ '+noProj.length+' helper(s) working without a project!</div>'+noProj.map(function(e){var h=hById(e.helperId); var mins=Math.round((Date.now()-new Date(e.startTime))/60000); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f59e0b33;flex-wrap:wrap;gap:6px"><span style="font-size:13px;color:#92400e"><strong>'+(h?h.name:'?')+'</strong> Â· '+Math.floor(mins/60)+'h '+p2(mins%60)+'m</span><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid var(--amber);border-radius:6px;padding:4px 8px;font-size:11px;color:#92400e">'+opts+'</select></div>';}).join('')+'</div>';
     } else { alert.innerHTML=''; }
   }
 
@@ -1319,12 +1319,12 @@ function renderDashboard(){
   grid.innerHTML=helpers.map(function(h){
     var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcCurrentWeekPay(h.id,h.rate), weekEarned=wpay.totalPay||0, cl=isClocked(h.id);
     return '<div class="hcard'+(cl?' live':'')+'">'+
-      (cl?'<span class="live-badge">● LIVE</span>':'')+
+      (cl?'<span class="live-badge">â LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
       '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
-      '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
+      '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">ð Copy link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
       '</div></div>';
   }).join('');
@@ -1332,13 +1332,13 @@ function renderDashboard(){
   var recent=document.getElementById('dash-recent');
   var rec=entries.filter(function(e){return e.endTime;}).slice(0,8);
   recent.innerHTML=!rec.length?'<div style="color:var(--muted);font-size:13px">No activity yet.</div>':
-    rec.map(function(e){var h=hById(e.helperId); return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span><strong>'+(h?h.name:'?')+'</strong> · '+new Date(e.startTime).toLocaleDateString()+' '+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'–'+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span><span style="color:var(--green);font-family:var(--font-d);font-weight:700">'+fmtD(gMin(e))+'</span></div>';}).join('');
+    rec.map(function(e){var h=hById(e.helperId); return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span><strong>'+(h?h.name:'?')+'</strong> Â· '+new Date(e.startTime).toLocaleDateString()+' '+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'â'+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span><span style="color:var(--green);font-family:var(--font-d);font-weight:700">'+fmtD(gMin(e))+'</span></div>';}).join('');
 }
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 
-// ── HELPERS LIST ───────────────────────────────────────
+// ââ HELPERS LIST âââââââââââââââââââââââââââââââââââââââ
 function addHelper(){
   var name=document.getElementById('nh-name').value.trim();
   var rate=parseFloat(document.getElementById('nh-rate').value);
@@ -1356,7 +1356,7 @@ function renderHelpersList(){
   if(!helpers.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No helpers yet.</div>'; return;}
   el.innerHTML=helpers.map(function(h){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">'+
-      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">$'+h.rate+'/hr</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy helper link</div></div>'+
+      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">$'+h.rate+'/hr</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">ð Copy helper link</div></div>'+
       '<button class="btn sm ghost" onclick="openHelperViewAdmin(\''+h.id+'\')">Preview</button>'+
       '<button class="btn sm ghost" style="color:var(--red);border-color:#fcc" onclick="promptDeleteHelper(\''+h.id+'\')">Remove</button>'+
       '</div>';
@@ -1365,7 +1365,7 @@ function renderHelpersList(){
 function openHelperViewAdmin(id){
   var h=hById(id); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
-  // Do NOT save session or sign in anonymously — admin stays as admin
+  // Do NOT save session or sign in anonymously â admin stays as admin
   document.getElementById('helper-name-display').textContent=h.name;
   document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('active',i===0);});
   document.querySelectorAll('.hpanel').forEach(function(p,i){p.classList.toggle('active',i===0);});
@@ -1392,7 +1392,7 @@ function confirmDeleteHelper(){
 }
 window.confirmDeleteHelper=confirmDeleteHelper;
 
-// ── ENTRIES ────────────────────────────────────────────
+// ââ ENTRIES ââââââââââââââââââââââââââââââââââââââââââââ
 var currentReport = 'entries';
 function switchReport(panel, btn){
   currentReport = panel;
@@ -1421,7 +1421,7 @@ function getEntriesDateRange(){
   if(adminRange==='current-week'){
     start=weekStart();
     var ws=weekStart(), we=new Date(ws); we.setDate(ws.getDate()+6);
-    lbl='📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    lbl='ð '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' â '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   } else if(adminRange==='month'){
     start=new Date(now.getFullYear(),now.getMonth(),1);
     lbl=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -1459,8 +1459,8 @@ function renderEntriesList(){
     html+='<div data-hid="'+h.id+'" onclick="toggleHelperEntries(this.dataset.hid)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none">';
     html+='<div style="width:38px;height:38px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>';
     html+='<div style="flex:1"><div style="font-family:var(--font-d);font-weight:800;font-size:14px">'+h.name+'</div>';
-    html+='<div style="font-size:11px;color:var(--muted)">'+hEnts.length+' entr'+(hEnts.length>1?'ies':'y')+' · '+fmtD(totalM)+' · '+fmtC(totalPay)+'</div></div>';
-    html+='<span id="hent-arrow-'+h.id+'" style="color:var(--muted);font-size:16px">▼</span>';
+    html+='<div style="font-size:11px;color:var(--muted)">'+hEnts.length+' entr'+(hEnts.length>1?'ies':'y')+' Â· '+fmtD(totalM)+' Â· '+fmtC(totalPay)+'</div></div>';
+    html+='<span id="hent-arrow-'+h.id+'" style="color:var(--muted);font-size:16px">â¼</span>';
     html+='</div>';
 
     // Entries - collapsed by default
@@ -1472,20 +1472,20 @@ function renderEntriesList(){
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
       html+='<div style="font-size:12px;font-weight:700">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>';
-      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div>';
+      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">â</button></div>';
       html+='</div>';
       html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
       html+='<div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px 12px">';
       html+='<div style="font-size:10px;font-weight:700;color:#666;margin-bottom:2px">CLOCKED IN</div>';
       html+='<div style="font-size:18px;font-weight:800;color:var(--green)">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</div>';
-      if(e.clockInLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">📍 '+e.clockInLocation.lat.toFixed(4)+', '+e.clockInLocation.lng.toFixed(4)+'</div>';
+      if(e.clockInLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">ð '+e.clockInLocation.lat.toFixed(4)+', '+e.clockInLocation.lng.toFixed(4)+'</div>';
       else html+='<div style="font-size:10px;color:#ccc;margin-top:3px">No location</div>';
       html+='</div>';
-      html+='<div style="display:flex;align-items:center;color:#ccc;font-size:18px">→</div>';
+      html+='<div style="display:flex;align-items:center;color:#ccc;font-size:18px">â</div>';
       html+='<div style="flex:1;background:#fff5f5;border-radius:10px;padding:10px 12px">';
       html+='<div style="font-size:10px;font-weight:700;color:#666;margin-bottom:2px">CLOCKED OUT</div>';
       html+='<div style="font-size:18px;font-weight:800;color:var(--red)">'+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</div>';
-      if(e.clockOutLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">📍 '+e.clockOutLocation.lat.toFixed(4)+', '+e.clockOutLocation.lng.toFixed(4)+'</div>';
+      if(e.clockOutLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">ð '+e.clockOutLocation.lat.toFixed(4)+', '+e.clockOutLocation.lng.toFixed(4)+'</div>';
       else html+='<div style="font-size:10px;color:#ccc;margin-top:3px">No location</div>';
       html+='</div>';
       html+='</div>';
@@ -1563,7 +1563,7 @@ function toggleHelperEntries(hid){
   if(el){
     var open=el.style.display!=='none';
     el.style.display=open?'none':'block';
-    if(arrow) arrow.textContent=open?'▼':'▲';
+    if(arrow) arrow.textContent=open?'â¼':'â²';
     if(!open) setTimeout(initEntryMaps, 300);
   }
 }
@@ -1571,13 +1571,13 @@ window.toggleHelperEntries=toggleHelperEntries;
 function delEntry(id){db.collection('entries').doc(id).delete(); showToast('Entry deleted');}
 window.delEntry=delEntry;
 
-// ── SUMMARY ────────────────────────────────────────────
+// ââ SUMMARY ââââââââââââââââââââââââââââââââââââââââââââ
 var AVATAR_COLORS=['#1a6b2a','#2563eb','#dc2626','#7c3aed','#d97706','#0891b2','#be185d','#059669'];
 function getInitials(name){return name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);}
 
 function getSumRange(period){
   var now=new Date(), s, e, lbl;
-  if(period==='week'){s=weekStart(); e=new Date(s); e.setDate(s.getDate()+6); e.setHours(23,59,59,999); lbl='Week of '+s.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+e.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+  if(period==='week'){s=weekStart(); e=new Date(s); e.setDate(s.getDate()+6); e.setHours(23,59,59,999); lbl='Week of '+s.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' â '+e.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
   else if(period==='last2'){s=weekStart(); s.setDate(s.getDate()-7); e=new Date(); e.setHours(23,59,59,999); lbl='Last 2 weeks';}
   else if(period==='month'){s=new Date(now.getFullYear(),now.getMonth(),1); e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59); lbl=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});}
   else{s=new Date(2000,0,1); e=new Date(2099,0,1); lbl='All time';}
@@ -1594,7 +1594,7 @@ window.setSumPeriod=setSumPeriod;
 
 function renderSummary(){
   var range=getSumRange(sumPeriod);
-  var lblEl=document.getElementById('sum-period-lbl'); if(lblEl) lblEl.textContent='📅 '+range.lbl;
+  var lblEl=document.getElementById('sum-period-lbl'); if(lblEl) lblEl.textContent='ð '+range.lbl;
   var list=document.getElementById('sum-list'); if(!list) return;
   if(!helpers.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No helpers yet.</div>'; return;}
   var totalM=0, totalP=0;
@@ -1607,7 +1607,7 @@ function renderSummary(){
     var wp=calcPeriodPay(h.id,h.rate,range.s,range.e);
     return '<div class="sum-row"><div class="sum-avatar" style="background:'+AVATAR_COLORS[i%AVATAR_COLORS.length]+'">'+getInitials(h.name)+'</div>'+
       '<div style="flex:1"><div class="sum-name">'+h.name+'</div><div class="sum-rate">$'+h.rate+'/hr</div>'+
-      (wp.otMins>0?'<div style="font-size:10px;color:#d97706;margin-top:2px">⚡ '+fmtD(wp.otMins)+' OT</div>':'')+
+      (wp.otMins>0?'<div style="font-size:10px;color:#d97706;margin-top:2px">â¡ '+fmtD(wp.otMins)+' OT</div>':'')+
       '</div>'+
       '<div class="sum-right">'+
       '<div class="sum-hrs">'+hrs+'h '+p2(min)+'m</div>'+
@@ -1620,13 +1620,13 @@ function renderSummary(){
   if(tp) tp.textContent=fmtC(totalP);
 }
 
-// ── PAYMENTS ──────────────────────────────────────────
+// ââ PAYMENTS ââââââââââââââââââââââââââââââââââââââââââ
 function renderPayments(){
   var sel=document.getElementById('pay-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var pd=document.getElementById('pay-date'); if(pd&&!pd.value) pd.value=localDateStr();
   var el=document.getElementById('payments-list');
   if(!payments.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No payments recorded yet.</div>'; return;}
-  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+parseLocalDate(p.date).toLocaleDateString()+(p.note?' · '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
+  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+parseLocalDate(p.date).toLocaleDateString()+(p.note?' Â· '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">â</button></div>';}).join('');
 }
 function addPayment(){
   var hid=document.getElementById('pay-helper').value, amount=parseFloat(document.getElementById('pay-amount').value), date=document.getElementById('pay-date').value, note=document.getElementById('pay-note').value;
@@ -1635,20 +1635,20 @@ function addPayment(){
   if(!date) return showToast('Select a date','err');
   db.collection('payments').add({helperId:hid,amount:amount,date:date,note:note,createdAt:new Date().toISOString()});
   document.getElementById('pay-amount').value=''; document.getElementById('pay-note').value='';
-  showToast('Payment recorded! ✅');
+  showToast('Payment recorded! â');
 }
 window.addPayment=addPayment;
 function delPayment(id){db.collection('payments').doc(id).delete(); showToast('Payment deleted');}
 window.delPayment=delPayment;
 
-// ── ABSENCES ───────────────────────────────────────────
-var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
+// ââ ABSENCES âââââââââââââââââââââââââââââââââââââââââââ
+var absLabels={absent:'ð« Absent',dayoff:'ð´ Day Off',sick:'ð¤ Sick',holiday:'ð Holiday'};
 function renderAbsences(){
   var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
   var el=document.getElementById('absences-list');
   if(!absences.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No absences recorded yet.</div>'; return;}
-  el.innerHTML=absences.map(function(a){var h=hById(a.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+' <span style="font-size:12px;color:var(--muted)">'+(absLabels[a.type]||a.type)+'</span></div><div class="entry-meta">'+parseLocalDate(a.date).toLocaleDateString()+(a.note?' · '+a.note:'')+'</div></div><button data-aid="'+a.id+'" onclick="delAbsence(this.dataset.aid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
+  el.innerHTML=absences.map(function(a){var h=hById(a.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+' <span style="font-size:12px;color:var(--muted)">'+(absLabels[a.type]||a.type)+'</span></div><div class="entry-meta">'+parseLocalDate(a.date).toLocaleDateString()+(a.note?' Â· '+a.note:'')+'</div></div><button data-aid="'+a.id+'" onclick="delAbsence(this.dataset.aid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">â</button></div>';}).join('');
 }
 function addAbsence(){
   var hid=document.getElementById('abs-helper').value, type=document.getElementById('abs-type').value, date=document.getElementById('abs-date').value, note=document.getElementById('abs-note').value;
@@ -1662,18 +1662,18 @@ window.addAbsence=addAbsence;
 function delAbsence(id){db.collection('absences').doc(id).delete(); showToast('Absence deleted');}
 window.delAbsence=delAbsence;
 
-// ── PROJECTS ──────────────────────────────────────────
+// ââ PROJECTS ââââââââââââââââââââââââââââââââââââââââââ
 function toggleLaborDrop(id){
   var el=document.getElementById(id);
   var arrow=document.getElementById(id+'-arrow');
   if(!el) return;
   var open=el.style.display!=='none';
   el.style.display=open?'none':'block';
-  if(arrow) arrow.textContent=open?'▼':'▲';
+  if(arrow) arrow.textContent=open?'â¼':'â²';
 }
 window.toggleLaborDrop=toggleLaborDrop;
 
-// ── PROJECT REPORT EXPORT ──────────────────────────────
+// ââ PROJECT REPORT EXPORT ââââââââââââââââââââââââââââââ
 function exportProjectReport(pid){
   var p=projects.find(function(pr){return pr.id===pid;}); if(!p) return;
   var projEntries=entries.filter(function(e){return e.projectId===pid&&e.endTime;});
@@ -1716,12 +1716,12 @@ function exportProjectReport(pid){
       var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
       var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
       var filled=Math.round(Math.min(pct,100)/10); var empty=10-filled;
-      var bar='';for(var _b=0;_b<filled;_b++)bar+='█';for(var _e=0;_e<empty;_e++)bar+='░';
+      var bar='';for(var _b=0;_b<filled;_b++)bar+='â';for(var _e=0;_e<empty;_e++)bar+='â';
       var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
       return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td>'+
         '<td><span class="bar-screen">'+cssBar+'</span><span class="bar-print" style="font-family:monospace;font-size:11px;color:'+color+'">'+bar+' '+pct+'%</span></td></tr>';
     }
-    mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
+    mbRows=mbRow('ð«§ Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
            (function(){
              var ccGalPerSet=mb.cc.galPerSet||55; var ccBFPerSet=mb.cc.bfPerSet||4500;
              var ccGalQ=ccBFq>0?Math.round(ccBFq/ccBFPerSet*ccGalPerSet*10)/10:0;
@@ -1729,10 +1729,10 @@ function exportProjectReport(pid){
              var ccSetsU=ccGal>0?Math.round(ccGal/ccGalPerSet*100)/100:0;
              if(!ccGalQ&&!ccGal) return '';
              return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
-               '📋 Cotado: '+ccSetsQ+' sets · '+ccGalQ+' gal &nbsp;|&nbsp; '+
-               '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
+               'ð Cotado: '+ccSetsQ+' sets Â· '+ccGalQ+' gal &nbsp;|&nbsp; '+
+               'ð§ Usado: '+ccSetsU+' sets Â· '+ccGal+' gal</td></tr>';
            })()+
-           mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
+           mbRow('ð«§ Open Cell',Math.round(ocBFq),ocBFu,'BF')+
            (function(){
              var ocGalPerSet=mb.oc.galPerSet||55; var ocBFPerSet=mb.oc.bfPerSet||17000;
              var ocGalQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*ocGalPerSet*10)/10:0;
@@ -1740,14 +1740,14 @@ function exportProjectReport(pid){
              var ocSetsU=ocGal>0?Math.round(ocGal/ocGalPerSet*100)/100:0;
              if(!ocGalQ&&!ocGal) return '';
              return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
-               '📋 Cotado: '+ocSetsQ+' sets · '+ocGalQ+' gal &nbsp;|&nbsp; '+
-               '🔧 Usado: '+ocSetsU+' sets · '+ocGal+' gal</td></tr>';
+               'ð Cotado: '+ocSetsQ+' sets Â· '+ocGalQ+' gal &nbsp;|&nbsp; '+
+               'ð§ Usado: '+ocSetsU+' sets Â· '+ocGal+' gal</td></tr>';
            })()+
-           mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
-           mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
-           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
-           mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
-           mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
+           mbRow('ð¦ Cellulose',mb.celBags||0,celU,'bags')+
+           mbRow('ðª¨ Roxul',mb.roxBags||0,roxU,'bags')+
+           mbRow('ð§¶ Fiberglass',mb.fbgBags||0,fbgU,'bags')+
+           mbRow('ð¥ Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
+           mbRow('ð§± Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
   }
 
   // Labor by helper
@@ -1776,7 +1776,7 @@ function exportProjectReport(pid){
     var hd=laborByHelper[name];
     var entryRows=hd.entries.sort(function(a,b){return new Date(a.startTime)-new Date(b.startTime);}).map(function(e){
       return '<tr style="font-size:11px"><td style="padding-left:20px;color:#555">'+fmtDt(e.startTime)+'</td>'+
-        '<td style="color:#555">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</td>'+
+        '<td style="color:#555">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' â '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</td>'+
         '<td style="text-align:right;color:#555">'+fmtD2(gMin(e))+'</td><td style="text-align:right;color:#555">'+fmtC2((gMin(e)/60)*(hById(e.helperId)?hById(e.helperId).rate:0))+'</td></tr>';
     }).join('');
     return '<tr style="background:#f8fdf9"><td><strong>'+name+'</strong></td><td></td><td style="text-align:right"><strong>'+fmtD2(hd.mins)+'</strong></td><td style="text-align:right"><strong>'+fmtC2(hd.cost)+'</strong></td></tr>'+entryRows;
@@ -1811,7 +1811,7 @@ function exportProjectReport(pid){
       '<strong style="font-size:16px">'+p.name+'</strong><br>'+
       (p.client?'<span style="color:#1a6b2a;font-weight:700">'+p.client+'</span><br>':'')+
       (p.desc?p.desc+'<br>':'')+
-      fmtDt(p.start)+(p.end?' → '+fmtDt(p.end):'')+'<br>'+
+      fmtDt(p.start)+(p.end?' â '+fmtDt(p.end):'')+'<br>'+
       '<span style="background:#e8f5eb;border-radius:4px;padding:2px 8px;font-weight:700;color:#1a6b2a">'+p.status.toUpperCase()+'</span>'+
     '</div>'+
   '</div>'+
@@ -1819,41 +1819,41 @@ function exportProjectReport(pid){
   '<div class="kpi-grid">'+
     '<div class="kpi"><div class="kpi-val" style="color:#2563eb">'+fmtC2(budget)+'</div><div class="kpi-lbl" data-en="CONTRACT VALUE" data-pt="VALOR DO CONTRATO">CONTRACT VALUE</div></div>'+
     '<div class="kpi"><div class="kpi-val" style="color:#dc2626">'+fmtC2(totalCost)+'</div><div class="kpi-lbl" data-en="TOTAL COST" data-pt="CUSTO TOTAL">TOTAL COST</div></div>'+
-    '<div class="kpi"><div class="kpi-val '+(profit>=0?'profit':'loss')+'">'+fmtC2(profit)+'</div><div class="kpi-lbl" data-en="NET PROFIT" data-pt="LUCRO LÍQUIDO">NET PROFIT</div></div>'+
+    '<div class="kpi"><div class="kpi-val '+(profit>=0?'profit':'loss')+'">'+fmtC2(profit)+'</div><div class="kpi-lbl" data-en="NET PROFIT" data-pt="LUCRO LÃQUIDO">NET PROFIT</div></div>'+
     '<div class="kpi"><div class="kpi-val '+(margin>=0?'profit':'loss')+'">'+margin.toFixed(1)+'%</div><div class="kpi-lbl" data-en="MARGIN" data-pt="MARGEM">MARGIN</div></div>'+
-    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#1a6b2a">'+fmtD2(totalMins)+'</div><div style="font-size:12px;color:#888;margin-top:2px">= '+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> ('+numTeams+' <span data-en="team" data-pt="equipe'+(numTeams>1?'s':'')+'">team'+(numTeams>1?'s':'')+'</span> × '+totalPeople+' <span data-en="people" data-pt="pessoas">people</span>)</div><div class="kpi-lbl" data-en="TOTAL LABOR HOURS" data-pt="TOTAL DE HORAS">TOTAL LABOR HOURS</div></div>'+
+    '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#1a6b2a">'+fmtD2(totalMins)+'</div><div style="font-size:12px;color:#888;margin-top:2px">= '+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> ('+numTeams+' <span data-en="team" data-pt="equipe'+(numTeams>1?'s':'')+'">team'+(numTeams>1?'s':'')+'</span> Ã '+totalPeople+' <span data-en="people" data-pt="pessoas">people</span>)</div><div class="kpi-lbl" data-en="TOTAL LABOR HOURS" data-pt="TOTAL DE HORAS">TOTAL LABOR HOURS</div></div>'+
     '<div class="kpi" style="grid-column:span 2"><div class="kpi-val" style="color:#111">'+projEntries.length+'</div><div class="kpi-lbl" data-en="ENTRIES" data-pt="REGISTROS">ENTRIES</div></div>'+
   '</div>'+
 
-  '<h2 data-en="📊 P&L Summary" data-pt="📊 Resumo P&L">📊 P&L Summary</h2>'+
+  '<h2 data-en="ð P&L Summary" data-pt="ð Resumo P&L">ð P&L Summary</h2>'+
   '<table><tr><td data-en="Contract Value" data-pt="Valor do Contrato">Contract Value</td><td style="text-align:right;font-weight:700;color:#2563eb">'+fmtC2(budget)+'</td></tr>'+
-  '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
-  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> · '+numTeams+' team'+(numTeams>1?'s':'')+' × '+totalPeople+' people)</td></tr>'+
-  '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
-  '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
-  '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
+  '<tr><td data-en="Labor" data-pt="MÃ£o de Obra">Labor</td><td style="text-align:right;color:#dc2626">â '+fmtC2(laborCost)+'</td></tr>'+
+  '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> Â· '+numTeams+' team'+(numTeams>1?'s':'')+' Ã '+totalPeople+' people)</td></tr>'+
+  '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">â '+fmtC2(matCost)+'</td></tr>'+
+  '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">â '+fmtC2(overhead)+'</td></tr>'+
+  '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro LÃ­quido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
   '</table>'+
 
-  (mbRows?'<h2 data-en="🧱 Material Budget" data-pt="🧱 Orçamento de Materiais">🧱 Material Budget</h2>'+
-  '<table><tr><th data-en="Material" data-pt="Material">Material</th><th data-en="Quoted" data-pt="Cotado">Quoted</th><th data-en="Used" data-pt="Usado">Used</th><th data-en="Difference" data-pt="Diferença">Difference</th><th>%</th></tr>'+mbRows+'</table>':'')+
+  (mbRows?'<h2 data-en="ð§± Material Budget" data-pt="ð§± OrÃ§amento de Materiais">ð§± Material Budget</h2>'+
+  '<table><tr><th data-en="Material" data-pt="Material">Material</th><th data-en="Quoted" data-pt="Cotado">Quoted</th><th data-en="Used" data-pt="Usado">Used</th><th data-en="Difference" data-pt="DiferenÃ§a">Difference</th><th>%</th></tr>'+mbRows+'</table>':'')+
 
-  (laborRows?'<h2 data-en="👷 Labor Detail" data-pt="👷 Detalhe de Mão de Obra">👷 Labor Detail</h2>'+
-  '<table><tr><th data-en="Helper" data-pt="Funcionário">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+
+  (laborRows?'<h2 data-en="ð· Labor Detail" data-pt="ð· Detalhe de MÃ£o de Obra">ð· Labor Detail</h2>'+
+  '<table><tr><th data-en="Helper" data-pt="FuncionÃ¡rio">Helper</th><th data-en="Date / Time" data-pt="Data / Hora">Date / Time</th><th style="text-align:right" data-en="Hours" data-pt="Horas">Hours</th><th style="text-align:right" data-en="Cost" data-pt="Custo">Cost</th></tr>'+laborRows+
   '<tr style="background:#f8fdf9"><td colspan="2"><strong data-en="TOTAL" data-pt="TOTAL">TOTAL</strong> <span style="font-size:11px;color:#888">('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span>)</span></td><td style="text-align:right;font-weight:800;color:#1a6b2a">'+fmtD2(totalMins)+'</td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(laborCost)+'</td></tr>'+
   '</table>':'')+
 
-  (expenseRows?'<h2 data-en="📦 Expenses" data-pt="📦 Despesas">📦 Expenses</h2>'+
-  '<table><tr><th data-en="Date" data-pt="Data">Date</th><th data-en="Description" data-pt="Descrição">Description</th><th data-en="Type" data-pt="Tipo">Type</th><th style="text-align:right" data-en="Amount" data-pt="Valor">Amount</th></tr>'+expenseRows+
+  (expenseRows?'<h2 data-en="ð¦ Expenses" data-pt="ð¦ Despesas">ð¦ Expenses</h2>'+
+  '<table><tr><th data-en="Date" data-pt="Data">Date</th><th data-en="Description" data-pt="DescriÃ§Ã£o">Description</th><th data-en="Type" data-pt="Tipo">Type</th><th style="text-align:right" data-en="Amount" data-pt="Valor">Amount</th></tr>'+expenseRows+
   '<tr style="background:#fff5f5"><td colspan="3"><strong data-en="Total Expenses" data-pt="Total de Despesas">Total Expenses</strong></td><td style="text-align:right;font-weight:800;color:#dc2626">'+fmtC2(matCost)+'</td></tr></table>':'')+
 
   '<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center">'+
-  '<span data-en="Report generated by WorkLog · Green Idea Insulation" data-pt="Relatório gerado pelo WorkLog · Green Idea Insulation">Report generated by WorkLog · Green Idea Insulation</span> · '+new Date().toLocaleDateString()+'</div>'+
+  '<span data-en="Report generated by WorkLog Â· Green Idea Insulation" data-pt="RelatÃ³rio gerado pelo WorkLog Â· Green Idea Insulation">Report generated by WorkLog Â· Green Idea Insulation</span> Â· '+new Date().toLocaleDateString()+'</div>'+
 
   '<script>var lang="en";function toggleLang(){lang=lang==="en"?"pt":"en";document.querySelector(".lang-btn").textContent=lang==="en"?"PT":"EN";document.querySelectorAll("[data-en]").forEach(function(el){el.textContent=el.getAttribute("data-"+lang);});}<\/script>'+
   '</body></html>';
 
   // Add download/print button inside report
-  html=html.replace('<button class="lang-btn"','<button onclick="window.print()" style="position:fixed;top:16px;right:80px;background:#2563eb;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">🖨️ Print / PDF</button><button class="lang-btn"');
+  html=html.replace('<button class="lang-btn"','<button onclick="window.print()" style="position:fixed;top:16px;right:80px;background:#2563eb;color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">ð¨ï¸ Print / PDF</button><button class="lang-btn"');
 
   var w=window.open('','_blank');
   if(w){
@@ -1868,7 +1868,7 @@ function exportProjectReport(pid){
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){URL.revokeObjectURL(url);},5000);
   }
-  showToast('Report generated! Tap 🖨️ Print → Save as PDF 📄');
+  showToast('Report generated! Tap ð¨ï¸ Print â Save as PDF ð');
 }
 window.exportProjectReport=exportProjectReport;
 
@@ -1908,12 +1908,12 @@ function renderProjects(filter){
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">ð¢ '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">ð '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' â '+parseLocalDate(p.end).toLocaleDateString():' â ongoing')+'</div></div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
-    html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
-    html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
-    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📄</button>';
-    html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>';
+    html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>ð¢ Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>â¸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>â Done</option></select>';
+    html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">âï¸</button>';
+    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">ð</button>';
+    html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">â</button>';
     html+='</div></div>';
     // Stats 2x2
     html+='<div class="proj-stats">';
@@ -1923,7 +1923,7 @@ function renderProjects(filter){
     html+='<div class="proj-stat"><div class="proj-stat-val" style="color:'+(remaining<0?'var(--red)':'var(--blue)')+'">'+fmtC(budget>0?remaining:0)+'</div><div class="proj-stat-lbl">REMAINING</div></div>';
     html+='</div>';
     // Budget bar
-    if(budget>0) html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Budget: '+fmtC(budget)+'</span><span style="color:'+(pct>=100?'var(--red)':'var(--text)')+'">'+pct+'% used · '+fmtC(totalCost)+'</span></div><div style="background:#e0e0e0;border-radius:99px;height:6px"><div style="background:'+(pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)')+';height:6px;border-radius:99px;width:'+pct+'%"></div></div></div>';
+    if(budget>0) html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Budget: '+fmtC(budget)+'</span><span style="color:'+(pct>=100?'var(--red)':'var(--text)')+'">'+pct+'% used Â· '+fmtC(totalCost)+'</span></div><div style="background:#e0e0e0;border-radius:99px;height:6px"><div style="background:'+(pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)')+';height:6px;border-radius:99px;width:'+pct+'%"></div></div></div>';
     // P&L Section
     var overhead = p.overhead || 0;
     var profit = budget - laborCost - extraCost - overhead;
@@ -1932,7 +1932,7 @@ function renderProjects(filter){
     var isProfit = profit >= 0;
     if(budget > 0){
       html += '<div style="background:'+(isProfit?'#f0fdf4':'#fef2f2')+';border:1px solid '+(isProfit?'#16a34a33':'#dc262633')+';border-radius:12px;padding:14px;margin-bottom:14px">';
-      html += '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px;letter-spacing:.5px">📊 P&L SUMMARY</div>';
+      html += '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px;letter-spacing:.5px">ð P&L SUMMARY</div>';
       // Build labor by day breakdown
       var laborByDay={};
       projEntries.forEach(function(e){
@@ -1948,35 +1948,35 @@ function renderProjects(filter){
       var laborDays=Object.keys(laborByDay).sort(function(a,b){return new Date(a)-new Date(b);});
       var ldid='labor-drop-'+p.id;
       // Rows
-      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">💵 Contract Value</span><span style="color:#2563eb;font-weight:700">'+fmtC(budget)+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">ðµ Contract Value</span><span style="color:#2563eb;font-weight:700">'+fmtC(budget)+'</span></div>';
       // Labor row expandable
       html += '<div style="border-bottom:1px solid #e0e0e022">';
       html += '<div data-ldid="'+ldid+'" onclick="toggleLaborDrop(this.dataset.ldid)" style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;cursor:pointer;user-select:none">';
-      html += '<span style="color:#444">👷 Labor <span id="'+ldid+'-arrow" style="font-size:9px">▼</span></span>';
-      html += '<span style="color:var(--red);font-weight:700">− '+fmtC(laborCost)+'</span></div>';
+      html += '<span style="color:#444">ð· Labor <span id="'+ldid+'-arrow" style="font-size:9px">â¼</span></span>';
+      html += '<span style="color:var(--red);font-weight:700">â '+fmtC(laborCost)+'</span></div>';
       html += '<div id="'+ldid+'" style="display:none;border-radius:8px;background:rgba(0,0,0,0.03);padding:8px 10px;margin-bottom:6px">';
       if(!laborDays.length){ html += '<div style="font-size:12px;color:var(--muted)">No entries yet.</div>'; }
       else { laborDays.forEach(function(day){
         var d=laborByDay[day];
         html += '<div style="margin-bottom:7px">';
-        html += '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#333"><span>📅 '+day+'</span><span>'+fmtD(d.mins)+' · '+fmtC(d.cost)+'</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#333"><span>ð '+day+'</span><span>'+fmtD(d.mins)+' Â· '+fmtC(d.cost)+'</span></div>';
         Object.keys(d.helpers).forEach(function(hname){
           var hd=d.helpers[hname];
-          html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-left:12px"><span>'+hname+'</span><span>'+fmtD(hd.mins)+' · '+fmtC(hd.cost)+'</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-left:12px"><span>'+hname+'</span><span>'+fmtD(hd.mins)+' Â· '+fmtC(hd.cost)+'</span></div>';
         });
         html += '</div>';
       }); }
       html += '</div></div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🧱 Materials & Extras</span><span style="color:var(--red);font-weight:700">− '+fmtC(extraCost)+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">ð§± Materials & Extras</span><span style="color:var(--red);font-weight:700">â '+fmtC(extraCost)+'</span></div>';
       if(overhead > 0){
         var daysLabel='';
         if(p.ohDays&&p.ohDays.length>0){
           daysLabel=' ('+p.ohDays.length+' day'+(p.ohDays.length>1?'s':'')+')';}
         else if(p.workingDays){ daysLabel=' ('+p.workingDays+' days)'; }
-        html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">⚙️ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">− '+fmtC(overhead)+'</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">âï¸ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">â '+fmtC(overhead)+'</span></div>';
       }
       // Total
-      html += '<div style="display:flex;justify-content:space-between;font-size:15px;padding:8px 0 4px;font-family:var(--font-d);font-weight:800"><span>'+(isProfit?'🟢 Net Profit':'🔴 Net Loss')+'</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">'+( isProfit?'':'− ')+fmtC(Math.abs(profit))+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:15px;padding:8px 0 4px;font-family:var(--font-d);font-weight:800"><span>'+(isProfit?'ð¢ Net Profit':'ð´ Net Loss')+'</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">'+( isProfit?'':'â ')+fmtC(Math.abs(profit))+'</span></div>';
       // Bar
       html += '<div style="background:#e0e0e0;border-radius:99px;height:7px;margin-top:6px;overflow:hidden"><div style="height:7px;border-radius:99px;width:'+costPct+'%;background:'+(costPct>=100?'var(--red)':'#f59e0b')+'"></div></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Costs: '+costPct+'%</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">Margin: '+Math.abs(profitPct)+'%'+(isProfit?'':' (loss)')+'</span></div>';
@@ -2015,7 +2015,7 @@ function renderProjects(filter){
       var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
       if(hasMat){
         html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
-        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
+        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">ð§± MATERIAL BUDGET</div>';
 
         function matRow(label, quoted, used, unit){
           if(quoted===0&&used===0) return '';
@@ -2037,7 +2037,7 @@ function renderProjects(filter){
         }
 
         if((mb.cc&&mb.cc.sqft>0)||ccGalUsed>0){
-          var ccLabel = ccBF>0 ? matRow('🫧 Closed Cell',ccBF,ccBFUsed,'BF') : matRow('🫧 Closed Cell (sq ft)',mb.cc.sqft||0,0,'sq ft');
+          var ccLabel = ccBF>0 ? matRow('ð«§ Closed Cell',ccBF,ccBFUsed,'BF') : matRow('ð«§ Closed Cell (sq ft)',mb.cc.sqft||0,0,'sq ft');
           html+=ccLabel;
           var ccGalPerSet=mb.cc.galPerSet||55;
           var ccBFPerSet=mb.cc.bfPerSet||4500;
@@ -2045,13 +2045,13 @@ function renderProjects(filter){
           var ccSetsQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*100)/100:0;
           var ccSetsUsed=ccGalUsed>0?Math.round(ccGalUsed/ccGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ccGalQuoted>0) html+='📋 Cotado: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
-          if(ccGalUsed>0) html+='🔧 Usado: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
+          if(ccGalQuoted>0) html+='ð Cotado: '+ccSetsQuoted+' sets Â· '+ccGalQuoted+' gal<br>';
+          if(ccGalUsed>0) html+='ð§ Usado: '+ccSetsUsed+' sets Â· '+ccGalUsed+' gal';
           html+='</div>';
-          if(mb.cc.inch===0&&ccBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+          if(mb.cc.inch===0&&ccBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">â ï¸ Set thickness (inches) in project settings to calculate BF</div>';
         }
         if((mb.oc&&mb.oc.sqft>0)||ocGalUsed>0){
-          var ocLabel = ocBF>0 ? matRow('🫧 Open Cell',ocBF,ocBFUsed,'BF') : matRow('🫧 Open Cell (sq ft)',mb.oc.sqft||0,0,'sq ft');
+          var ocLabel = ocBF>0 ? matRow('ð«§ Open Cell',ocBF,ocBFUsed,'BF') : matRow('ð«§ Open Cell (sq ft)',mb.oc.sqft||0,0,'sq ft');
           html+=ocLabel;
           var ocGalPerSet=mb.oc.galPerSet||55;
           var ocBFPerSet=mb.oc.bfPerSet||17000;
@@ -2059,23 +2059,23 @@ function renderProjects(filter){
           var ocSetsQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*100)/100:0;
           var ocSetsUsed=ocGalUsed>0?Math.round(ocGalUsed/ocGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ocGalQuoted>0) html+='📋 Cotado: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
-          if(ocGalUsed>0) html+='🔧 Usado: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
+          if(ocGalQuoted>0) html+='ð Cotado: '+ocSetsQuoted+' sets Â· '+ocGalQuoted+' gal<br>';
+          if(ocGalUsed>0) html+='ð§ Usado: '+ocSetsUsed+' sets Â· '+ocGalUsed+' gal';
           html+='</div>';
-          if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
+          if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">â ï¸ Set thickness (inches) in project settings to calculate BF</div>';
         }
-        if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
-        if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
-        if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
-        if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
-        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
+        if(mb.celBags>0||celUsed>0) html+=matRow('ð¦ Cellulose',mb.celBags,celUsed,'bags');
+        if(mb.roxBags>0||roxUsed>0) html+=matRow('ðª¨ Roxul',mb.roxBags,roxUsed,'bags');
+        if(mb.fbgBags>0||fbgUsed>0) html+=matRow('ð§¶ Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        if(mb.ignSqft>0||ignUsed>0) html+=matRow('ð¥ Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
+        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('ð§± Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
       }
     }
 
     // Expenses
-    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
+    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' Â· '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">âï¸</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">â</button></div></div>';}).join('')+'</div>';
     // Add expense
     html+='<button data-pid="'+p.id+'" onclick="toggleExpForm(this.dataset.pid)" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;margin-bottom:8px">+ Add Expense</button>';
     html+='<div id="expf-'+p.id+'" style="display:none;background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">';
@@ -2083,23 +2083,23 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Description</label><input id="exd-'+p.id+'" placeholder="e.g. Lumber" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Amount ($)</label><input id="exa-'+p.id+'" type="number" placeholder="0.00" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-    html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>🧱 Materials</option><option>📦 General</option><option>🔧 Other</option></select></div>';
+    html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>ð§± Materials</option><option>ð¦ General</option><option>ð§ Other</option></select></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
     // Assigned helpers
     // Photos
-    html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
+    html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">ð¸ PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
     html+='<select id="phcat-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px"><option>Incident</option><option>Progress</option><option>Material Delivered</option><option>Completion</option></select>';
     html+='<input id="phnote-'+p.id+'" placeholder="Note (optional)" style="flex:1;min-width:100px;background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px"/>';
-    html+='<button data-pid="'+p.id+'" onclick="addPhoto(this.dataset.pid,false)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">📷 Add</button></div>';
-    if(photos.length) html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+photos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" data-photoid="'+ph.id+'" onclick="openPhoto(this.dataset.photoid)"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'<br>'+ph.uploadedBy+'</div><button data-pid="'+ph.id+'" onclick="event.stopPropagation();delPhoto(this.dataset.pid)" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#f87171;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button></div>';}).join('')+'</div>';
+    html+='<button data-pid="'+p.id+'" onclick="addPhoto(this.dataset.pid,false)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">ð· Add</button></div>';
+    if(photos.length) html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+photos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" data-photoid="'+ph.id+'" onclick="openPhoto(this.dataset.photoid)"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'<br>'+ph.uploadedBy+'</div><button data-pid="'+ph.id+'" onclick="event.stopPropagation();delPhoto(this.dataset.pid)" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#f87171;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">â</button></div>';}).join('')+'</div>';
     else html+='<div style="color:var(--muted);font-size:12px">No photos yet.</div>';
     html+='</div>';
     // History
     if(hist.length){
-      html+='<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;cursor:pointer" onclick="toggleHist(\''+p.id+'\')">📋 ASSIGNMENT HISTORY <span id="ha-'+p.id+'">▼</span></div>';
-      html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'➕ Assigned':'➖ Removed')+'</span></div><span style="color:var(--muted)">'+parseLocalDate(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
+      html+='<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;cursor:pointer" onclick="toggleHist(\''+p.id+'\')">ð ASSIGNMENT HISTORY <span id="ha-'+p.id+'">â¼</span></div>';
+      html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'â Assigned':'â Removed')+'</span></div><span style="color:var(--muted)">'+parseLocalDate(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
     }
     html+='</div>';
     return html;
@@ -2128,7 +2128,7 @@ function addProject(){
   document.getElementById('proj-ign-sqft').value=''; document.getElementById('proj-fb-sqft').value='';
   document.getElementById('proj-days-list').innerHTML=''; 
   document.getElementById('proj-overhead-preview').style.display='none';
-  showToast('Project created! 📁');
+  showToast('Project created! ð');
 }
 window.addProject=addProject;
 
@@ -2145,7 +2145,7 @@ function toggleAssign(projId,helperId){
   else{hl=hl.concat([helperId]); action='assigned';}
   db.collection('projects').doc(projId).update({helpers:hl});
   db.collection('projectHistory').add({projId:projId,helperId:helperId,helperName:h?h.name:'?',projectName:proj.name,action:action,date:new Date().toISOString()});
-  showToast(action==='assigned'?'Helper assigned! ✅':'Helper removed');
+  showToast(action==='assigned'?'Helper assigned! â':'Helper removed');
 }
 window.toggleAssign=toggleAssign;
 
@@ -2172,7 +2172,7 @@ function openEditExpense(id){
   editingExpenseId=id;
   document.getElementById('ee-desc').value=exp.desc||'';
   document.getElementById('ee-amount').value=exp.amount||'';
-  document.getElementById('ee-type').value=exp.type||'📦 General';
+  document.getElementById('ee-type').value=exp.type||'ð¦ General';
   document.getElementById('ee-date').value = exp.date ? localDateStr(parseLocalDate(exp.date)) : localDateStr();
   document.getElementById('modal-edit-expense').classList.add('open');
 }
@@ -2188,11 +2188,11 @@ function saveEditExpense(){
   if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
   db.collection('projectExpenses').doc(editingExpenseId).update({desc:desc,amount:amount,type:type,date:date});
   closeModal('modal-edit-expense');
-  showToast('Expense updated! ✅');
+  showToast('Expense updated! â');
 }
 window.saveEditExpense=saveEditExpense;
 
-function toggleHist(pid){var el=document.getElementById('hist-'+pid),ar=document.getElementById('ha-'+pid); if(el){var o=el.style.display!=='none'; el.style.display=o?'none':'block'; if(ar) ar.textContent=o?'▼':'▲';}}
+function toggleHist(pid){var el=document.getElementById('hist-'+pid),ar=document.getElementById('ha-'+pid); if(el){var o=el.style.display!=='none'; el.style.display=o?'none':'block'; if(ar) ar.textContent=o?'â¼':'â²';}}
 window.toggleHist=toggleHist;
 
 function openEditProj(id){
@@ -2248,14 +2248,14 @@ function saveEditProject(){
   };
   db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
-  showToast('Project updated! ✅');
+  showToast('Project updated! â');
 }
 window.saveEditProject=saveEditProject;
 
-function assignEntryProj(eid,pid){if(!pid) return; db.collection('entries').doc(eid).update({projectId:pid}); var p=projects.find(function(x){return x.id===pid;}); showToast('Assigned to '+(p?p.name:'project')+'! ✅');}
+function assignEntryProj(eid,pid){if(!pid) return; db.collection('entries').doc(eid).update({projectId:pid}); var p=projects.find(function(x){return x.id===pid;}); showToast('Assigned to '+(p?p.name:'project')+'! â');}
 window.assignEntryProj=assignEntryProj;
 
-// ── PHOTOS ─────────────────────────────────────────────
+// ââ PHOTOS âââââââââââââââââââââââââââââââââââââââââââââ
 function addPhoto(projId,isHelper){
   var input=document.createElement('input'); input.type='file'; input.accept='image/*';
   input.onchange=function(){
@@ -2274,7 +2274,7 @@ function addPhoto(projId,isHelper){
         var b64=c.toDataURL('image/jpeg',0.7);
         var by=isHelper?(currentHelper?currentHelper.name:'Helper'):'Admin';
         db.collection('projectPhotos').add({projectId:projId,base64:b64,category:cat,note:note,uploadedBy:by,createdAt:new Date().toISOString()});
-        showToast('Photo saved! 📸');
+        showToast('Photo saved! ð¸');
       };
       img.src=ev.target.result;
     };
@@ -2297,7 +2297,7 @@ window.openPhoto=openPhoto;
 function delPhoto(id){db.collection('projectPhotos').doc(id).delete(); showToast('Photo deleted');}
 window.delPhoto=delPhoto;
 
-// ── QUICK HOURS ────────────────────────────────────────
+// ââ QUICK HOURS ââââââââââââââââââââââââââââââââââââââââ
 function openQuickHours(hid,name){
   quickHoursHelperId=hid;
   document.getElementById('qh-title').textContent='+ Hours for '+name;
@@ -2320,14 +2320,14 @@ function saveQuickHours(){
   if(e<=s) return showToast('End must be after start','err');
   db.collection('entries').add({helperId:quickHoursHelperId,startTime:s.toISOString(),endTime:e.toISOString(),note:note||'Added by admin',type:'manual',addedByAdmin:true});
   closeModal('modal-quick-hours');
-  showToast('Hours added! ✅');
+  showToast('Hours added! â');
 }
 window.saveQuickHours=saveQuickHours;
 
-// ── CSV EXPORT ─────────────────────────────────────────
+// ââ CSV EXPORT âââââââââââââââââââââââââââââââââââââââââ
 function showDepotQR(){
   var url=location.origin+location.pathname+'?action=clockin';
-  document.getElementById('qr-title').textContent='📷 Depot Clock In QR Code';
+  document.getElementById('qr-title').textContent='ð· Depot Clock In QR Code';
   document.getElementById('qr-link').textContent=url;
   var container=document.getElementById('qr-container');
   container.innerHTML='';
@@ -2380,7 +2380,7 @@ function exportCSV(){
 }
 window.exportCSV=exportCSV;
 
-// ── ROUTING & BOOT ─────────────────────────────────────
+// ââ ROUTING & BOOT âââââââââââââââââââââââââââââââââââââ
 function checkRoute(){
   var params=new URLSearchParams(location.search);
   var hid=params.get('helper');
@@ -2420,7 +2420,7 @@ function showQRHelperModal(){
   // Override select button to do QR clock in
   var btn=document.querySelector('#modal-helper-select .btn');
   if(btn){
-    btn.textContent='📷 Clock In';
+    btn.textContent='ð· Clock In';
     btn.onclick=function(){
       var id=document.getElementById('helper-sel-dd').value;
       if(!id) return showToast('Select your name','err');
@@ -2438,7 +2438,7 @@ function showQRHelperModal(){
         } else {
           getLocation().then(function(loc){
             db.collection('entries').add({helperId:id,startTime:new Date().toISOString(),endTime:null,note:'Clock in via QR Code',type:'qrcode',clockInLocation:loc||null,projectId:null});
-            showToast('📷 Clocked in! ✅');
+            showToast('ð· Clocked in! â');
           });
         }
       },1000);
@@ -2448,7 +2448,7 @@ function showQRHelperModal(){
 }
 window.showQRHelperModal=showQRHelperModal;
 
-// ── GEOFENCING ─────────────────────────────────────────
+// ââ GEOFENCING âââââââââââââââââââââââââââââââââââââââââ
 function calcDistance(lat1,lng1,lat2,lng2){
   var R=6371000;
   var dLat=(lat2-lat1)*Math.PI/180;
@@ -2467,12 +2467,12 @@ function startGeofence(){
     var clockedOutToday=entries.some(function(e){return e.helperId===currentHelper.id&&e.endTime&&new Date(e.endTime).toDateString()===today;});
 
     if(dist<=DEPOT_RADIUS){
-      // Case 1: Clocked in but no clock out yet — remind to clock out
+      // Case 1: Clocked in but no clock out yet â remind to clock out
       if(open&&!sessionStorage.getItem('geo_reminded_out_'+currentHelper.id)){
         sessionStorage.setItem('geo_reminded_out_'+currentHelper.id,'1');
         showClockOutReminder();
       }
-      // Case 2: Not clocked in, not clocked out today — auto clock in
+      // Case 2: Not clocked in, not clocked out today â auto clock in
       if(!open&&!clockedOutToday&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
         sessionStorage.setItem('geo_clocked_'+currentHelper.id,'1');
         var loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
@@ -2486,7 +2486,7 @@ function startGeofence(){
           clockInLocation:loc,
           projectId:projId
         });
-        showToast('📍 Auto clocked in at depot!');
+        showToast('ð Auto clocked in at depot!');
       }
     }
     // Clear flags when far from depot
@@ -2514,7 +2514,7 @@ function showClockOutReminder(){
   t2.textContent='You are back at the depot with time still running.';
   msg.appendChild(t2);
   msg.textContent='';
-  btnClose.textContent='✕';
+  btnClose.textContent='â';
   btnClose.style.cssText='background:transparent;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px;opacity:.8;';
   btnClose.onclick=function(){ banner.remove(); };
   banner.appendChild(msg);
@@ -2554,7 +2554,7 @@ function addOHDayRow(prefix, date, teams){
 
   var btnMinus = document.createElement('button');
   btnMinus.type = 'button';
-  btnMinus.textContent = '−';
+  btnMinus.textContent = 'â';
   btnMinus.style.cssText = 'background:transparent;border:none;color:#1a6b2a;font-size:16px;font-weight:800;cursor:pointer;padding:0 4px';
   btnMinus.setAttribute('data-prefix', prefix);
   btnMinus.setAttribute('data-idx', idx);
@@ -2590,7 +2590,7 @@ function addOHDayRow(prefix, date, teams){
 
   var btnRemove = document.createElement('button');
   btnRemove.type = 'button';
-  btnRemove.textContent = '✕';
+  btnRemove.textContent = 'â';
   btnRemove.style.cssText = 'background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px';
   btnRemove.setAttribute('data-prefix', prefix);
   btnRemove.setAttribute('data-idx', idx);
@@ -2658,7 +2658,7 @@ function updateOHPreview(prefix){
   }
 }
 
-// ── ANALYTICS ──────────────────────────────────────────
+// ââ ANALYTICS ââââââââââââââââââââââââââââââââââââââââââ
 function updateClientSuggestions(){
   var dl = document.getElementById('client-suggestions');
   if(!dl) return;
@@ -2763,7 +2763,7 @@ function renderAnalytics(){
         '<div style="background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">'+
           '<div style="height:100%;width:'+barW+'%;background:'+barColor+';border-radius:99px;transition:width .4s"></div>'+
         '</div>'+
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue · '+fmtC(c.totalProfit)+' profit</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' Â· '+fmtC(c.totalBudget)+' revenue Â· '+fmtC(c.totalProfit)+' profit</div>'+
       '</div>';
     }).join('');
   }
@@ -2790,8 +2790,8 @@ function renderAnalytics(){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px">'+
       '<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">'+
         '<div>'+
-          '<div style="font-weight:800;font-size:15px">🏢 '+c.client+'</div>'+
-          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue</div>'+
+          '<div style="font-weight:800;font-size:15px">ð¢ '+c.client+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' Â· '+fmtC(c.totalBudget)+' revenue</div>'+
         '</div>'+
         '<div style="text-align:right">'+
           '<div style="font-size:22px;font-weight:800;color:'+marginColor+';font-family:var(--font-d)">'+margin.toFixed(1)+'%</div>'+
@@ -2810,7 +2810,7 @@ function renderAnalytics(){
 }
 window.renderAnalytics=renderAnalytics;
 
-// ── SETTINGS ───────────────────────────────────────────
+// ââ SETTINGS âââââââââââââââââââââââââââââââââââââââââââ
 function renderSettings(){
   // Populate profile
   var user = firebase.auth().currentUser;
@@ -2819,7 +2819,7 @@ function renderSettings(){
     var emailEl = document.getElementById('settings-email-display');
     var avatarEl = document.getElementById('settings-avatar');
     if(nameEl) nameEl.textContent = user.displayName || 'Admin';
-    if(emailEl) emailEl.textContent = user.email || '—';
+    if(emailEl) emailEl.textContent = user.email || 'â';
     if(avatarEl) avatarEl.textContent = (user.displayName||user.email||'A')[0].toUpperCase();
   }
   // Load saved settings
@@ -2850,9 +2850,9 @@ function renderSettingsTeam(){
       '<div style="width:40px;height:40px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr Â· '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">â Live</span>':'')+'</div>' +
       '</div>' +
-      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Rate</button>' +
+      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">âï¸ Rate</button>' +
       '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
       '</div>';
   }).join('');
@@ -2876,7 +2876,7 @@ function saveHelperRate(){
   if(isNaN(rate)||rate<0) return showToast('Enter a valid rate','err');
   db.collection('helpers').doc(editingHelperId).update({rate:rate});
   closeModal('modal-edit-helper-rate');
-  showToast('Rate updated! ✅');
+  showToast('Rate updated! â');
 }
 window.saveHelperRate = saveHelperRate;
 
@@ -2888,7 +2888,7 @@ function settingsAddHelper(){
   db.collection('helpers').add({name:name, rate:rate, createdAt:new Date().toISOString()});
   document.getElementById('set-nh-name').value = '';
   document.getElementById('set-nh-rate').value = '';
-  showToast(name+' added! ✅');
+  showToast(name+' added! â');
 }
 window.settingsAddHelper = settingsAddHelper;
 
@@ -2915,7 +2915,7 @@ function saveSettings(){
   DEPOT_RADIUS = geoRadius;
   OT_THRESHOLD_MINS = otThreshold * 60;
   OT_MULTIPLIER = otMult;
-  showToast('Settings saved! ✅');
+  showToast('Settings saved! â');
 }
 window.saveSettings=saveSettings;
 window.renderSettings=renderSettings;
@@ -2942,7 +2942,7 @@ var ADMIN_PROFILES = {
   'Soeusei13':  {name:'Rafael Gazel',  initials:'RG'}
 };
 
-// ── ADMIN PROFILE ─────────────────────────────────────
+// ââ ADMIN PROFILE âââââââââââââââââââââââââââââââââââââ
 function renderAdminProfileBadge(){
   var profile = currentAdminProfile || JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
   if(!profile) return;
@@ -3076,12 +3076,12 @@ function showInstallBanner(){
   var banner=document.createElement('div');
   banner.id='install-banner';
   banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid var(--green);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:10px;z-index:9997;font-family:Syne,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:320px;width:90%';
-  var icon=document.createElement('span'); icon.style.fontSize='22px'; icon.textContent='📲';
+  var icon=document.createElement('span'); icon.style.fontSize='22px'; icon.textContent='ð²';
   var info=document.createElement('div'); info.style.flex='1';
   info.innerHTML='<div style="font-weight:700;color:#f0f0f0;font-size:13px">Install WorkLog</div><div style="color:#888;font-size:11px;margin-top:2px">Add to home screen</div>';
   var btnI=document.createElement('button'); btnI.textContent='Install'; btnI.style.cssText='background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-family:Syne,sans-serif;font-weight:700;font-size:12px;cursor:pointer';
   btnI.onclick=function(){if(deferredPrompt){deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){deferredPrompt=null; var b=document.getElementById('install-banner'); if(b) b.remove();});}};
-  var btnC=document.createElement('button'); btnC.textContent='✕'; btnC.style.cssText='background:transparent;border:none;color:#888;font-size:18px;cursor:pointer;padding:0 4px';
+  var btnC=document.createElement('button'); btnC.textContent='â'; btnC.style.cssText='background:transparent;border:none;color:#888;font-size:18px;cursor:pointer;padding:0 4px';
   btnC.onclick=function(){var b=document.getElementById('install-banner'); if(b) b.remove();};
   banner.appendChild(icon); banner.appendChild(info); banner.appendChild(btnI); banner.appendChild(btnC);
   document.body.appendChild(banner);
@@ -3091,19 +3091,19 @@ function showInstallBanner(){
 <div id="kwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:80vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-weight:800;font-size:16px;color:#1a1a1a">📋 Expense Keywords</div>
-      <button onclick="document.getElementById('kwModal').style.display='none'" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
+      <div style="font-weight:800;font-size:16px;color:#1a1a1a">ð Expense Keywords</div>
+      <button onclick="document.getElementById('kwModal').style.display='none'" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#666">â</button>
     </div>
     <div style="font-size:12px;color:#444;line-height:2">
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🫧 Closed Cell</strong><br>"closed cell", "closedcell", "close cell", "closed-cell", "c.c.", "cc"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">💧 Open Cell</strong><br>"open cell", "opencell", "open-cell", "o.c.", "oc"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">📦 Cellulose</strong><br>"cellulose", "celulose", "open blown", "dense pack", "densepack"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🪨 Roxul / Mineral Wool</strong><br>"roxul", "roxull", "mineral wool", "mineralwool", "rockwool", "rock wool", "stone wool"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🧶 Fiberglass</strong><br>"fiberglass", "fiber glass", "fibreglass", "fg", "batt", "batts", "kraft", "unfaced", "r-13" thru "r-49"</div>
-      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🔥 Ignition Barrier</strong><br>"ignition barrier", "ignition bar", "intumescent", "ignition paint", "fire paint", "ign barrier"</div>
-      <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ð«§ Closed Cell</strong><br>"closed cell", "closedcell", "close cell", "closed-cell", "c.c.", "cc"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ð§ Open Cell</strong><br>"open cell", "opencell", "open-cell", "o.c.", "oc"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ð¦ Cellulose</strong><br>"cellulose", "celulose", "open blown", "dense pack", "densepack"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ðª¨ Roxul / Mineral Wool</strong><br>"roxul", "roxull", "mineral wool", "mineralwool", "rockwool", "rock wool", "stone wool"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ð§¶ Fiberglass</strong><br>"fiberglass", "fiber glass", "fibreglass", "fg", "batt", "batts", "kraft", "unfaced", "r-13" thru "r-49"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">ð¥ Ignition Barrier</strong><br>"ignition barrier", "ignition bar", "intumescent", "ignition paint", "fire paint", "ign barrier"</div>
+      <div><strong style="color:#1a6b2a">ð§± Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
     </div>
-    <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
+    <div style="margin-top:16px;font-size:11px;color:#888">ð¡ Use these words in your expense descriptions to automatically track material usage against your budget.</div>
   </div>
 </div>
 </body>
