@@ -2468,14 +2468,21 @@ function checkRoute(){
   if(hid){
     startListeners();
     auth.signInAnonymously().catch(function(){});
+    // Show loading screen while helpers load
+    document.getElementById('loading').style.display='flex';
     var done=false;
     var wait=setInterval(function(){
       if(helpers.length>0){
         clearInterval(wait);
+        document.getElementById('loading').style.display='none';
         if(!done){ done=true; var h=hById(hid); if(h) openHelperView(hid); else showScreen('landing'); }
       }
-    },300);
-    setTimeout(function(){clearInterval(wait); if(!done){done=true; showScreen('landing');}},10000);
+    },200);
+    setTimeout(function(){
+      clearInterval(wait);
+      document.getElementById('loading').style.display='none';
+      if(!done){done=true; showScreen('landing');}
+    },10000);
     return true;
   }
   return false;
@@ -3197,23 +3204,24 @@ if(!checkRoute()){
     renderDashboard();
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
-    // Start listeners immediately, sign in anonymously in background
     startListeners();
     auth.signInAnonymously().catch(function(){});
-    if(helpers.length>0){
-      var _h=hById(_hid);
-      if(_h) openHelperView(_hid);
-      else{localStorage.removeItem('wl_session'); showScreen('landing');}
-    } else {
-      window._pendingHelperSession=_hid;
-      showScreen('landing');
-      setTimeout(function(){
-        if(window._pendingHelperSession){
-          window._pendingHelperSession=null;
-          localStorage.removeItem('wl_session');
+    var _done=false;
+    var _wait=setInterval(function(){
+      if(helpers.length>0){
+        clearInterval(_wait);
+        if(!_done){
+          _done=true;
+          var _h=hById(_hid);
+          if(_h) openHelperView(_hid);
+          else{localStorage.removeItem('wl_session'); showScreen('landing');}
         }
-      },5000);
-    }
+      }
+    },200);
+    setTimeout(function(){
+      clearInterval(_wait);
+      if(!_done){_done=true; showScreen('landing');}
+    },10000);
   } else {
     showScreen('landing');
     // Start listeners immediately for fast helper load, then sign in anonymously
