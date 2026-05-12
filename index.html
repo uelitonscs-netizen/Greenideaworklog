@@ -118,9 +118,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
-.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:420px;}
 .modal-title{font-family:var(--font-d);font-size:17px;font-weight:800;margin-bottom:18px;}
-.modal-actions{position:sticky;bottom:-24px;background:#fff;padding:12px 0 4px;margin-top:8px;border-top:1px solid #eee;display:flex;gap:10px;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
 .modal-actions .btn{flex:1;}
 
 /* SYNC */
@@ -288,7 +288,6 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
-        <button id="rep-toggle-advances" onclick="switchReport('advances',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💵 Advances</button>
       </div>
 
       <!-- Entries panel -->
@@ -344,25 +343,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         </div>
         <div id="payments-list"></div>
       </div>
-
-      <!-- ADVANCES panel -->
-      <div id="rep-advances" style="display:none">
-        <div class="card" style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px">ADD ADVANCE / DISCOUNT</div>
-          <div class="fg"><label>Helper</label><select id="adv-helper"><option value="">-- Select --</option></select></div>
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <button id="adv-type-btn-advance" onclick="setAdvType('advance')" style="flex:1;padding:8px;border:2px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--red);color:#fff">💸 Advance</button>
-            <button id="adv-type-btn-discount" onclick="setAdvType('discount')" style="flex:1;padding:8px;border:2px solid #ccc;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">✅ Discount</button>
-          </div>
-          <input type="hidden" id="adv-type" value="advance"/>
-          <div class="fg" style="max-width:140px"><label>Amount ($)</label><input id="adv-amount" type="number" placeholder="0.00"/></div>
-          <div class="fg"><label>Date</label><input type="date" id="adv-date"/></div>
-          <div class="fg"><label>Note (optional)</label><input id="adv-note" placeholder="e.g. Cash advance May 9"/></div>
-          <button class="btn" onclick="addAdvance()">✓ Save</button>
-        </div>
-        <div id="advances-list"></div>
-      </div>
     </div>
+
 
 
     <!-- ANALYTICS -->
@@ -517,12 +499,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div style="position:relative;margin-bottom:14px">
         <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
       </div>
-      <div class="card" style="margin-bottom:18px;padding:0;overflow:hidden">
-        <button onclick="(function(){var b=document.getElementById('cpForm');var a=document.getElementById('cpArrow');var open=b.style.display==='block';b.style.display=open?'none':'block';a.textContent=open?'▼':'▲';})()" style="width:100%;background:transparent;border:none;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:var(--font-d);font-weight:700;font-size:13px;color:var(--green)">
-          <span>+ New Project</span>
-          <span id="cpArrow" style="font-size:11px;color:var(--muted)">▼</span>
-        </button>
-        <div id="cpForm" style="display:none;padding:0 16px 16px">
+      <div class="card" style="margin-bottom:18px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
         <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
         <div class="fg"><label>Description</label><input id="proj-desc" placeholder="Brief description"/></div>
@@ -565,7 +543,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           </div>
         </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
-        </div>
+      </div>
       <div id="projects-list"></div>
     </div>
 
@@ -647,11 +625,6 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:11px;color:var(--muted);margin-bottom:4px">BALANCE DUE</div>
           <div id="mypay-balance" style="font-family:var(--font-d);font-size:26px;font-weight:800">$0.00</div>
-        </div>
-        <div id="mypay-advance-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px">💸 ADVANCE OWED</div>
-          <div id="mypay-advance" style="font-family:var(--font-d);font-size:22px;font-weight:800;color:var(--red)">$0.00</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">Amount to be deducted from next payment</div>
         </div>
       </div>
       <div id="mypay-list"></div>
@@ -821,7 +794,7 @@ var _app = firebase.initializeApp({
 var db = firebase.firestore();
 
 // ── STATE ──────────────────────────────────────────────
-var helpers=[], entries=[], payments=[], absences=[], advances=[], projects=[], projectExpenses=[], projectPhotos=[], projectHistory=[];
+var helpers=[], entries=[], payments=[], absences=[], projects=[], projectExpenses=[], projectPhotos=[], projectHistory=[];
 
 // ── DEPOT LOCATION ─────────────────────────────────────
 var DEPOT_LAT = 42.2304418;
@@ -931,7 +904,7 @@ function calcPeriodPay(hid, rate, startDate, endDate){
   return {regMins:totalReg,otMins:totalOT,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
 }
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
-function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
+function hLink(h){return location.origin+location.pathname+'?helper='+h.id;}
 function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1000,7 +973,6 @@ function startListeners(){
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); renderAdvances();},function(){});
 }
 
 function refreshView(){
@@ -1070,9 +1042,9 @@ window.hTab=hTab;
 
 // ── HELPER SELECT ──────────────────────────────────────
 function showHelperModal(){
+  // Reset to loading state in case helpers not loaded yet
   var loading = document.getElementById('helper-sel-loading');
   var content = document.getElementById('helper-sel-content');
-  document.getElementById('modal-helper-select').classList.add('open');
   if(helpers.length > 0){
     if(loading) loading.style.display = 'none';
     if(content) content.style.display = 'block';
@@ -1080,21 +1052,8 @@ function showHelperModal(){
   } else {
     if(loading) loading.style.display = 'block';
     if(content) content.style.display = 'none';
-    // Poll until helpers load
-    var waited=0;
-    var poll=setInterval(function(){
-      waited+=300;
-      if(helpers.length>0){
-        clearInterval(poll);
-        if(loading) loading.style.display='none';
-        if(content) content.style.display='block';
-        populateHelperSelectDD();
-      } else if(waited>=8000){
-        clearInterval(poll);
-        if(loading) loading.textContent='⚠️ Could not load helpers. Check connection.';
-      }
-    },300);
   }
+  document.getElementById('modal-helper-select').classList.add('open');
 }
 window.showHelperModal=showHelperModal;
 
@@ -1175,12 +1134,6 @@ function updateHelperStats(){
   document.getElementById('stat-week').textContent=fmtD(wm);
   if(document.getElementById('stat-pay')) document.getElementById('stat-pay').textContent=fmtC(weekEarned);
   if(document.getElementById('stat-total')) document.getElementById('stat-total').textContent=fmtD(tm);
-  // Advance balance
-  var advBal=getAdvanceBalance(h.id);
-  var advWrap=document.getElementById('mypay-advance-wrap');
-  var advEl=document.getElementById('mypay-advance');
-  if(advWrap) advWrap.style.display=advBal>0?'block':'none';
-  if(advEl) advEl.textContent=fmtC(advBal);
 }
 
 function updateElapsed(st){var s=Math.floor((Date.now()-new Date(st))/1000); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; var el=document.getElementById('clock-elapsed'); if(el) el.textContent=p2(h)+':'+p2(m)+':'+p2(sc);}
@@ -1369,7 +1322,7 @@ function renderDashboard(){
       (cl?'<span class="live-badge">● LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
-      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span>'+(getAdvanceBalance(h.id)>0?'<br><span style="color:var(--red);font-weight:700;font-size:12px">💸 Advance: '+fmtC(getAdvanceBalance(h.id))+' owed</span>':'')+'</div>'+
+      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
       '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
@@ -1446,7 +1399,6 @@ function switchReport(panel, btn){
   document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
   document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
   document.getElementById('rep-payments').style.display = panel==='payments'?'block':'none';
-  document.getElementById('rep-advances').style.display = panel==='advances'?'block':'none';
   var be = document.getElementById('rep-toggle-entries');
   var bs = document.getElementById('rep-toggle-summary');
   var bp = document.getElementById('rep-toggle-payments');
@@ -1746,11 +1698,11 @@ function exportProjectReport(pid){
     expenses.forEach(function(e){
       var d=(e.desc||'').toLowerCase();
       var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
-      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/\bcc\b/.test(d)) ccGal+=qty;
-      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/\boc\b/.test(d)) ocGal+=qty;
+      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/^cc[\s\d]/.test(d)) ccGal+=qty;
+      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/^oc[\s\d]/.test(d)) ocGal+=qty;
       else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
       else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
-      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/^fg[\s\d]/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
       else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
@@ -1795,7 +1747,6 @@ function exportProjectReport(pid){
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
            mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
            mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
-           (mb.ignSqft>0||ignU>0?'<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">📋 Cotado: '+Math.ceil((mb.ignSqft||0)/450)+' bucket(s) &nbsp;|&nbsp; 🔧 Usado: '+Math.ceil(ignU/450)+' bucket(s)</td></tr>':'')+
            mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
   }
 
@@ -2045,15 +1996,15 @@ function renderProjects(filter){
         var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
         function matchMat(d, keywords){ for(var ki=0;ki<keywords.length;ki++){ if(d.indexOf(keywords[ki])>=0) return true; } return false; }
         // CC: closed cell, closedcell, close cell, cc (start or standalone), c.c., closed-cell
-        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/\bcc\b/.test(desc)) ccGalUsed+=qty;
+        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/^cc[\s\d]/.test(desc)||desc==='cc') ccGalUsed+=qty;
         // OC: open cell, opencell, open-cell, oc (start or standalone), o.c.
-        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/\boc\b/.test(desc)) ocGalUsed+=qty;
+        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/^oc[\s\d]/.test(desc)||desc==='oc') ocGalUsed+=qty;
         // Cellulose: cellulose, celulose, celulose, cellolose, blow-in cel, blown cel
         else if(matchMat(desc,['cellulose','celulose','cellulos','cellolose','cellulose open','open blown','open blow','dense pack','densepack','dense-pack','blown-in cel','blow cel','blown cel','cellulose blown','cellulose blow','cellulose dense','cel dense','cel open','cel blown','celulose blown','r-30 cel','r-49 cel','r-60 cel','r60 cel','r30 cel','r49 cel'])) celUsed+=qty;
         // Roxul: roxul, roxull, roxol, mineral wool, mineralwool, mineral-wool, minwool, rockwool, rock wool, rock-wool, mineral fiber, stone wool
         else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
-        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
+        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/^fg[\s\d]/.test(desc)||desc==='fg'||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
         else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=qty;
         else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
@@ -2116,12 +2067,7 @@ function renderProjects(filter){
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
-        if(mb.ignSqft>0||ignUsed>0){
-          html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
-          var ignBuckets=mb.ignSqft>0?Math.ceil(mb.ignSqft/450):0;
-          var ignBucketsUsed=ignUsed>0?Math.ceil(ignUsed/450):0;
-          if(ignBuckets>0||ignBucketsUsed>0) html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px">📋 Cotado: '+ignBuckets+' bucket'+(ignBuckets!==1?'s':'')+' &nbsp;|&nbsp; 🔧 Usado: '+ignBucketsUsed+' bucket'+(ignBucketsUsed!==1?'s':'')+'</div>';
-        }
+        if(mb.ignSqft>0||ignUsed>0) html+=matRow('🔥 Ignition Barrier',mb.ignSqft,ignUsed,'sq ft');
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
@@ -2129,13 +2075,7 @@ function renderProjects(filter){
     }
 
     // Expenses
-    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){
-      var _d=(e.desc||'').toLowerCase();
-      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run'];
-      var _matched=false;for(var _ki=0;_ki<_kws.length;_ki++){if(_d.indexOf(_kws[_ki])>=0){_matched=true;break;}}
-      if(!_matched) _matched=/\bcc\b/.test(_d)||/\boc\b/.test(_d)||/\bfg\b/.test(_d)||/r-[0-9]+/.test(_d);
-      var _warn=!_matched?'<span title="No material detected" style="background:#f59e0b;color:#000;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:4px">⚠ untracked</span>':'';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+_warn+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
+    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
     // Add expense
     html+='<button data-pid="'+p.id+'" onclick="toggleExpForm(this.dataset.pid)" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;margin-bottom:8px">+ Add Expense</button>';
     html+='<div id="expf-'+p.id+'" style="display:none;background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">';
@@ -2195,14 +2135,7 @@ window.addProject=addProject;
 function updateProjStatus(id,status){db.collection('projects').doc(id).update({status:status}); showToast('Status updated!');}
 window.updateProjStatus=updateProjStatus;
 
-function delProject(id){
-  var proj=null;
-  for(var i=0;i<projects.length;i++){if(projects[i].id===id){proj=projects[i];break;}}
-  var name=proj?proj.name:'this project';
-  document.getElementById('delProjName').textContent=name;
-  document.getElementById('delProjConfirmBtn').setAttribute('data-id',id);
-  document.getElementById('modal-del-project').classList.add('open');
-}
+function delProject(id){db.collection('projects').doc(id).delete(); showToast('Project deleted');}
 window.delProject=delProject;
 
 function toggleAssign(projId,helperId){
@@ -2467,22 +2400,14 @@ function checkRoute(){
   // Direct helper link
   if(hid){
     startListeners();
-    auth.signInAnonymously().catch(function(){});
-    // Show loading screen while helpers load
-    document.getElementById('loading').style.display='flex';
     var done=false;
     var wait=setInterval(function(){
       if(helpers.length>0){
         clearInterval(wait);
-        document.getElementById('loading').style.display='none';
         if(!done){ done=true; var h=hById(hid); if(h) openHelperView(hid); else showScreen('landing'); }
       }
-    },200);
-    setTimeout(function(){
-      clearInterval(wait);
-      document.getElementById('loading').style.display='none';
-      if(!done){done=true; showScreen('landing');}
-    },10000);
+    },300);
+    setTimeout(function(){clearInterval(wait); if(!done){done=true; showScreen('landing');}},5000);
     return true;
   }
   return false;
@@ -3090,103 +3015,15 @@ function adminLogout(){
 }
 window.adminLogout=adminLogout;
 
-// ── ADVANCES ───────────────────────────────────────────
-function setAdvType(type){
-  document.getElementById('adv-type').value=type;
-  var ab=document.getElementById('adv-type-btn-advance');
-  var db2=document.getElementById('adv-type-btn-discount');
-  if(type==='advance'){
-    ab.style.background='var(--red)';ab.style.color='#fff';ab.style.borderColor='var(--red)';
-    db2.style.background='transparent';db2.style.color='var(--muted)';db2.style.borderColor='#ccc';
-  } else {
-    db2.style.background='var(--green2)';db2.style.color='#fff';db2.style.borderColor='var(--green2)';
-    ab.style.background='transparent';ab.style.color='var(--muted)';ab.style.borderColor='#ccc';
-  }
-}
-window.setAdvType=setAdvType;
-
-function addAdvance(){
-  var hid=document.getElementById('adv-helper').value;
-  var amount=parseFloat(document.getElementById('adv-amount').value);
-  var date=document.getElementById('adv-date').value;
-  var note=document.getElementById('adv-note').value;
-  var type=document.getElementById('adv-type').value;
-  if(!hid) return showToast('Select a helper','err');
-  if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
-  if(!date) return showToast('Select a date','err');
-  db.collection('advances').add({helperId:hid,amount:amount,date:date,note:note,type:type,createdAt:new Date().toISOString()});
-  document.getElementById('adv-amount').value='';
-  document.getElementById('adv-note').value='';
-  showToast(type==='advance'?'Advance recorded! 💸':'Discount recorded! ✅');
-}
-window.addAdvance=addAdvance;
-
-function delAdvance(id){db.collection('advances').doc(id).delete(); showToast('Deleted');}
-window.delAdvance=delAdvance;
-
-function getAdvanceBalance(hid){
-  var total=0;
-  advances.forEach(function(a){
-    if(a.helperId!==hid) return;
-    if(a.type==='advance') total+=a.amount||0;
-    else total-=a.amount||0;
-  });
-  return Math.max(0,total);
-}
-
-function renderAdvances(){
-  var sel=document.getElementById('adv-helper');
-  if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option');o.value=h.id;o.textContent=h.name;sel.appendChild(o);});}
-  var ad=document.getElementById('adv-date'); if(ad&&!ad.value) ad.value=localDateStr();
-  var el=document.getElementById('advances-list'); if(!el) return;
-  if(!advances.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No advances recorded yet.</div>';return;}
-
-  // Group by helper
-  var byHelper={};
-  advances.forEach(function(a){
-    if(!byHelper[a.helperId]) byHelper[a.helperId]=[];
-    byHelper[a.helperId].push(a);
-  });
-
-  var html='';
-  Object.keys(byHelper).forEach(function(hid){
-    var h=hById(hid);
-    if(!h) return;
-    var bal=getAdvanceBalance(hid);
-    var items=byHelper[hid];
-    html+='<div class="card" style="margin-bottom:12px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-    html+='<div style="font-weight:800;font-size:14px">'+h.name+'</div>';
-    html+='<div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:'+(bal>0?'var(--red)':'var(--green2)')+'">'+fmtC(bal)+' '+(bal>0?'owed':'clear')+'</div>';
-    html+='</div>';
-    items.forEach(function(a){
-      var isAdv=a.type==='advance';
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px">';
-      html+='<div><span style="font-weight:700;color:'+(isAdv?'var(--red)':'var(--green2)')+'">'+( isAdv?'💸 Advance':'✅ Discount')+'</span>';
-      html+='<div style="font-size:11px;color:var(--muted)">'+parseLocalDate(a.date).toLocaleDateString()+(a.note?' · '+a.note:'')+'</div></div>';
-      html+='<div style="display:flex;align-items:center;gap:8px">';
-      html+='<span style="font-family:var(--font-d);font-weight:800;color:'+(isAdv?'var(--red)':'var(--green2)')+'">'+( isAdv?'-':'+' )+fmtC(a.amount)+'</span>';
-      html+='<button data-aid="'+a.id+'" onclick="delAdvance(this.dataset.aid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button>';
-      html+='</div></div>';
-    });
-    html+='</div>';
-  });
-  el.innerHTML=html;
-}
-window.renderAdvances=renderAdvances;
-
 document.getElementById('loading').style.display='none';
-// Always pre-load helpers immediately regardless of session type
-startListeners();
-auth.signInAnonymously().catch(function(){});
 if(!checkRoute()){
   var _session=localStorage.getItem('wl_session');
   if(_session==='admin'){
-    // Start listeners immediately — don't wait for auth callback
-    startListeners();
+    // Verify still authenticated
     auth.onAuthStateChanged(function(user){
       if(user){
         currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
+        startListeners();
         showScreen('admin');
         currentAdminTab='dashboard';
         renderAdminProfileBadge();
@@ -3194,34 +3031,28 @@ if(!checkRoute()){
       } else {
         localStorage.removeItem('wl_session');
         showScreen('login');
+        startListeners();
       }
     });
-    // Show admin screen immediately from session
-    currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
-    showScreen('admin');
-    currentAdminTab='dashboard';
-    renderAdminProfileBadge();
-    renderDashboard();
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
+    // Start listeners immediately, sign in anonymously in background
     startListeners();
     auth.signInAnonymously().catch(function(){});
-    var _done=false;
-    var _wait=setInterval(function(){
-      if(helpers.length>0){
-        clearInterval(_wait);
-        if(!_done){
-          _done=true;
-          var _h=hById(_hid);
-          if(_h) openHelperView(_hid);
-          else{localStorage.removeItem('wl_session'); showScreen('landing');}
+    if(helpers.length>0){
+      var _h=hById(_hid);
+      if(_h) openHelperView(_hid);
+      else{localStorage.removeItem('wl_session'); showScreen('landing');}
+    } else {
+      window._pendingHelperSession=_hid;
+      showScreen('landing');
+      setTimeout(function(){
+        if(window._pendingHelperSession){
+          window._pendingHelperSession=null;
+          localStorage.removeItem('wl_session');
         }
-      }
-    },200);
-    setTimeout(function(){
-      clearInterval(_wait);
-      if(!_done){_done=true; showScreen('landing');}
-    },10000);
+      },5000);
+    }
   } else {
     showScreen('landing');
     // Start listeners immediately for fast helper load, then sign in anonymously
@@ -3273,20 +3104,6 @@ function showInstallBanner(){
       <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
     </div>
     <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
-  </div>
-</div>
-
-<div id="modal-del-project" class="modal-overlay">
-  <div class="modal" style="max-width:340px;text-align:center">
-    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
-    <div class="modal-title" style="text-align:center">Delete Project?</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">This will permanently delete:</div>
-    <div id="delProjName" style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:16px;padding:8px;background:#fff5f5;border-radius:8px"></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:20px">All expenses, hours and photos associated with this project will be removed.</div>
-    <div class="modal-actions">
-      <button class="btn ghost" onclick="document.getElementById('modal-del-project').classList.remove('open')">Cancel</button>
-      <button id="delProjConfirmBtn" class="btn" style="background:var(--red)" onclick="(function(){var id=document.getElementById('delProjConfirmBtn').getAttribute('data-id');db.collection('projects').doc(id).delete();document.getElementById('modal-del-project').classList.remove('open');showToast('Project deleted');})()">Delete</button>
-    </div>
   </div>
 </div>
 </body>
