@@ -3169,6 +3169,9 @@ function renderAdvances(){
 window.renderAdvances=renderAdvances;
 
 document.getElementById('loading').style.display='none';
+// Always pre-load helpers immediately regardless of session type
+startListeners();
+auth.signInAnonymously().catch(function(){});
 if(!checkRoute()){
   var _session=localStorage.getItem('wl_session');
   if(_session==='admin'){
