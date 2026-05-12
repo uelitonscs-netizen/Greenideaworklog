@@ -931,7 +931,7 @@ function calcPeriodPay(hid, rate, startDate, endDate){
   return {regMins:totalReg,otMins:totalOT,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
 }
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
-function hLink(h){return location.origin+location.pathname+'?helper='+h.id;}
+function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
 function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
