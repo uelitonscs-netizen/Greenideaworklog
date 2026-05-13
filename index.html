@@ -1698,11 +1698,11 @@ function exportProjectReport(pid){
     expenses.forEach(function(e){
       var d=(e.desc||'').toLowerCase();
       var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
-      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/^cc[\s\d]/.test(d)) ccGal+=qty;
-      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/^oc[\s\d]/.test(d)) ocGal+=qty;
+      if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/\bcc\b/.test(d)) ccGal+=qty;
+      else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/\boc\b/.test(d)) ocGal+=qty;
       else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
       else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
-      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/^fg[\s\d]/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
       else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
@@ -1996,15 +1996,15 @@ function renderProjects(filter){
         var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
         function matchMat(d, keywords){ for(var ki=0;ki<keywords.length;ki++){ if(d.indexOf(keywords[ki])>=0) return true; } return false; }
         // CC: closed cell, closedcell, close cell, cc (start or standalone), c.c., closed-cell
-        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/^cc[\s\d]/.test(desc)||desc==='cc') ccGalUsed+=qty;
+        if(matchMat(desc,['closed cell','closedcell','close cell','closed-cell','closedc','c.c.'])||/\bcc\b/.test(desc)) ccGalUsed+=qty;
         // OC: open cell, opencell, open-cell, oc (start or standalone), o.c.
-        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/^oc[\s\d]/.test(desc)||desc==='oc') ocGalUsed+=qty;
+        else if(matchMat(desc,['open cell','opencell','open-cell','openc','o.c.'])||/\boc\b/.test(desc)) ocGalUsed+=qty;
         // Cellulose: cellulose, celulose, celulose, cellolose, blow-in cel, blown cel
         else if(matchMat(desc,['cellulose','celulose','cellulos','cellolose','cellulose open','open blown','open blow','dense pack','densepack','dense-pack','blown-in cel','blow cel','blown cel','cellulose blown','cellulose blow','cellulose dense','cel dense','cel open','cel blown','celulose blown','r-30 cel','r-49 cel','r-60 cel','r60 cel','r30 cel','r49 cel'])) celUsed+=qty;
         // Roxul: roxul, roxull, roxol, mineral wool, mineralwool, mineral-wool, minwool, rockwool, rock wool, rock-wool, mineral fiber, stone wool
         else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
-        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/^fg[\s\d]/.test(desc)||desc==='fg'||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
+        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
         else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=qty;
         else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
@@ -2075,7 +2075,14 @@ function renderProjects(filter){
     }
 
     // Expenses
-    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';}).join('')+'</div>';
+    if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){
+      var _d=(e.desc||'').toLowerCase();
+      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run'];
+      var _matched=false;for(var _ki=0;_ki<_kws.length;_ki++){if(_d.indexOf(_kws[_ki])>=0){_matched=true;break;}}
+      if(!_matched) _matched=/\bcc\b/.test(_d)||/\boc\b/.test(_d)||/\bfg\b/.test(_d)||/r-[0-9]+/.test(_d);
+      var _warn=!_matched?'<span style="background:#f59e0b;color:#000;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:4px">⚠ untracked</span>':'';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="flex:1;min-width:0">'+e.desc+_warn+' <span style="color:var(--muted);font-size:11px">'+e.type+' · '+parseLocalDate(e.date).toLocaleDateString()+'</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><span style="color:var(--red);font-family:var(--font-d);font-weight:700">'+fmtC(e.amount)+'</span><button data-eid="'+e.id+'" onclick="openEditExpense(this.dataset.eid)" style="background:transparent;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;font-family:var(--font-d);font-weight:600">✏️</button><button data-eid="'+e.id+'" onclick="delExpense(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div></div>';
+    }).join('')+'</div>';
     // Add expense
     html+='<button data-pid="'+p.id+'" onclick="toggleExpForm(this.dataset.pid)" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;margin-bottom:8px">+ Add Expense</button>';
     html+='<div id="expf-'+p.id+'" style="display:none;background:#f9f9f9;border-radius:10px;padding:12px;margin-bottom:12px">';
