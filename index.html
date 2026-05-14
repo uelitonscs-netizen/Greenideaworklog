@@ -2077,7 +2077,7 @@ function renderProjects(filter){
     // Expenses
     if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){
       var _d=(e.desc||'').toLowerCase();
-      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run'];
+      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run','foam can','foam cans','insulation removal','removal'];
       var _matched=false;for(var _ki=0;_ki<_kws.length;_ki++){if(_d.indexOf(_kws[_ki])>=0){_matched=true;break;}}
       if(!_matched) _matched=/\bcc\b/.test(_d)||/\boc\b/.test(_d)||/\bfg\b/.test(_d)||/r-[0-9]+/.test(_d);
       var _warn=!_matched?'<span style="background:#f59e0b;color:#000;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:4px">⚠ untracked</span>':'';
