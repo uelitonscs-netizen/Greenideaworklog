@@ -825,7 +825,8 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="fg"><label class="fl">Product</label><div class="prod-picker" id="eiPicker"></div></div>
     <div class="frow">
       <div class="fg"><label class="fl">Square Feet</label><input class="fi" id="ei_sf" type="number" placeholder="0" min="0"></div>
-      <div class="fg"><label class="fl">Price / SF ($)</label><input class="fi" id="ei_price" type="number" placeholder="0.00" step="0.01"></div>
+      <div class="fg" id="ei_inch_wrap" style="display:none"><label class="fl">Thickness (in)</label><input class="fi" id="ei_inch" type="number" placeholder="0" step="0.5" min="0"></div>
+      <div class="fg"><label class="fl" id="ei_price_label">Price / SF ($)</label><input class="fi" id="ei_price" type="number" placeholder="0.00" step="0.01"></div>
     </div>
     <div class="hint" id="eiHint">Line total: <strong>$0.00</strong></div>
     <div class="fg" style="margin-top:10px"><label class="fl">Notes</label><input class="fi" id="ei_notes" type="text" placeholder="R-value, fire-rated..."></div>
@@ -1040,17 +1041,19 @@ var calcMode='walls';
 var currentProj=null;
 
 var DEFAULTS=[
-  {id:'p1',name:'Open-Cell Spray Foam',emoji:'💧',cat:'Spray Foam',price:1.80,desc:'R-3.7/in'},
-  {id:'p2',name:'Closed-Cell Spray Foam',emoji:'🔵',cat:'Spray Foam',price:2.80,desc:'R-6.5/in'},
-  {id:'p3',name:'Hybrid — Closed + Open Cell',emoji:'🔀',cat:'Hybrid',price:2.20,desc:'Closed cell base + open cell top'},
-  {id:'p4',name:'Blown-In Cellulose',emoji:'🌬',cat:'Blown-In',price:1.10,desc:'R-3.7/in'},
-  {id:'p5',name:'Blown-In Fiberglass',emoji:'🌀',cat:'Blown-In',price:1.20,desc:'R-2.5/in'},
-  {id:'p6',name:'Fiberglass Batt R-13',emoji:'🧱',cat:'Batt',price:0.75,desc:'R-13, 2x4'},
-  {id:'p7',name:'Fiberglass Batt R-21',emoji:'🟧',cat:'Batt',price:0.95,desc:'R-21, 2x6'},
-  {id:'p8',name:'Mineral Wool Batt',emoji:'🔥',cat:'Mineral Wool',price:2.10,desc:'Fire-rated'},
-  {id:'p9',name:'Mineral Wool Board',emoji:'🟥',cat:'Mineral Wool',price:2.50,desc:'Exterior continuous'},
-  {id:'p10',name:'Rigid EPS Board',emoji:'📦',cat:'Board / Rigid',price:1.60,desc:'R-4/in'},
-  {id:'p11',name:'Air Barrier Membrane',emoji:'🌊',cat:'Air Barrier',price:0.60,desc:'WRB layer'}
+  {id:'p1',name:'Open-Cell Spray Foam',emoji:'💧',cat:'Spray Foam',price:0.30,desc:'$0.30/inch',pricingType:'per_inch'},
+  {id:'p2',name:'Closed-Cell Spray Foam',emoji:'🔵',cat:'Spray Foam',price:1.00,desc:'$1.00/inch',pricingType:'per_inch'},
+  {id:'p3',name:'Hybrid — Closed + Open Cell',emoji:'🔀',cat:'Hybrid',price:1.00,desc:'CC $1.00/in + OC $0.30/in',pricingType:'per_inch'},
+  {id:'p4',name:'Blown-In Cellulose',emoji:'🌬',cat:'Blown-In',price:1.10,desc:'R-3.7/in',pricingType:'per_sf'},
+  {id:'p5',name:'Blown-In Fiberglass',emoji:'🌀',cat:'Blown-In',price:1.20,desc:'R-2.5/in',pricingType:'per_sf'},
+  {id:'p6',name:'Fiberglass Batt R-15',emoji:'🧶',cat:'Batt',price:1.80,desc:'R-15, 3.5"',pricingType:'per_sf'},
+  {id:'p7',name:'Fiberglass Batt R-19',emoji:'🧶',cat:'Batt',price:1.70,desc:'R-19, 6.25"',pricingType:'per_sf'},
+  {id:'p8',name:'Fiberglass Batt R-21',emoji:'🧶',cat:'Batt',price:1.90,desc:'R-21, 5.5"',pricingType:'per_sf'},
+  {id:'p9',name:'Fiberglass Batt R-30',emoji:'🧶',cat:'Batt',price:1.90,desc:'R-30, 10"',pricingType:'per_sf'},
+  {id:'p10',name:'Fiberglass Batt R-49',emoji:'🧶',cat:'Batt',price:2.90,desc:'R-49',pricingType:'per_sf'},
+  {id:'p11',name:'Mineral Wool R-15',emoji:'🪨',cat:'Mineral Wool',price:1.90,desc:'R-15, 3.5"',pricingType:'per_sf'},
+  {id:'p12',name:'Mineral Wool R-21',emoji:'🪨',cat:'Mineral Wool',price:2.90,desc:'R-21, 5.5"',pricingType:'per_sf'},
+  {id:'p13',name:'Ignition Barrier',emoji:'🔥',cat:'Air Barrier',price:1.10,desc:'$1.10/SF',pricingType:'per_sf'}
 ];
 
 // ── LAST PRICE BY TYPE ──────────────────────────────
@@ -2044,17 +2047,39 @@ function openEIModal(idx){
   document.getElementById('eiTitle').textContent=idx>=0?'Edit Item':'Add Item';
   document.getElementById('eiSaveBtn').textContent=idx>=0?'Update':'Add Item';
   eiPendPh=[];
-  if(idx>=0){var it=estItems[idx];document.getElementById('ei_name').value=it.name;document.getElementById('ei_sf').value=it.sf;document.getElementById('ei_price').value=it.price;document.getElementById('ei_notes').value=it.notes||'';eiProd=it.productId||null;eiPendPh=it.photos?it.photos.slice():[];}
-  else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
+  if(idx>=0){var it=estItems[idx];document.getElementById('ei_name').value=it.name;document.getElementById('ei_sf').value=it.sf;document.getElementById('ei_price').value=it.pricePerInch||it.price;document.getElementById('ei_inch').value=it.inches||'';document.getElementById('ei_notes').value=it.notes||'';eiProd=it.productId||null;eiPendPh=it.photos?it.photos.slice():[];}
+  else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
+  updateEIPricingUI();
   renderPicker('ei');renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
+}
+function isPerInch(){
+  var pr=getProd(eiProd);
+  return pr&&pr.pricingType==='per_inch';
 }
 function updateEIHint(){
   var sf=parseFloat(document.getElementById('ei_sf').value)||0;
   var price=parseFloat(document.getElementById('ei_price').value)||0;
-  document.getElementById('eiHint').innerHTML='Line total (w/ markup): <strong>'+fmt(sf*price*(1+cfg.markup/100))+'</strong>';
+  var total=0;
+  if(isPerInch()){
+    var inch=parseFloat(document.getElementById('ei_inch').value)||0;
+    total=sf*inch*price;
+    document.getElementById('eiHint').innerHTML='<span style="color:var(--amber);font-size:11px">'+sf+' SF × '+inch+'" × $'+price+'/in</span> = Line total: <strong>'+fmt(total*(1+cfg.markup/100))+'</strong>';
+  } else {
+    total=sf*price;
+    document.getElementById('eiHint').innerHTML='Line total (w/ markup): <strong>'+fmt(total*(1+cfg.markup/100))+'</strong>';
+  }
+}
+function updateEIPricingUI(){
+  var perInch=isPerInch();
+  var wrap=document.getElementById('ei_inch_wrap');
+  var lbl=document.getElementById('ei_price_label');
+  if(wrap) wrap.style.display=perInch?'block':'none';
+  if(lbl) lbl.textContent=perInch?'Price / inch ($)':'Price / SF ($)';
+  updateEIHint();
 }
 document.getElementById('ei_sf').addEventListener('input',updateEIHint);
 document.getElementById('ei_price').addEventListener('input',updateEIHint);
+document.getElementById('ei_inch').addEventListener('input',updateEIHint);
 document.getElementById('eiCancelBtn').addEventListener('click',function(){closeOv('eiOverlay');});
 document.getElementById('eiSaveBtn').addEventListener('click',function(){
   var name=document.getElementById('ei_name').value.trim();
@@ -2063,8 +2088,15 @@ document.getElementById('eiSaveBtn').addEventListener('click',function(){
   var notes=document.getElementById('ei_notes').value.trim();
   if(!name){toast('Add a description');return;}
   if(!sf||sf<=0){toast('Enter square feet');return;}
-  if(!price||price<=0){toast('Enter price/SF');return;}
-  var item={name:name,productId:eiProd,sf:sf,price:price,notes:notes,photos:eiPendPh.slice()};
+  if(!price||price<=0){toast('Enter price');return;}
+  var inch=0;
+  var linePrice=price;
+  if(isPerInch()){
+    inch=parseFloat(document.getElementById('ei_inch').value)||0;
+    if(!inch||inch<=0){toast('Enter thickness (inches)');return;}
+    linePrice=parseFloat((price*inch).toFixed(2));
+  }
+  var item={name:name,productId:eiProd,sf:sf,price:linePrice,pricePerInch:isPerInch()?price:0,inches:inch,notes:notes,photos:eiPendPh.slice()};
   if(editEIIdx>=0)estItems[editEIIdx]=item;else estItems.push(item);
   // Save price by area name (most reliable - works even without matType)
   if(eiProd) setLastPrice('prod_'+eiProd, price);
@@ -2136,7 +2168,7 @@ function selProd(el){
   var opts=container.querySelectorAll('.popt');
   for(var i=0;i<opts.length;i++)opts[i].className='popt';
   el.className='popt on';
-  if(mode==='ei'){var pr=getProd(pid);if(pr){document.getElementById('ei_price').value=pr.price;updateEIHint();}}
+  if(mode==='ei'){var pr=getProd(pid);if(pr){document.getElementById('ei_price').value=pr.price;updateEIPricingUI();}}
 }
 
 // PHOTOS
@@ -2517,7 +2549,7 @@ function openProdModal(idx){
   document.getElementById('prodSaveBtn').textContent=idx>=0?'Update':'Save';
   document.getElementById('prodDelRow').style.display=idx>=0?'block':'none';
   if(idx>=0){var pr=products[idx];document.getElementById('p_name').value=pr.name;document.getElementById('p_emoji').value=pr.emoji;document.getElementById('p_price').value=pr.price;document.getElementById('p_cat').value=pr.cat;document.getElementById('p_desc').value=pr.desc||'';}
-  else{document.getElementById('p_name').value='';document.getElementById('p_emoji').value='📦';document.getElementById('p_price').value='';document.getElementById('p_cat').value='Other';document.getElementById('p_desc').value='';}
+  else{document.getElementById('p_name').value='';document.getElementById('p_emoji').value='📦';document.getElementById('p_price').value='0';document.getElementById('p_cat').value='Other';document.getElementById('p_desc').value='';}
   openOv('prodOverlay');
 }
 document.getElementById('prodCancelBtn').addEventListener('click',function(){closeOv('prodOverlay');});
