@@ -686,7 +686,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7d8590;margin-bottom:3px">Total SF</div>
         <div class="calc-sf" id="calcSF">0</div>
       </div>
-      <div class="calc-bd" id="calcBD" style="font-size:11px;color:#7d8590;text-align:right;font-family:ui-monospace,monospace;line-height:1.8;max-width:160px"></div>
+      <div class="calc-bd" id="calcBD" style="font-size:11px;color:#7d8590;text-align:right;font-family:ui-monospace,monospace;line-height:1.8;max-width:160px;white-space:pre-wrap"></div>
     </div>
 
     <!-- Multiplier toggle -->
@@ -1635,9 +1635,9 @@ function renderRows(mode){
   for(var i=0;i<rows.length;i++){
     h+='<div class="mrow" data-row="'+i+'" data-mode="'+mode+'">';
     h+='<div class="mrow-l"><div class="mrow-lbl">'+(i===0?'Length (ft)':'')+'</div>';
-    h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px" oninput="updateRow(this)"></div>';
+    h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px"></div>';
     h+='<div class="mrow-h"><div class="mrow-lbl">'+(i===0?(mode==='wall'?'Height':'Width'):'')+'</div>';
-    h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px" oninput="updateRow(this)"></div>';
+    h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px"></div>';
     if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" onclick="deleteRow(this)">×</button>';
     h+='</div>';
   }
@@ -1676,6 +1676,20 @@ function setMMode(mode,btn){
   recalcSF();
 }
 
+
+// Samsung-safe event delegation handler for measurement rows
+var _rowInputHandler = function(e){
+  var el = e.target;
+  if(!el || el.tagName !== 'INPUT') return;
+  var row = parseInt(el.getAttribute('data-row'));
+  var field = el.getAttribute('data-field');
+  var m = el.getAttribute('data-mode');
+  if(isNaN(row) || !field || !m) return;
+  var arr = m === 'wall' ? wallRows : floorRows;
+  if(arr[row]) arr[row][field] = el.value;
+  recalcSF();
+};
+
 function initCalc(){
   calcMode='walls';
   wallRows=[{l:'',h:''}];
@@ -1688,6 +1702,19 @@ function initCalc(){
   document.getElementById('mManual').style.display='none';
   renderRows('wall');
   renderRows('floor');
+  // Event delegation for measurement inputs (Samsung Android safe)
+  (function(){
+    var wc=document.getElementById('mRowsContainer');
+    var fc=document.getElementById('mFloorRowsContainer');
+    if(wc){
+      wc.removeEventListener('input',_rowInputHandler);
+      wc.addEventListener('input',_rowInputHandler);
+    }
+    if(fc){
+      fc.removeEventListener('input',_rowInputHandler);
+      fc.addEventListener('input',_rowInputHandler);
+    }
+  })();
   var m=document.getElementById('fa_sf_m');if(m)m.value='';
   document.getElementById('calcSF').textContent='0';
   document.getElementById('calcBD').textContent='';
