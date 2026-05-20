@@ -155,6 +155,26 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
 .form-row .fg{flex:1;min-width:120px;}
 
 /* PROJECT CARD */
+
+.proj-filter-pill{
+  flex:none;
+  background:#f1f5f9;
+  border:1.5px solid #e2e8f0;
+  border-radius:20px;
+  padding:6px 14px;
+  font-size:12px;
+  font-weight:700;
+  color:#64748b;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s;
+  font-family:var(--font);
+}
+.proj-filter-pill.active{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+}
 .proj-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
 .proj-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
 .proj-stat{background:#f5f5f5;border-radius:8px;padding:10px;text-align:center;}
@@ -543,6 +563,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
           </div>
         </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
+      </div>
+      <!-- Status filter pills -->
+      <div id="proj-filter-bar" style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px">
+        <button class="proj-filter-pill active" data-filter="all"    onclick="setProjFilter('all',this)">All</button>
+        <button class="proj-filter-pill"         data-filter="active"  onclick="setProjFilter('active',this)">🟢 Active</button>
+        <button class="proj-filter-pill"         data-filter="paused"  onclick="setProjFilter('paused',this)">⏸ Paused</button>
+        <button class="proj-filter-pill"         data-filter="completed" onclick="setProjFilter('completed',this)">✓ Done</button>
       </div>
       <div id="projects-list"></div>
     </div>
@@ -1901,6 +1928,13 @@ function renderProjects(filter){
     if(diff===0) return (b.createdAt||'') > (a.createdAt||'') ? 1 : -1;
     return diff;
   });
+  // Update pill counts
+  if(typeof updateProjPillCounts==='function') updateProjPillCounts();
+  // Filter by status pill
+  var statusF = (typeof _projStatusFilter !== 'undefined') ? _projStatusFilter : 'all';
+  if(statusF && statusF !== 'all'){
+    sorted = sorted.filter(function(p){ return (p.status||'active') === statusF; });
+  }
   // Filter by search
   var q = (filter || (document.getElementById('proj-search')?document.getElementById('proj-search').value:'')||'').toLowerCase().trim();
   if(q) sorted = sorted.filter(function(p){ return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.desc||'').toLowerCase().indexOf(q)>=0 || (p.client||'').toLowerCase().indexOf(q)>=0; });
@@ -2390,10 +2424,39 @@ document.addEventListener('click', function(e){
   }
 });
 
+var _projStatusFilter = 'all';
+
+function setProjFilter(status, btn) {
+  _projStatusFilter = status;
+  // Update pill active states
+  var pills = document.querySelectorAll('.proj-filter-pill');
+  for (var i = 0; i < pills.length; i++) {
+    pills[i].className = 'proj-filter-pill' + (pills[i].getAttribute('data-filter') === status ? ' active' : '');
+  }
+  renderProjects();
+}
+window.setProjFilter = setProjFilter;
+
 function filterProjects(){
   renderProjects();
 }
 window.filterProjects=filterProjects;
+
+function updateProjPillCounts(){
+  var counts = {all:0, active:0, paused:0, completed:0};
+  for (var i = 0; i < projects.length; i++) {
+    counts.all++;
+    var s = projects[i].status || 'active';
+    if (counts[s] !== undefined) counts[s]++;
+  }
+  var labels = {all:'All', active:'🟢 Active', paused:'⏸ Paused', completed:'✓ Done'};
+  var pills = document.querySelectorAll('.proj-filter-pill');
+  for (var j = 0; j < pills.length; j++) {
+    var f = pills[j].getAttribute('data-filter');
+    pills[j].textContent = labels[f] + (counts[f] > 0 ? ' (' + counts[f] + ')' : '');
+  }
+}
+window.updateProjPillCounts = updateProjPillCounts;
 
 function renderQR(){
   var qrDiv = document.getElementById('depot-qr');
