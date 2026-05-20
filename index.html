@@ -519,7 +519,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
       <div style="position:relative;margin-bottom:14px">
         <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
       </div>
-      <div class="card" style="margin-bottom:18px">
+      <div style="margin-bottom:18px">
+        <button id="proj-create-toggle" onclick="toggleCreateProj()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:#1a6b2a;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <span>＋ New Project</span>
+          <span id="proj-create-arrow" style="font-size:16px;transition:transform .2s">▼</span>
+        </button>
+        <div id="proj-create-form" style="display:none;padding-top:8px">
+        <div class="card" style="margin-bottom:18px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">CREATE PROJECT</div>
         <div class="fg"><label>Name</label><input id="proj-name" placeholder="e.g. Johnson Insulation"/></div>
         <div class="fg"><label>Client / Company</label><input id="proj-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
@@ -564,10 +570,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         </div>
         <button class="btn" onclick="addProject()">+ Create Project</button>
       </div>
+        </div>
+      </div>
       <!-- Status filter pills -->
       <div id="proj-filter-bar" style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px">
-        <button class="proj-filter-pill active" data-filter="all"    onclick="setProjFilter('all',this)">All</button>
-        <button class="proj-filter-pill"         data-filter="active"  onclick="setProjFilter('active',this)">🟢 Active</button>
+        <button class="proj-filter-pill"         data-filter="all"    onclick="setProjFilter('all',this)">All</button>
+        <button class="proj-filter-pill active"  data-filter="active"  onclick="setProjFilter('active',this)">🟢 Active</button>
         <button class="proj-filter-pill"         data-filter="paused"  onclick="setProjFilter('paused',this)">⏸ Paused</button>
         <button class="proj-filter-pill"         data-filter="completed" onclick="setProjFilter('completed',this)">✓ Done</button>
       </div>
@@ -2424,7 +2432,16 @@ document.addEventListener('click', function(e){
   }
 });
 
-var _projStatusFilter = 'all';
+var _projStatusFilter = 'active';
+
+function toggleCreateProj(){
+  var form = document.getElementById('proj-create-form');
+  var arrow = document.getElementById('proj-create-arrow');
+  var open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  arrow.textContent = open ? '▼' : '▲';
+}
+window.toggleCreateProj = toggleCreateProj;
 
 function setProjFilter(status, btn) {
   _projStatusFilter = status;
