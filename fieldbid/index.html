@@ -509,6 +509,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <button class="tab" id="et4">📄 Contract</button>
     <button class="tab" id="et5">🗄️ Products</button>
     <button class="tab" id="et6">⚙️ Settings</button>
+    <button class="tab" id="et7">💼 Jobs</button>
   </div>
   <div id="ep-items" class="page on">
     <div class="import-bar" id="importBar" style="display:none">
@@ -619,6 +620,15 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
         <input class="fi" type="text" id="cfgLicense" placeholder="MA Lic. #000000" style="background:#0d1117">
       </div>
     </div>
+  </div>
+</div>
+<div class="page" id="ep-jobs">
+  <div style="padding:16px 14px 8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:800;color:#7d8590;letter-spacing:.06em">SAVED JOBS</div>
+      <button id="newJobBtn" style="background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ New Job</button>
+    </div>
+    <div id="jobsList"></div>
   </div>
 </div>
 <button class="fab e" id="estFab" style="display:none">+</button>
@@ -1213,8 +1223,23 @@ document.getElementById('et3').addEventListener('click',function(){showEP('wo',t
 document.getElementById('et4').addEventListener('click',function(){showEP('contract',this);renderCtDoc();});
 document.getElementById('et5').addEventListener('click',function(){showEP('products',this);renderProds();});
 document.getElementById('et6').addEventListener('click',function(){showEP('settings',this);});
+document.getElementById('et7').addEventListener('click',function(){showEP('jobs',this);renderJobsList();});
+document.getElementById('newJobBtn').addEventListener('click',function(){
+  if(currentProj&&estItems.length){
+    appConfirm('Save current job and start new?',function(){
+      saveProjAreas();
+      doNewEst();
+      showEP('items',document.getElementById('et1'));
+      document.getElementById('et1').className='tab on';
+    });
+  } else {
+    doNewEst();
+    showEP('items',document.getElementById('et1'));
+    document.getElementById('et1').className='tab on';
+  }
+});
 function showEP(id,tab){
-  var pages=['items','quote','wo','contract','products','settings'];
+  var pages=['items','quote','wo','contract','products','settings','jobs'];
   for(var i=0;i<pages.length;i++)document.getElementById('ep-'+pages[i]).className='page';
   document.getElementById('ep-'+id).className='page on';
   var tabs=document.querySelectorAll('#est-app .tab');
@@ -1265,7 +1290,7 @@ function deleteProjById(pid){
     projs=projs.filter(function(p){return p.id!==pid;});
     saveProjs(projs);
     if(currentProj&&currentProj.id===pid){currentProj=projs.length?projs[0]:null;fieldAreas=currentProj&&currentProj.areas?JSON.parse(JSON.stringify(currentProj.areas)):[];window.fieldAreas=fieldAreas;}
-    renderProjList();updateProjHeader();renderFA();renderFWO();toast('🗑 Deleted');
+    renderProjList();if(typeof renderJobsList==='function')renderJobsList();updateProjHeader();renderFA();renderFWO();toast('🗑 Deleted');
   });
 }
 window.deleteProjById=deleteProjById;
@@ -1676,6 +1701,99 @@ function setMMode(mode,btn){
   recalcSF();
 }
 
+
+function renderJobsList(){
+  var projs = loadProjs();
+  var container = document.getElementById('jobsList');
+  if(!projs.length){
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4d5560;font-size:13px">No saved jobs yet.<br>Create a project to get started.</div>';
+    return;
+  }
+  var h = '';
+  for(var i=0; i<projs.length; i++){
+    var p = projs[i];
+    var isActive = currentProj && currentProj.id === p.id;
+    var safeId = p.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    // Calc totals from saved project data
+    var totalSF = 0;
+    var quoteTotal = 0;
+    var areas = p.areas || [];
+    var items = p.estItems || [];
+    for(var j=0; j<areas.length; j++) totalSF += Number(areas[j].sf)||0;
+    for(var k=0; k<items.length; k++){
+      var sf=Number(items[k].sf)||0;
+      var pr=Number(items[k].price)||0;
+      var mk=Number(cfg&&cfg.markup)||0;
+      quoteTotal += sf*pr*(1+mk/100);
+    }
+    var taxRate=Number(cfg&&cfg.taxRate)||0;
+    if(taxRate>0) quoteTotal = quoteTotal*(1+taxRate/100);
+    quoteTotal = Math.round(quoteTotal);
+    var areaCount = areas.length;
+    var itemCount = items.length;
+    h += '<div style="background:'+(isActive?'#1a2f1e':'#131920')+';border:1px solid '+(isActive?'#2a6b35':'#1e2530')+';border-radius:12px;margin-bottom:10px;overflow:hidden;">';
+    // Active badge
+    if(isActive){
+      h += '<div style="background:#1a6b2a;color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 10px;">● ACTIVE</div>';
+    }
+    h += '<div style="padding:12px 14px;">';
+    // Name + date
+    h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">';
+    h += '<div style="font-size:15px;font-weight:800;color:#f0f0f0;line-height:1.2">'+esc(p.name)+'</div>';
+    h += '<div style="font-size:10px;color:#4d5560;white-space:nowrap;margin-top:2px">'+esc(p.created||'')+'</div>';
+    h += '</div>';
+    // Address
+    if(p.address){ h += '<div style="font-size:12px;color:#7d8590;margin-bottom:8px">📍 '+esc(p.address)+'</div>'; }
+    // Stats row
+    h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+    h += '<span style="background:#1e2530;border-radius:6px;padding:3px 8px;font-size:11px;color:#94a3b8">📐 '+fmtN(Math.round(totalSF))+' SF</span>';
+    h += '<span style="background:#1e2530;border-radius:6px;padding:3px 8px;font-size:11px;color:#94a3b8">'+areaCount+' area'+(areaCount!==1?'s':'')+'</span>';
+    if(quoteTotal>0){
+      h += '<span style="background:#1a3020;border:1px solid #2a6b35;border-radius:6px;padding:3px 8px;font-size:11px;color:#4ade80;font-weight:700">$'+quoteTotal.toLocaleString()+'</span>';
+    } else if(itemCount>0){
+      h += '<span style="background:#1e2530;border-radius:6px;padding:3px 8px;font-size:11px;color:#94a3b8">'+itemCount+' item'+(itemCount!==1?'s':'')+'</span>';
+    }
+    h += '</div>';
+    // Action buttons
+    h += '<div style="display:flex;gap:8px">';
+    h += '<button style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer" onclick="openJobFromList(\''+safeId+'\')">'+(isActive?'✓ Editing':'Open Job')+'</button>';
+    h += '<button style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer" onclick="deleteProjById(\''+safeId+'\')">🗑</button>';
+    h += '</div>';
+    h += '</div></div>';
+  }
+  container.innerHTML = h;
+}
+window.renderJobsList = renderJobsList;
+
+function openJobFromList(pid){
+  if(currentProj && currentProj.id === pid){
+    // Already active - just go to items tab
+    showEP('items', document.getElementById('et1'));
+    document.getElementById('et1').className = 'tab on';
+    return;
+  }
+  if(currentProj) saveProjAreas();
+  var projs = loadProjs();
+  for(var i=0; i<projs.length; i++){
+    if(projs[i].id === pid){
+      currentProj = projs[i];
+      fieldAreas = projs[i].areas ? JSON.parse(JSON.stringify(projs[i].areas)) : [];
+      window.fieldAreas = fieldAreas;
+      estItems = projs[i].estItems ? JSON.parse(JSON.stringify(projs[i].estItems)) : [];
+      window.estItems = estItems;
+      quoteInfo = projs[i].quoteInfo ? JSON.parse(JSON.stringify(projs[i].quoteInfo)) : {client:projs[i].name,address:projs[i].address||''};
+      window.quoteInfo = quoteInfo;
+      updateProjHeader();
+      renderEst();
+      renderJobsList();
+      showEP('items', document.getElementById('et1'));
+      document.getElementById('et1').className = 'tab on';
+      toast('Opened: ' + projs[i].name);
+      break;
+    }
+  }
+}
+window.openJobFromList = openJobFromList;
 
 // Samsung-safe event delegation handler for measurement rows
 var _rowInputHandler = function(e){
