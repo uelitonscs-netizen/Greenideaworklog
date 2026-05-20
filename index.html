@@ -860,8 +860,7 @@ var pendingDeleteId=null, editingProjId=null, quickHoursHelperId=null, currentAd
 var OT_THRESHOLD_MINS = 40*60;
 var OT_MULTIPLIER = 1.5;
 // Apply saved settings on boot
-(function(){
-  var saved = JSON.parse(localStorage.getItem('wl_settings')||'{}');
+function _applySettings(saved){
   if(saved.monthlyOH) MONTHLY_OVERHEAD = saved.monthlyOH;
   if(saved.workDays) WORKING_DAYS = saved.workDays;
   if(saved.numTeams) NUM_TEAMS = saved.numTeams;
@@ -869,6 +868,24 @@ var OT_MULTIPLIER = 1.5;
   if(saved.geoRadius) DEPOT_RADIUS = saved.geoRadius;
   if(saved.otThreshold) OT_THRESHOLD_MINS = saved.otThreshold * 60;
   if(saved.otMult) OT_MULTIPLIER = saved.otMult;
+}
+(function(){
+  var saved = JSON.parse(localStorage.getItem('wl_settings')||'{}');
+  var hasLocal = !!(saved.monthlyOH || saved.workDays || saved.otThreshold);
+  if(hasLocal){
+    _applySettings(saved);
+  } else {
+    // localStorage empty (cache cleared) - load from Firestore
+    db.collection('wl_config').doc('settings').get().then(function(doc){
+      if(doc.exists){
+        var fs = doc.data();
+        _applySettings(fs);
+        // Restore to localStorage
+        localStorage.setItem('wl_settings', JSON.stringify(fs));
+        showToast('Settings restored from cloud ✅');
+      }
+    }).catch(function(){});
+  }
 })();
 
 // ── UTILS ──────────────────────────────────────────────
@@ -1521,7 +1538,7 @@ function renderEntriesList(){
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
       html+='<div style="font-size:12px;font-weight:700">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>';
-      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div>';
+      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="openEditEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:#2563eb;font-size:13px;padding:2px 6px" title="Edit times">✏️</button><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div>';
       html+='</div>';
       html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
       html+='<div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px 12px">';
@@ -1617,6 +1634,75 @@ function toggleHelperEntries(hid){
   }
 }
 window.toggleHelperEntries=toggleHelperEntries;
+
+// ── EDIT ENTRY ──────────────────────────────────────────────
+var _editEntryId = null;
+
+function toLocalDT(isoStr){
+  // Convert ISO string to datetime-local input value (YYYY-MM-DDTHH:MM)
+  var d = new Date(isoStr);
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function updateEditDuration(){
+  var inVal = document.getElementById('edit-entry-in').value;
+  var outVal = document.getElementById('edit-entry-out').value;
+  var lbl = document.getElementById('edit-entry-duration');
+  if(!inVal||!outVal){ lbl.textContent=''; return; }
+  var diff = (new Date(outVal) - new Date(inVal))/60000;
+  if(diff<=0){ lbl.textContent='⚠️ Clock out must be after clock in'; lbl.style.color='var(--red)'; return; }
+  lbl.style.color='var(--muted)';
+  lbl.textContent='Duration: '+fmtD(diff);
+}
+
+function openEditEntry(id){
+  var entry = entries.find(function(e){ return e.id===id; });
+  if(!entry) return;
+  _editEntryId = id;
+  document.getElementById('edit-entry-in').value = toLocalDT(entry.startTime);
+  document.getElementById('edit-entry-out').value = toLocalDT(entry.endTime);
+  updateEditDuration();
+  document.getElementById('modal-edit-entry').classList.add('open');
+}
+window.openEditEntry = openEditEntry;
+
+function saveEntryEdit(){
+  if(!_editEntryId) return;
+  var inVal = document.getElementById('edit-entry-in').value;
+  var outVal = document.getElementById('edit-entry-out').value;
+  if(!inVal||!outVal){ showToast('Fill both times'); return; }
+  var newIn = new Date(inVal).toISOString();
+  var newOut = new Date(outVal).toISOString();
+  if(new Date(newOut) <= new Date(newIn)){ showToast('Clock out must be after clock in'); return; }
+  db.collection('entries').doc(_editEntryId).update({
+    startTime: newIn,
+    endTime: newOut
+  }).then(function(){
+    // Update local array
+    var idx = -1;
+    for(var _i=0; _i<entries.length; _i++){ if(entries[_i].id===_editEntryId){ idx=_i; break; } }
+    if(idx>=0){ entries[idx].startTime=newIn; entries[idx].endTime=newOut; }
+    document.getElementById('modal-edit-entry').classList.remove('open');
+    renderEntriesList();
+    renderProjects();
+    if(typeof renderAnalytics==='function') renderAnalytics();
+    showToast('Entry updated ✓');
+  }).catch(function(err){
+    showToast('Error: '+err.message);
+  });
+}
+window.saveEntryEdit = saveEntryEdit;
+
+// Wire datetime inputs to update duration preview
+(function(){
+  var inEl = document.getElementById('edit-entry-in');
+  var outEl = document.getElementById('edit-entry-out');
+  var saveBtn = document.getElementById('saveEntryEditBtn');
+  if(inEl) inEl.addEventListener('change', updateEditDuration);
+  if(outEl) outEl.addEventListener('change', updateEditDuration);
+  if(saveBtn) saveBtn.addEventListener('click', saveEntryEdit);
+})();
 function delEntry(id){db.collection('entries').doc(id).delete(); showToast('Entry deleted');}
 window.delEntry=delEntry;
 
@@ -3030,7 +3116,10 @@ function saveSettings(){
   var numTeams = parseInt(document.getElementById('set-num-teams').value)||2;
   var geoRadius = parseInt(document.getElementById('set-geo-radius').value)||50;
   // Save to localStorage
-  localStorage.setItem('wl_settings', JSON.stringify({otThreshold:otThreshold,otMult:otMult,monthlyOH:monthlyOH,workDays:workDays,numTeams:numTeams,geoRadius:geoRadius}));
+  var _settingsObj = {otThreshold:otThreshold,otMult:otMult,monthlyOH:monthlyOH,workDays:workDays,numTeams:numTeams,geoRadius:geoRadius};
+  localStorage.setItem('wl_settings', JSON.stringify(_settingsObj));
+  // Mirror to Firestore so settings survive cache clear
+  db.collection('wl_config').doc('settings').set(_settingsObj).catch(function(){});
   // Apply immediately
   MONTHLY_OVERHEAD = monthlyOH;
   WORKING_DAYS = workDays;
@@ -3228,6 +3317,30 @@ function showInstallBanner(){
       <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
     </div>
     <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
+  </div>
+</div>
+
+<!-- EDIT ENTRY MODAL -->
+<div class="modal-overlay" id="modal-edit-entry">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">&#x270F;&#xFE0F; Edit Entry</div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div style="flex:1">
+          <label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:4px">CLOCK IN</label>
+          <input type="datetime-local" id="edit-entry-in" style="width:100%;background:#f0fdf4;border:2px solid var(--green);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;color:var(--green);outline:none"/>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:4px">CLOCK OUT</label>
+          <input type="datetime-local" id="edit-entry-out" style="width:100%;background:#fff5f5;border:2px solid var(--red);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;color:var(--red);outline:none"/>
+        </div>
+      </div>
+      <div id="edit-entry-duration" style="text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
+      <button class="btn" id="saveEntryEditBtn">Save</button>
+    </div>
   </div>
 </div>
 </body>
