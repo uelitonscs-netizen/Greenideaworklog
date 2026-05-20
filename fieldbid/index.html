@@ -1809,7 +1809,7 @@ function openFAModal(idx){
     faPendPh=a.photos?a.photos.slice():[];
     // Restore measurement mode and rows
     var savedMode=a.calcMode||'manual';
-    if(savedMode==='walls'&&a.wallRows&&a.wallRows.length>0&&window.wallRows!==undefined){
+    if(savedMode==='walls'&&a.wallRows&&a.wallRows.length>0){
       wallRows=JSON.parse(JSON.stringify(a.wallRows));
       floorRows=a.floorRows&&a.floorRows.length?JSON.parse(JSON.stringify(a.floorRows)):[{l:'',h:''}];
       setMMode('walls',document.getElementById('mm1'));
