@@ -1694,15 +1694,15 @@ function saveEntryEdit(){
 }
 window.saveEntryEdit = saveEntryEdit;
 
-// Wire datetime inputs to update duration preview
-(function(){
+// Wire datetime inputs - done via DOMContentLoaded (modal is after script tag)
+document.addEventListener('DOMContentLoaded', function(){
   var inEl = document.getElementById('edit-entry-in');
   var outEl = document.getElementById('edit-entry-out');
   var saveBtn = document.getElementById('saveEntryEditBtn');
   if(inEl) inEl.addEventListener('change', updateEditDuration);
   if(outEl) outEl.addEventListener('change', updateEditDuration);
   if(saveBtn) saveBtn.addEventListener('click', saveEntryEdit);
-})();
+});
 function delEntry(id){db.collection('entries').doc(id).delete(); showToast('Entry deleted');}
 window.delEntry=delEntry;
 
@@ -3322,20 +3322,18 @@ function showInstallBanner(){
 
 <!-- EDIT ENTRY MODAL -->
 <div class="modal-overlay" id="modal-edit-entry">
-  <div class="modal" style="max-width:360px">
+  <div class="modal" style="max-width:400px">
     <div class="modal-title">&#x270F;&#xFE0F; Edit Entry</div>
     <div style="margin-bottom:14px">
-      <div style="display:flex;gap:10px;margin-bottom:12px">
-        <div style="flex:1">
-          <label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:4px">CLOCK IN</label>
-          <input type="datetime-local" id="edit-entry-in" style="width:100%;background:#f0fdf4;border:2px solid var(--green);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;color:var(--green);outline:none"/>
-        </div>
-        <div style="flex:1">
-          <label style="font-size:10px;font-weight:700;color:#666;display:block;margin-bottom:4px">CLOCK OUT</label>
-          <input type="datetime-local" id="edit-entry-out" style="width:100%;background:#fff5f5;border:2px solid var(--red);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;color:var(--red);outline:none"/>
-        </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;font-weight:700;color:#1a6b2a;display:block;margin-bottom:5px">&#x1F7E2; CLOCK IN</label>
+        <input type="datetime-local" id="edit-entry-in" style="width:100%;background:#f0fdf4;border:2px solid var(--green);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--green);outline:none"/>
       </div>
-      <div id="edit-entry-duration" style="text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px"></div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:10px;font-weight:700;color:#dc2626;display:block;margin-bottom:5px">&#x1F534; CLOCK OUT</label>
+        <input type="datetime-local" id="edit-entry-out" style="width:100%;background:#fff5f5;border:2px solid var(--red);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--red);outline:none"/>
+      </div>
+      <div id="edit-entry-duration" style="text-align:center;font-size:14px;font-weight:700;color:var(--muted);padding:8px;background:#f8f9fa;border-radius:8px"></div>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
