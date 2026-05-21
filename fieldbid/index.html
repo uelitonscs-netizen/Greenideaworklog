@@ -1470,6 +1470,7 @@ function formatDimRows(a, opts){
 }
 
 function renderFA(){
+  fieldAreas=window.fieldAreas||fieldAreas;
   var list=document.getElementById('fieldAreaList');
   var sf=0;for(var i=0;i<fieldAreas.length;i++)sf+=fieldAreas[i].sf||0;
   document.getElementById('fAreaCount').textContent=fieldAreas.length;
@@ -1509,6 +1510,7 @@ function renderFA(){
 
 // RENDER EST
 function renderEst(){
+  estItems=window.estItems||estItems;
   var list=document.getElementById('estItemList');
   var totals=calcTotals();
   var sf=0;for(var i=0;i<estItems.length;i++)sf+=estItems[i].sf;
@@ -2179,8 +2181,11 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
     calcMode:calcMode||'manual',
     wallRows:saveWallRows,
     floorRows:saveFloorRows});
-  if(editFAIdx>=0)fieldAreas[editFAIdx]=area;else fieldAreas.push(area);
-  saveFA();renderFA();renderFWO();closeOv('faOverlay');
+  // Always use window.fieldAreas to avoid closure scope divergence
+  if(editFAIdx>=0)window.fieldAreas[editFAIdx]=area;else window.fieldAreas.push(area);
+  fieldAreas=window.fieldAreas;
+  saveFA();closeOv('faOverlay');
+  setTimeout(function(){renderFA();renderFWO();},50);
   toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
   }catch(e){console.error('saveArea error:',e);closeOv('faOverlay');toast('Area saved');}
 });
@@ -2242,7 +2247,8 @@ document.getElementById('eiSaveBtn').addEventListener('click',function(){
     linePrice=parseFloat((price*inch).toFixed(2));
   }
   var item={name:name,productId:eiProd,sf:sf,price:linePrice,pricePerInch:isPerInch()?price:0,inches:inch,notes:notes,photos:eiPendPh.slice()};
-  if(editEIIdx>=0)estItems[editEIIdx]=item;else estItems.push(item);
+  if(editEIIdx>=0)window.estItems[editEIIdx]=item;else window.estItems.push(item);
+  estItems=window.estItems;
   // Save price by area name (most reliable - works even without matType)
   if(eiProd) setLastPrice('prod_'+eiProd, price);
   setLastPrice('name_'+name.trim().toLowerCase().replace(/\s+/g,'_'), price);
