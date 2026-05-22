@@ -707,7 +707,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
 
     <!-- Multiplier toggle -->
     <div style="margin:8px 0 4px">
-      <button id="multToggleBtn" onclick="toggleMultiplier()" style="background:transparent;border:1px solid #444;color:#7d8590;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">× Multiplier: OFF</button>
+      <button id="multToggleBtn" id="multToggleBtn" style="background:transparent;border:1px solid #444;color:#7d8590;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">× Multiplier: OFF</button>
     </div>
     <div id="multWrap" style="display:none;margin-bottom:8px">
       <div class="frow">
@@ -1246,6 +1246,7 @@ function showEP(id,tab){
 // PROJECT
 document.getElementById('btnOpenProj').addEventListener('click',function(){openProjModal();});
 document.getElementById('fieldProjName').addEventListener('click', function(){ openProjModal(); });
+(function(){ var mb=document.getElementById('multToggleBtn'); if(mb) mb.addEventListener('click', toggleMultiplier); })();
 document.getElementById('projCloseBtn').addEventListener('click',function(){closeOv('projOverlay');});
 document.getElementById('createProjBtn').addEventListener('click',function(){createProj();});
 function openProjModal(){renderProjList();openOv('projOverlay');}
@@ -1299,14 +1300,24 @@ function renderProjList(){
     var p=projs[i];var active=currentProj&&currentProj.id===p.id;
     var safeId=p.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     h+='<div class="proj-item '+(active?'active':'inactive')+'">';
-    h+='<button class="proj-btn" onclick="switchProjById(\''+safeId+'\')" style="flex:1;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font-family:inherit;color:inherit">';
+    h+='<button class="proj-btn" data-act="switch" data-pid="'+safeId+'" style="flex:1;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font-family:inherit;color:inherit">'
     h+='<div class="proj-name">'+esc(p.name)+(active?' ✓':'')+'</div>';
     h+='<div class="proj-meta">'+(p.address?esc(p.address)+' · ':'')+''+(p.areas?p.areas.length:0)+' areas · '+p.created+'</div>';
     h+='</button>';
-    h+='<button class="proj-del" onclick="deleteProjById(\''+safeId+'\')">🗑</button>';
+    h+='<button class="proj-del" data-act="del" data-pid="'+safeId+'">🗑</button>';
     h+='</div>';
   }
   list.innerHTML=h;
+  var newList=list.cloneNode(true);list.parentNode.replaceChild(newList,list);
+  newList.addEventListener('click',function(e){
+    var btn=e.target;
+    while(btn&&btn!==newList){if(btn.tagName==='BUTTON'&&btn.getAttribute('data-act'))break;btn=btn.parentNode;}
+    if(!btn||btn===newList)return;
+    var act=btn.getAttribute('data-act');
+    var pid=btn.getAttribute('data-pid');
+    if(act==='switch')switchProjById(pid);
+    else if(act==='del')deleteProjById(pid);
+  });
 }
 function createProj(){
   var name=document.getElementById('newProjName').value.trim();
@@ -1664,7 +1675,7 @@ function renderRows(mode){
     h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px"></div>';
     h+='<div class="mrow-h"><div class="mrow-lbl">'+(i===0?(mode==='wall'?'Height':'Width'):'')+'</div>';
     h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px"></div>';
-    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" onclick="deleteRow(this)">×</button>';
+    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" data-act="delrow">×</button>';
     h+='</div>';
   }
   container.innerHTML=h;
@@ -1763,21 +1774,21 @@ function renderJobsList(){
     h += '</div></div>';
   }
   container.innerHTML = h;
-  // Wire buttons via event delegation (Samsung addEventListener safe)
-  container.removeEventListener('click', _jobListHandler);
-  container._jobListHandler = function(e) {
+  // cloneNode removes all accumulated listeners, then add one clean listener
+  var newContainer = container.cloneNode(true);
+  container.parentNode.replaceChild(newContainer, container);
+  newContainer.addEventListener('click', function(e) {
     var btn = e.target;
-    while(btn && btn !== container) {
+    while(btn && btn !== newContainer) {
       if(btn.tagName === 'BUTTON' && btn.getAttribute('data-act')) break;
       btn = btn.parentNode;
     }
-    if(!btn || btn === container) return;
+    if(!btn || btn === newContainer) return;
     var act = btn.getAttribute('data-act');
     var pid = btn.getAttribute('data-pid');
     if(act === 'open') openJobFromList(pid);
     else if(act === 'del') deleteProjById(pid);
-  };
-  container.addEventListener('click', container._jobListHandler);
+  });
 }
 window.renderJobsList = renderJobsList;
 
@@ -1812,6 +1823,18 @@ function openJobFromList(pid){
 window.openJobFromList = openJobFromList;
 
 // Samsung-safe event delegation handler for measurement rows
+var _rowClickHandler = function(e){
+  var btn=e.target;
+  if(!btn||btn.tagName!=='BUTTON') return;
+  if(btn.getAttribute('data-act')!=='delrow') return;
+  var row=parseInt(btn.getAttribute('data-row'));
+  var mode=btn.getAttribute('data-mode');
+  if(isNaN(row)||!mode) return;
+  if(mode==='wall'){wallRows.splice(row,1);if(!wallRows.length)wallRows=[{l:'',h:''}];renderRows('wall');}
+  else{floorRows.splice(row,1);if(!floorRows.length)floorRows=[{l:'',h:''}];renderRows('floor');}
+  recalcSF();
+};
+
 var _rowInputHandler = function(e){
   var el = e.target;
   if(!el || el.tagName !== 'INPUT') return;
@@ -1843,10 +1866,14 @@ function initCalc(){
     if(wc){
       wc.removeEventListener('input',_rowInputHandler);
       wc.addEventListener('input',_rowInputHandler);
+      wc.removeEventListener('click',_rowClickHandler);
+      wc.addEventListener('click',_rowClickHandler);
     }
     if(fc){
       fc.removeEventListener('input',_rowInputHandler);
       fc.addEventListener('input',_rowInputHandler);
+      fc.removeEventListener('click',_rowClickHandler);
+      fc.addEventListener('click',_rowClickHandler);
     }
   })();
   var m=document.getElementById('fa_sf_m');if(m)m.value='';
@@ -2356,21 +2383,34 @@ function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(id
 function renderPicker(mode){
   var id=mode==='fa'?'faPicker':'eiPicker';
   var sel=mode==='fa'?faProd:eiProd;
-  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" onclick="openProdModal(-1)">+ New Type</button></div>';
+  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" data-act="addprod">+ New Type</button></div>';
   for(var i=0;i<products.length;i++){
     var pr=products[i];var on=pr.id===sel?' on':'';
     h+='<div class="popt-wrap">';
-    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="selProd(this)">';
+    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="sel">';
     h+='<div class="po-l"><div class="po-em">'+pr.emoji+'</div><div><div class="po-nm">'+esc(pr.name)+'</div><div class="po-ct">'+esc(pr.cat)+'</div></div></div>';
     h+='<div style="display:flex;align-items:center">';
     if(mode==='ei')h+='<div class="po-pr">$'+parseFloat(pr.price).toFixed(2)+'/SF</div>';
     h+='<div class="po-ck">✓</div></div></button>';
-    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="delProdFromPicker(this.dataset.pid,this.dataset.mode)" title="Delete">×</button>';
+    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="delprod" title="Delete">×</button>';
     h+='</div>';
   }
   if(products.length===0)h+='<div style="padding:14px;color:#4d5560;font-size:12px;text-align:center">No products — tap + New Type</div>';
   var container=document.getElementById(id);
-  if(container) container.innerHTML=h;
+  if(!container) return;
+  container.innerHTML=h;
+  var newC=container.cloneNode(true);container.parentNode.replaceChild(newC,container);
+  newC.addEventListener('click',function(e){
+    var btn=e.target;
+    while(btn&&btn!==newC){if(btn.tagName==='BUTTON')break;btn=btn.parentNode;}
+    if(!btn||btn===newC)return;
+    var act=btn.getAttribute('data-act');
+    var pid=btn.getAttribute('data-pid');
+    var mode=btn.getAttribute('data-mode');
+    if(act==='addprod')openProdModal(-1);
+    else if(act==='delprod')delProdFromPicker(pid,mode);
+    else if(act==='sel')selProd(btn);
+  });
 }
 function delProdFromPicker(pid,mode){
   var idx=-1;
