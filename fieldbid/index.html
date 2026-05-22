@@ -2245,7 +2245,17 @@ function openEIModal(idx){
       prodRow.style.display='none';
     }
   }
-  else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
+  else{
+    document.getElementById('ei_name').value='';
+    document.getElementById('ei_sf').value='';
+    document.getElementById('ei_price').value='';
+    document.getElementById('ei_inch').value='';
+    document.getElementById('ei_notes').value='';
+    eiProd=null;
+    // Hide material label for new manual items
+    var prodRow=document.getElementById('ei_prod_row');
+    if(prodRow) prodRow.style.display='none';
+  }
   updateEIPricingUI();
   // product picker removed - material shown as label
   renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
