@@ -1757,12 +1757,27 @@ function renderJobsList(){
     h += '</div>';
     // Action buttons
     h += '<div style="display:flex;gap:8px">';
-    h += '<button style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer" onclick="openJobFromList(\''+safeId+'\')">'+(isActive?'✓ Editing':'Open Job')+'</button>';
-    h += '<button style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer" onclick="deleteProjById(\''+safeId+'\')">🗑</button>';
+    h += '<button class="job-open-btn" data-act="open" data-pid="'+safeId+'" style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
+    h += '<button class="job-del-btn" data-act="del" data-pid="'+safeId+'" style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer">🗑</button>';
     h += '</div>';
     h += '</div></div>';
   }
   container.innerHTML = h;
+  // Wire buttons via event delegation (Samsung addEventListener safe)
+  container.removeEventListener('click', _jobListHandler);
+  container._jobListHandler = function(e) {
+    var btn = e.target;
+    while(btn && btn !== container) {
+      if(btn.tagName === 'BUTTON' && btn.getAttribute('data-act')) break;
+      btn = btn.parentNode;
+    }
+    if(!btn || btn === container) return;
+    var act = btn.getAttribute('data-act');
+    var pid = btn.getAttribute('data-pid');
+    if(act === 'open') openJobFromList(pid);
+    else if(act === 'del') deleteProjById(pid);
+  };
+  container.addEventListener('click', container._jobListHandler);
 }
 window.renderJobsList = renderJobsList;
 
