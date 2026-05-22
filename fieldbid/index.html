@@ -1910,6 +1910,13 @@ function openFAModal(idx){
   document.getElementById('faTitle').textContent=idx>=0?'Edit Area':'Add Area';
   document.getElementById('faSaveBtn').textContent=idx>=0?'Update':'Add Area';
   faPendPh=[];
+  // Explicitly clear photo grid DOM immediately
+  var faGrid=document.getElementById('faPhotoGrid');
+  if(faGrid) faGrid.innerHTML='';
+  var faHint=document.getElementById('faPhotoHint');
+  if(faHint) faHint.style.display='none';
+  var faCount=document.getElementById('faPhotoCount');
+  if(faCount) faCount.textContent='0';
   // Clear file inputs so old photos don't re-fire on Android
   var faCamEl=document.getElementById('faCam');
   var faGalEl=document.getElementById('faGal');
@@ -2206,6 +2213,13 @@ function openEIModal(idx){
   document.getElementById('eiTitle').textContent=idx>=0?'Edit Item':'Add Item';
   document.getElementById('eiSaveBtn').textContent=idx>=0?'Update':'Add Item';
   eiPendPh=[];
+  // Explicitly clear photo grid DOM immediately
+  var eiGrid=document.getElementById('eiPhotoGrid');
+  if(eiGrid) eiGrid.innerHTML='';
+  var eiHint=document.getElementById('eiPhotoHint');
+  if(eiHint) eiHint.style.display='none';
+  var eiCount=document.getElementById('eiPhotoCount');
+  if(eiCount) eiCount.textContent='0';
   // Clear file inputs so old photos don't re-fire on Android
   var eiCamEl=document.getElementById('eiCam');
   var eiGalEl=document.getElementById('eiGal');
@@ -2374,13 +2388,18 @@ function renderPPGrid(mode){
   var h='';
   for(var i=0;i<arr.length;i++)h+='<div class="ppw"><img src="'+arr[i]+'"><button class="pp-del" data-mode="'+mode+'" data-i="'+i+'" data-act="rmph">×</button></div>';
   grid.innerHTML=h;
-  var newGrid=grid.cloneNode(true);grid.parentNode.replaceChild(newGrid,grid);
-  newGrid.addEventListener('click',function(e){
-    var btn=e.target;
-    while(btn&&btn!==newGrid){if(btn.getAttribute&&btn.getAttribute('data-act')==='rmph')break;btn=btn.parentNode;}
-    if(!btn||btn===newGrid)return;
-    rmPH(btn);
-  });
+  // Use onclick attribute on buttons - no addEventListener needed, no accumulation
+  // (buttons are rebuilt each render via innerHTML)
+  grid._ppBound=grid._ppBound||false;
+  if(!grid._ppBound){
+    grid._ppBound=true;
+    grid.addEventListener('click',function(e){
+      var btn=e.target;
+      while(btn&&btn!==grid){if(btn.getAttribute&&btn.getAttribute('data-act')==='rmph')break;btn=btn.parentNode;}
+      if(!btn||btn===grid)return;
+      rmPH(btn);
+    });
+  }
   document.getElementById(mode+'PhotoCount').textContent=arr.length;
   hint.style.display='block';
 }
