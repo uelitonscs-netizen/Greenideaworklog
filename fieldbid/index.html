@@ -1768,8 +1768,8 @@ function renderJobsList(){
     h += '</div>';
     // Action buttons
     h += '<div style="display:flex;gap:8px">';
-    h += '<button class="job-open-btn" data-act="open" data-pid="'+safeId+'" style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
-    h += '<button class="job-del-btn" data-act="del" data-pid="'+safeId+'" style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer">🗑</button>';
+    h += '<button class="job-open-btn" data-act="open" data-pid="'+p.id+'" style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
+    h += '<button class="job-del-btn" data-act="del" data-pid="'+p.id+'" style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer">🗑</button>';
     h += '</div>';
     h += '</div></div>';
   }
