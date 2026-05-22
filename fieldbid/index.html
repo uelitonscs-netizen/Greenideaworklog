@@ -2549,7 +2549,9 @@ function doImport(){
     // Priority: 1) lastPrice on area object, 2) lastPrice by name, 3) lastPrice by product, 4) product default
     var _nameKey='name_'+a.name.trim().toLowerCase().replace(/\s+/g,'_');
     var _savedProdId=getLastPrice(_nameKey+'__prod',null);
-    var _useProd=_savedProdId?getProd(_savedProdId):(a.lastProdId?getProd(a.lastProdId):pr);
+    // If matType is explicitly known (ign, cc, oc, fg, mw, cel), trust it over name history
+    var _hasKnownMat = a.matType && a.matType !== 'other' && pr;
+    var _useProd=_hasKnownMat ? pr : (_savedProdId?getProd(_savedProdId):(a.lastProdId?getProd(a.lastProdId):pr));
     var lastP = 0;
     if(a.lastPrice>0) lastP=a.lastPrice;
     else{ lastP=getLastPrice(_nameKey, 0); }
