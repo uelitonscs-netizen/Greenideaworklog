@@ -1714,6 +1714,30 @@ function setMMode(mode,btn){
 }
 
 
+
+function clearJobEstimate(pid){
+  appConfirm('Remove this job from Estimator? (Takeoff areas are kept)',function(){
+    var projs=loadProjs();
+    for(var i=0;i<projs.length;i++){
+      if(projs[i].id===pid){
+        projs[i].estItems=[];
+        projs[i].quoteInfo={client:projs[i].name,address:projs[i].address||''};
+        break;
+      }
+    }
+    saveProjs(projs);
+    // If this is the active project, clear estItems in memory too
+    if(currentProj&&currentProj.id===pid){
+      estItems=[];window.estItems=estItems;
+      quoteInfo={client:currentProj.name,address:currentProj.address||''};
+      window.quoteInfo=quoteInfo;
+    }
+    renderJobsList();
+    toast('Job removed from Estimator');
+  });
+}
+window.clearJobEstimate=clearJobEstimate;
+
 function renderJobsList(){
   var projs = loadProjs();
   var container = document.getElementById('jobsList');
@@ -1721,7 +1745,13 @@ function renderJobsList(){
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4d5560;font-size:13px">No saved jobs yet.<br>Create a project to get started.</div>';
     return;
   }
+  // Only show projects that have estimator items
+  projs = projs.filter(function(p){ return p.estItems && p.estItems.length > 0; });
   var h = '';
+  if(!projs.length){
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4d5560;font-size:13px">No estimator jobs yet.<br>Import areas from takeoff to create a job.</div>';
+    return;
+  }
   for(var i=0; i<projs.length; i++){
     var p = projs[i];
     var isActive = currentProj && currentProj.id === p.id;
@@ -1787,7 +1817,7 @@ function renderJobsList(){
     var act = btn.getAttribute('data-act');
     var pid = btn.getAttribute('data-pid');
     if(act === 'open') openJobFromList(pid);
-    else if(act === 'del') deleteProjById(pid);
+    else if(act === 'del') clearJobEstimate(pid);
   });
 }
 window.renderJobsList = renderJobsList;
