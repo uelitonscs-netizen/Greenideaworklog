@@ -2230,7 +2230,7 @@ function updateEIPricingUI(){
 document.getElementById('ei_sf').addEventListener('input',updateEIHint);
 document.getElementById('ei_price').addEventListener('input',updateEIHint);
 document.getElementById('ei_inch').addEventListener('input',updateEIHint);
-document.getElementById('eiCancelBtn').addEventListener('click',function(){closeOv('eiOverlay');});
+document.getElementById('eiCancelBtn').addEventListener('click',function(){editEIIdx=-1;eiProd=null;eiPendPh=[];closeOv('eiOverlay');});
 document.getElementById('eiSaveBtn').addEventListener('click',function(){
   var name=document.getElementById('ei_name').value.trim();
   var sf=parseFloat(document.getElementById('ei_sf').value);
@@ -2275,7 +2275,7 @@ document.getElementById('eiSaveBtn').addEventListener('click',function(){
     }
     saveProjs(_projs);
   }
-  saveEI();renderEst();closeOv('eiOverlay');toast(editEIIdx>=0?'✅ Updated':'✅ Item added');
+  var _wasEdit=editEIIdx>=0;saveEI();renderEst();editEIIdx=-1;eiProd=null;eiPendPh=[];closeOv('eiOverlay');toast(_wasEdit?'✅ Updated':'✅ Item added');
 });
 function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(idx,1);saveEI();renderEst();toast('🗑 Deleted');});}
 
