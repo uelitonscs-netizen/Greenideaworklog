@@ -1493,13 +1493,14 @@ function renderFA(){
     h+='<div class="card-acts"><button class="ca ph" data-idx="'+i+'" data-act="ph">📷 Photo</button><button class="ca" data-idx="'+i+'" data-act="edit">✏️ Edit</button><button class="ca del" data-idx="'+i+'" data-act="del">🗑 Del</button></div></div>';
   }
   list.innerHTML=h;
-  list.addEventListener('click',function(e){
+  var newList=list.cloneNode(true);list.parentNode.replaceChild(newList,list);
+  newList.addEventListener('click',function(e){
     var btn=e.target;
-    while(btn&&btn!==list){
+    while(btn&&btn!==newList){
       if(btn.tagName==='BUTTON'&&btn.getAttribute('data-act'))break;
       btn=btn.parentNode;
     }
-    if(!btn||btn===list)return;
+    if(!btn||btn===newList)return;
     var idx=parseInt(btn.getAttribute('data-idx'));
     var act=btn.getAttribute('data-act');
     if(act==='ph')qkPH('field',btn);
@@ -1531,13 +1532,16 @@ function renderEst(){
     h+='<div class="card-acts"><button class="ca ph" data-idx="'+i+'" data-act="ph">📷 Photo</button><button class="ca" data-idx="'+i+'" data-act="edit">✏️ Edit</button><button class="ca del" data-idx="'+i+'" data-act="del">🗑 Del</button></div></div>';
   }
   list.innerHTML=h;
-  list.addEventListener('click',function(e){
+  // Use cloneNode to remove ALL accumulated listeners before re-adding
+  var newList=list.cloneNode(true);
+  list.parentNode.replaceChild(newList,list);
+  newList.addEventListener('click',function(e){
     var btn=e.target;
-    while(btn&&btn!==list){
+    while(btn&&btn!==newList){
       if(btn.tagName==='BUTTON'&&btn.getAttribute('data-act'))break;
       btn=btn.parentNode;
     }
-    if(!btn||btn===list)return;
+    if(!btn||btn===newList)return;
     var idx=parseInt(btn.getAttribute('data-idx'));
     var act=btn.getAttribute('data-act');
     if(act==='ph')qkPH('est',btn);
@@ -2370,10 +2374,11 @@ function renderPPGrid(mode){
   var h='';
   for(var i=0;i<arr.length;i++)h+='<div class="ppw"><img src="'+arr[i]+'"><button class="pp-del" data-mode="'+mode+'" data-i="'+i+'" data-act="rmph">×</button></div>';
   grid.innerHTML=h;
-  grid.addEventListener('click',function(e){
+  var newGrid=grid.cloneNode(true);grid.parentNode.replaceChild(newGrid,grid);
+  newGrid.addEventListener('click',function(e){
     var btn=e.target;
-    while(btn&&btn!==grid){if(btn.getAttribute&&btn.getAttribute('data-act')==='rmph')break;btn=btn.parentNode;}
-    if(!btn||btn===grid)return;
+    while(btn&&btn!==newGrid){if(btn.getAttribute&&btn.getAttribute('data-act')==='rmph')break;btn=btn.parentNode;}
+    if(!btn||btn===newGrid)return;
     rmPH(btn);
   });
   document.getElementById(mode+'PhotoCount').textContent=arr.length;
@@ -2693,10 +2698,11 @@ function renderProds(){
     h+='</div>';
   }
   list.innerHTML=h;
-  list.addEventListener('click',function(e){
+  var newList=list.cloneNode(true);list.parentNode.replaceChild(newList,list);
+  newList.addEventListener('click',function(e){
     var btn=e.target;
-    while(btn&&btn!==list){if(btn.getAttribute&&btn.getAttribute('data-act'))break;btn=btn.parentNode;}
-    if(!btn||btn===list)return;
+    while(btn&&btn!==newList){if(btn.getAttribute&&btn.getAttribute('data-act'))break;btn=btn.parentNode;}
+    if(!btn||btn===newList)return;
     var act=btn.getAttribute('data-act');
     var idx=parseInt(btn.getAttribute('data-idx'));
     if(act==='editprod')openProdModal(idx);
