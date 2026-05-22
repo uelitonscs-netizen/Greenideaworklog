@@ -1906,6 +1906,11 @@ function openFAModal(idx){
   document.getElementById('faTitle').textContent=idx>=0?'Edit Area':'Add Area';
   document.getElementById('faSaveBtn').textContent=idx>=0?'Update':'Add Area';
   faPendPh=[];
+  // Clear file inputs so old photos don't re-fire on Android
+  var faCamEl=document.getElementById('faCam');
+  var faGalEl=document.getElementById('faGal');
+  if(faCamEl) faCamEl.value='';
+  if(faGalEl) faGalEl.value='';
   initCalc();
   if(idx>=0){
     var a=fieldAreas[idx];
@@ -2197,6 +2202,11 @@ function openEIModal(idx){
   document.getElementById('eiTitle').textContent=idx>=0?'Edit Item':'Add Item';
   document.getElementById('eiSaveBtn').textContent=idx>=0?'Update':'Add Item';
   eiPendPh=[];
+  // Clear file inputs so old photos don't re-fire on Android
+  var eiCamEl=document.getElementById('eiCam');
+  var eiGalEl=document.getElementById('eiGal');
+  if(eiCamEl) eiCamEl.value='';
+  if(eiGalEl) eiGalEl.value='';
   if(idx>=0){var it=estItems[idx];document.getElementById('ei_name').value=it.name;document.getElementById('ei_sf').value=it.sf;document.getElementById('ei_price').value=it.pricePerInch||it.price;document.getElementById('ei_inch').value=it.inches||'';document.getElementById('ei_notes').value=it.notes||'';eiProd=it.productId||null;eiPendPh=it.photos?it.photos.slice():[];}
   else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
   updateEIPricingUI();
