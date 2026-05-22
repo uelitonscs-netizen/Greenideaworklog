@@ -2397,16 +2397,20 @@ function handlePH(input,mode){
   var files=input.files;if(!files||!files.length)return;
   var space=6-arr.length;if(space<=0){toast('Max 6 photos','warn');input.value='';return;}
   if(files.length>space){toast('Only '+space+' more photo'+(space===1?'':'s')+' allowed','warn');}
-  var count=Math.min(files.length,space);var done=0,ok=0,errs=[];
+  // Copy files array synchronously BEFORE clearing input (Samsung: input.value='' in async callback breaks next pick)
+  var filesCopy=[];
+  for(var _f=0;_f<Math.min(files.length,space);_f++) filesCopy.push(files[_f]);
+  input.value=''; // Clear synchronously NOW so next pick always fires change event
+  var count=filesCopy.length;var done=0,ok=0,errs=[];
   for(var i=0;i<count;i++){(function(f){
     var v=validatePhoto(f);
-    if(v){errs.push(v);done++;if(done===count){renderPPGrid(mode);input.value='';if(ok===0)toast(errs[0],'err');}return;}
+    if(v){errs.push(v);done++;if(done===count){renderPPGrid(mode);if(ok===0)toast(errs[0],'err');}return;}
     compressPhoto(f,function(dataUrl){
-      if(!dataUrl){done++;errs.push('Read error');if(done===count){renderPPGrid(mode);input.value='';toast('Could not read photo','err');}return;}
+      if(!dataUrl){done++;errs.push('Read error');if(done===count){renderPPGrid(mode);toast('Could not read photo','err');}return;}
       arr.push(dataUrl);ok++;done++;
-      if(done===count){renderPPGrid(mode);input.value='';if(errs.length)toast(errs.length+' file(s) skipped','warn');}
+      if(done===count){renderPPGrid(mode);if(errs.length)toast(errs.length+' file(s) skipped','warn');}
     });
-  })(files[i]);}
+  })(filesCopy[i]);}
 }
 function renderPPGrid(mode){
   var arr=mode==='fa'?faPendPh:eiPendPh;
