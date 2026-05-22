@@ -2911,6 +2911,9 @@ function sendToWorkLog(){
     try{
       var a=all[i]; if(!a) continue;
       var sf=parseFloat(a.sf)||0; if(sf<=0) continue;
+      // Skip removal/demo items - they don't consume material
+      var aname=(a.name||'').toLowerCase();
+      if(aname.indexOf('remov')>=0||aname.indexOf('demo')>=0||aname.indexOf('tear')>=0) continue;
       var mtype=a.matType||'';
       var pr=null; try{pr=getProd(a.productId);}catch(e){}
       var cat=pr?pr.cat:'';
