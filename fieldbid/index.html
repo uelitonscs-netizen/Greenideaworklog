@@ -1014,24 +1014,6 @@ function appConfirm(msg, onYes) {
   document.getElementById('confirmOverlay').className = 'overlay on';
 }
 
-
-// All code runs after DOM is ready
-function appConfirm(msg, onYes) {
-  document.getElementById('confirmMsg').textContent = msg;
-  window._confirmResolve = onYes;
-  window._confirmReject = null;
-  document.getElementById('confirmOverlay').className = 'overlay on';
-}
-
-
-// All code runs after DOM is ready
-function appConfirm(msg, onYes) {
-  document.getElementById('confirmMsg').textContent = msg;
-  window._confirmResolve = onYes;
-  window._confirmReject = null;
-  document.getElementById('confirmOverlay').className = 'overlay on';
-}
-
 document.addEventListener('DOMContentLoaded', function() {
 
 window.fieldAreas=window.fieldAreas||[]; var fieldAreas=window.fieldAreas;
@@ -2156,7 +2138,7 @@ function restoreMatCatFields(area){
 }
 window.restoreMatCatFields=restoreMatCatFields;
 
-document.getElementById('faCancelBtn').addEventListener('click',function(){closeOv('faOverlay');});
+document.getElementById('faCancelBtn').addEventListener('click',function(){editFAIdx=-1;faPendPh=[];closeOv('faOverlay');});
   // Material category change listener
   var matCatSel=document.getElementById('fa_mat_cat');
   if(matCatSel) matCatSel.addEventListener('change',function(){onMatCatChange();});
@@ -2207,7 +2189,8 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   closeOv('faOverlay');
   renderFA();
   renderFWO();
-  toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
+  var _wasFA=editFAIdx>=0;editFAIdx=-1;faPendPh=[];
+  toast(_wasFA?'✅ Area updated':'✅ Area added');
   }catch(e){console.error('saveArea error:',e);closeOv('faOverlay');toast('Area saved');}
 });
 function delFA(idx){appConfirm('Delete this area?',function(){fieldAreas.splice(idx,1);saveFA();renderFA();renderFWO();toast('🗑 Deleted');});}
@@ -2372,24 +2355,29 @@ function validatePhoto(f){
 }
 function compressPhoto(file, callback){
   var MAX_W=800, MAX_H=800, QUALITY=0.45;
-  var r=new FileReader();
-  r.onload=function(e){
-    var img=new Image();
-    img.onload=function(){
-      var w=img.width, h=img.height;
-      if(w>MAX_W){h=Math.round(h*MAX_W/w);w=MAX_W;}
-      if(h>MAX_H){w=Math.round(w*MAX_H/h);h=MAX_H;}
-      var canvas=document.createElement('canvas');
-      canvas.width=w; canvas.height=h;
-      var ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,w,h);
-      callback(canvas.toDataURL('image/jpeg',QUALITY));
-    };
-    img.onerror=function(){callback(e.target.result);}; // fallback uncompressed
-    img.src=e.target.result;
+  // Use createObjectURL (single async level) instead of FileReader → Image (double async)
+  var url=URL.createObjectURL(file);
+  var img=new Image();
+  img.onload=function(){
+    var w=img.width, h=img.height;
+    if(w>MAX_W){h=Math.round(h*MAX_W/w);w=MAX_W;}
+    if(h>MAX_H){w=Math.round(w*MAX_H/h);h=MAX_H;}
+    var canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    var result=canvas.toDataURL('image/jpeg',QUALITY);
+    URL.revokeObjectURL(url);
+    callback(result);
   };
-  r.onerror=function(){callback(null);};
-  r.readAsDataURL(file);
+  img.onerror=function(){
+    URL.revokeObjectURL(url);
+    // Fallback: read as dataURL
+    var r=new FileReader();
+    r.onload=function(e){callback(e.target.result);};
+    r.onerror=function(){callback(null);};
+    r.readAsDataURL(file);
+  };
+  img.src=url;
 }
 
 function handlePH(input,mode){
