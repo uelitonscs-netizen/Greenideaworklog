@@ -955,6 +955,7 @@ function save() {
       var k = _SYNC_KEYS[i];
       var v = ls.getItem('fb6_' + k);
       if (v !== null && v !== undefined && v !== '') {
+        if (v.length > 900000) continue; // skip if over 900KB
         batch.set(col.doc(k), { data: v, updatedAt: ts });
         wrote++;
       }
@@ -2369,6 +2370,28 @@ function validatePhoto(f){
   if(f.size>5*1024*1024)return 'Image over 5MB';
   return null;
 }
+function compressPhoto(file, callback){
+  var MAX_W=800, MAX_H=800, QUALITY=0.45;
+  var r=new FileReader();
+  r.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var w=img.width, h=img.height;
+      if(w>MAX_W){h=Math.round(h*MAX_W/w);w=MAX_W;}
+      if(h>MAX_H){w=Math.round(w*MAX_H/h);h=MAX_H;}
+      var canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL('image/jpeg',QUALITY));
+    };
+    img.onerror=function(){callback(e.target.result);}; // fallback uncompressed
+    img.src=e.target.result;
+  };
+  r.onerror=function(){callback(null);};
+  r.readAsDataURL(file);
+}
+
 function handlePH(input,mode){
   var arr=mode==='fa'?faPendPh:eiPendPh;
   var files=input.files;if(!files||!files.length)return;
@@ -2378,10 +2401,11 @@ function handlePH(input,mode){
   for(var i=0;i<count;i++){(function(f){
     var v=validatePhoto(f);
     if(v){errs.push(v);done++;if(done===count){renderPPGrid(mode);input.value='';if(ok===0)toast(errs[0],'err');}return;}
-    var r=new FileReader();
-    r.onload=function(e){arr.push(e.target.result);ok++;done++;if(done===count){renderPPGrid(mode);input.value='';if(errs.length)toast(errs.length+' file(s) skipped','warn');}};
-    r.onerror=function(){done++;errs.push('Read error');if(done===count){renderPPGrid(mode);input.value='';toast('Could not read photo','err');}};
-    r.readAsDataURL(f);
+    compressPhoto(f,function(dataUrl){
+      if(!dataUrl){done++;errs.push('Read error');if(done===count){renderPPGrid(mode);input.value='';toast('Could not read photo','err');}return;}
+      arr.push(dataUrl);ok++;done++;
+      if(done===count){renderPPGrid(mode);input.value='';if(errs.length)toast(errs.length+' file(s) skipped','warn');}
+    });
   })(files[i]);}
 }
 function renderPPGrid(mode){
