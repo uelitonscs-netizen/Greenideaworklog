@@ -2247,7 +2247,8 @@ function openEIModal(idx){
   }
   else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
   updateEIPricingUI();
-  // product picker removed - material shown as labelrenderPPGrid('ei');updateEIHint();openOv('eiOverlay');
+  // product picker removed - material shown as label
+  renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
 }
 function isPerInch(){
   var pr=getProd(eiProd);
