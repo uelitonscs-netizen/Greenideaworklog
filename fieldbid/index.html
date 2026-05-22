@@ -454,17 +454,17 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
 <div id="field-app">
   <div class="app-hd">
     <button class="back-btn" id="backField">← Back</button>
-    <button id="fieldProjName" onclick="openProjModal()" style="flex:1;min-width:0;background:#1e2530;border:1px solid #2a3340;border-radius:12px;padding:8px 12px;text-align:left;cursor:pointer;margin:0 8px">
+    <button id="fieldProjName" style="flex:1;min-width:0;background:#1a3a20;border:2px solid #2d6a35;border-radius:12px;padding:8px 12px;text-align:left;cursor:pointer;margin:0 8px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
         <div style="min-width:0">
-          <div id="fieldProjTitle" style="font-size:14px;font-weight:800;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tap to set project</div>
+          <div id="fieldProjTitle" style="font-size:14px;font-weight:800;color:#4ade80;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tap to set project</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-            <span id="fieldProjSub" style="font-size:10px;color:#7d8590">tap to name or switch</span>
+            <span id="fieldProjSub" style="font-size:10px;color:#86efac">tap to name or switch</span>
             <span id="fb-sync-dot" style="width:6px;height:6px;border-radius:50%;background:#888;display:inline-block;flex-shrink:0"></span>
             <span id="fb-sync-lbl" style="font-size:10px;font-weight:700;color:#888">connecting...</span>
           </div>
         </div>
-        <span style="color:#7d8590;font-size:10px;flex-shrink:0">▼</span>
+        <span style="color:#4ade80;font-size:12px;flex-shrink:0">▼</span>
       </div>
     </button>
     <button class="hd-action" id="btnOpenProj">+ Project</button>
@@ -1245,7 +1245,7 @@ function showEP(id,tab){
 
 // PROJECT
 document.getElementById('btnOpenProj').addEventListener('click',function(){openProjModal();});
-// fieldProjName click handled via onclick attribute
+document.getElementById('fieldProjName').addEventListener('click', function(){ openProjModal(); });
 document.getElementById('projCloseBtn').addEventListener('click',function(){closeOv('projOverlay');});
 document.getElementById('createProjBtn').addEventListener('click',function(){createProj();});
 function openProjModal(){renderProjList();openOv('projOverlay');}
