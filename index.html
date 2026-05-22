@@ -308,6 +308,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
+        <button id="rep-toggle-advances" onclick="switchReport('advances',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Advances</button>
       </div>
 
       <!-- Entries panel -->
@@ -363,6 +364,41 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         </div>
         <div id="payments-list"></div>
       </div>
+    </div>
+
+
+    <!-- ADVANCES -->
+    <div id="tab-advances" style="display:none">
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:12px">ADD ADVANCE / DISCOUNT</div>
+        <div class="form-row">
+          <div class="fg"><label>Helper</label>
+            <select id="adv-helper" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font-size:13px">
+              <option value="">-- Select Helper --</option>
+            </select>
+          </div>
+          <div class="fg"><label>Type</label>
+            <select id="adv-type" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font-size:13px">
+              <option value="advance">💸 Advance (owed to company)</option>
+              <option value="discount">✅ Discount (paid back)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg"><label>Amount ($)</label>
+            <input id="adv-amount" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font-size:13px"/>
+          </div>
+          <div class="fg"><label>Date</label>
+            <input id="adv-date" type="date" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font-size:13px"/>
+          </div>
+        </div>
+        <div class="fg"><label>Note</label>
+          <input id="adv-note" type="text" placeholder="Reason..." style="width:100%;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px 10px;font-size:13px"/>
+        </div>
+        <button class="btn" id="addAdvanceBtn" style="margin-top:8px">+ Add Entry</button>
+      </div>
+      <div id="advances-summary" style="margin-bottom:16px"></div>
+      <div id="advances-list"></div>
     </div>
 
 
@@ -624,6 +660,14 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
         <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label">TODAY</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label">THIS WEEK</div></div>
       </div>
+      <!-- Advance Balance - only shows if owed -->
+      <div id="helper-advance-badge" style="display:none;background:#fff5f5;border:1px solid #dc2626;border-radius:10px;padding:10px 14px;margin:10px 16px 0;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#dc2626;letter-spacing:.06em">ADVANCE OWED</div>
+          <div id="helper-advance-amount" style="font-size:20px;font-weight:800;color:#dc2626">$0.00</div>
+        </div>
+        <div style="font-size:24px">💳</div>
+      </div>
     </div>
 
     <!-- MANUAL -->
@@ -843,7 +887,7 @@ var _app = firebase.initializeApp({
 var db = firebase.firestore();
 
 // ── STATE ──────────────────────────────────────────────
-var helpers=[], entries=[], payments=[], absences=[], projects=[], projectExpenses=[], projectPhotos=[], projectHistory=[];
+var helpers=[], entries=[], payments=[],advances=[], absences=[], projects=[], projectExpenses=[], projectPhotos=[], projectHistory=[];
 
 // ── DEPOT LOCATION ─────────────────────────────────────
 var DEPOT_LAT = 42.2304418;
@@ -1034,6 +1078,7 @@ function startListeners(){
   },function(){setSyncStatus(false);});
   db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -1200,6 +1245,18 @@ function updateHelperStats(){
   document.getElementById('stat-week').textContent=fmtD(wm);
   if(document.getElementById('stat-pay')) document.getElementById('stat-pay').textContent=fmtC(weekEarned);
   if(document.getElementById('stat-total')) document.getElementById('stat-total').textContent=fmtD(tm);
+  // Show advance balance to helper if they owe money
+  var advBadge = document.getElementById('helper-advance-badge');
+  var advAmt = document.getElementById('helper-advance-amount');
+  if(advBadge && advAmt && typeof getAdvanceBalance === 'function'){
+    var bal = getAdvanceBalance(h.id);
+    if(bal > 0){
+      advAmt.textContent = '$' + bal.toFixed(2);
+      advBadge.style.display = 'flex';
+    } else {
+      advBadge.style.display = 'none';
+    }
+  }
 }
 
 function updateElapsed(st){var s=Math.floor((Date.now()-new Date(st))/1000); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; var el=document.getElementById('clock-elapsed'); if(el) el.textContent=p2(h)+':'+p2(m)+':'+p2(sc);}
@@ -1389,6 +1446,7 @@ function renderDashboard(){
       '<div class="hcard-name">'+h.name+'</div>'+
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
       '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+
+      '<!-- Advance balance badge -->'+ (function(){ var advBal=getAdvanceBalance(h.id); return advBal>0?'<div style="background:#fff5f5;border:1px solid var(--red);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--red);margin-top:8px">💳 Advance owed: $'+advBal.toFixed(2)+'</div>':''; })() +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
       '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
@@ -1465,12 +1523,16 @@ function switchReport(panel, btn){
   document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
   document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
   document.getElementById('rep-payments').style.display = panel==='payments'?'block':'none';
+  var advEl=document.getElementById('tab-advances'); if(advEl) advEl.style.display = panel==='advances'?'block':'none';
+  if(panel==='advances') renderAdvances();
   var be = document.getElementById('rep-toggle-entries');
   var bs = document.getElementById('rep-toggle-summary');
   var bp = document.getElementById('rep-toggle-payments');
   if(be){ be.style.background=panel==='entries'?'var(--green)':'transparent'; be.style.color=panel==='entries'?'#fff':'var(--muted)'; }
   if(bs){ bs.style.background=panel==='summary'?'var(--green)':'transparent'; bs.style.color=panel==='summary'?'#fff':'var(--muted)'; }
   if(bp){ bp.style.background=panel==='payments'?'var(--green)':'transparent'; bp.style.color=panel==='payments'?'#fff':'var(--muted)'; }
+  var ba=document.getElementById('rep-toggle-advances');
+  if(ba){ ba.style.background=panel==='advances'?'var(--green)':'transparent'; ba.style.color=panel==='advances'?'#fff':'var(--muted)'; }
   if(panel==='entries') renderEntriesList();
   else if(panel==='summary') renderSummary();
   else renderPayments();
@@ -1696,6 +1758,16 @@ window.saveEntryEdit = saveEntryEdit;
 
 // Wire datetime inputs - done via DOMContentLoaded (modal is after script tag)
 document.addEventListener('DOMContentLoaded', function(){
+  var advBtn = document.getElementById('addAdvanceBtn');
+  if(advBtn) advBtn.addEventListener('click', function(){ addAdvance(); });
+  // Delegation for advances list delete buttons
+  var advList = document.getElementById('advances-list');
+  if(advList) advList.addEventListener('click', function(e){
+    var btn = e.target;
+    while(btn && btn !== advList){ if(btn.classList && btn.classList.contains('adv-del-btn')) break; btn = btn.parentNode; }
+    if(!btn || btn === advList) return;
+    delAdvance(btn.getAttribute('data-advid'));
+  });
   var inEl = document.getElementById('edit-entry-in');
   var outEl = document.getElementById('edit-entry-out');
   var saveBtn = document.getElementById('saveEntryEditBtn');
@@ -1756,6 +1828,102 @@ function renderSummary(){
 }
 
 // ── PAYMENTS ──────────────────────────────────────────
+
+// ── ADVANCES ────────────────────────────────────────────────────────
+function renderAdvances(){
+  // Populate helper dropdown
+  var sel = document.getElementById('adv-helper');
+  if(sel){
+    sel.innerHTML = '<option value="">-- Select Helper --</option>';
+    helpers.forEach(function(h){
+      var o = document.createElement('option');
+      o.value = h.id; o.textContent = h.name;
+      sel.appendChild(o);
+    });
+  }
+  var advDate = document.getElementById('adv-date');
+  if(advDate && !advDate.value) advDate.value = localDateStr();
+
+  // Summary per helper
+  var summaryEl = document.getElementById('advances-summary');
+  var balances = {};
+  advances.forEach(function(a){
+    if(!balances[a.helperId]) balances[a.helperId] = 0;
+    balances[a.helperId] += a.type === 'advance' ? a.amount : -a.amount;
+  });
+  var sumHtml = '';
+  var hasAny = false;
+  helpers.forEach(function(h){
+    var bal = balances[h.id] || 0;
+    if(bal === 0) return;
+    hasAny = true;
+    var color = bal > 0 ? 'var(--red)' : 'var(--green)';
+    var label = bal > 0 ? 'owes company' : 'overpaid';
+    sumHtml += '<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:8px">';
+    sumHtml += '<div style="font-weight:700">'+h.name+'</div>';
+    sumHtml += '<div style="font-weight:800;color:'+color+'">$'+Math.abs(bal).toFixed(2)+' <span style="font-size:11px;font-weight:600">'+label+'</span></div>';
+    sumHtml += '</div>';
+  });
+  if(summaryEl) summaryEl.innerHTML = hasAny ? '<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px">BALANCE SUMMARY</div>' + sumHtml : '';
+
+  // Full history
+  var listEl = document.getElementById('advances-list');
+  if(!advances.length){ listEl.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No advances recorded yet.</div>'; return; }
+  listEl.innerHTML = advances.map(function(a){
+    var h = hById(a.helperId);
+    var isAdv = a.type === 'advance';
+    var color = isAdv ? 'var(--red)' : 'var(--green)';
+    var sign = isAdv ? '-$' : '+$';
+    var icon = isAdv ? '💸' : '✅';
+    return '<div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
+      '<div style="font-size:20px">'+icon+'</div>'+
+      '<div style="flex:1">'+
+        '<div style="font-weight:700">'+(h?h.name:'Unknown')+'</div>'+
+        '<div style="font-size:12px;color:var(--muted)">'+a.date+(a.note?' · '+a.note:'')+'</div>'+
+      '</div>'+
+      '<div style="font-weight:800;color:'+color+'">'+sign+parseFloat(a.amount).toFixed(2)+'</div>'+
+      '<button data-advid="'+a.id+'" class="adv-del-btn" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button>'+
+    '</div>';
+  }).join('');
+}
+window.renderAdvances = renderAdvances;
+
+function addAdvance(){
+  var hid = document.getElementById('adv-helper').value;
+  var type = document.getElementById('adv-type').value;
+  var amount = parseFloat(document.getElementById('adv-amount').value);
+  var date = document.getElementById('adv-date').value;
+  var note = document.getElementById('adv-note').value.trim();
+  if(!hid) return showToast('Select a helper','err');
+  if(!amount || amount <= 0) return showToast('Enter a valid amount','err');
+  if(!date) return showToast('Select a date','err');
+  db.collection('advances').add({helperId:hid, type:type, amount:amount, date:date, note:note, createdAt:new Date().toISOString()})
+    .then(function(){
+      document.getElementById('adv-amount').value = '';
+      document.getElementById('adv-note').value = '';
+      showToast(type==='advance'?'Advance recorded':'Discount recorded');
+      renderDashboard();
+    });
+}
+window.addAdvance = addAdvance;
+
+function delAdvance(id){
+  db.collection('advances').doc(id).delete();
+  showToast('Entry deleted');
+  renderDashboard();
+}
+window.delAdvance = delAdvance;
+
+function getAdvanceBalance(helperId){
+  var bal = 0;
+  advances.forEach(function(a){
+    if(a.helperId !== helperId) return;
+    bal += a.type === 'advance' ? a.amount : -a.amount;
+  });
+  return bal;
+}
+window.getAdvanceBalance = getAdvanceBalance;
+
 function renderPayments(){
   var sel=document.getElementById('pay-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var pd=document.getElementById('pay-date'); if(pd&&!pd.value) pd.value=localDateStr();
