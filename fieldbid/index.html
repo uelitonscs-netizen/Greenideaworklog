@@ -2200,8 +2200,12 @@ document.getElementById('faSaveBtn').addEventListener('click',function(){
   // Always use window.fieldAreas to avoid closure scope divergence
   if(editFAIdx>=0)window.fieldAreas[editFAIdx]=area;else window.fieldAreas.push(area);
   fieldAreas=window.fieldAreas;
-  saveFA();closeOv('faOverlay');
-  setTimeout(function(){renderFA();renderFWO();},50);
+  saveFA();
+  // Sync fieldAreas from window to ensure photos are included before render
+  fieldAreas=window.fieldAreas;
+  closeOv('faOverlay');
+  renderFA();
+  renderFWO();
   toast(editFAIdx>=0?'✅ Area updated':'✅ Area added');
   }catch(e){console.error('saveArea error:',e);closeOv('faOverlay');toast('Area saved');}
 });
