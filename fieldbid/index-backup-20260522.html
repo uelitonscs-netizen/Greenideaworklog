@@ -707,7 +707,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
 
     <!-- Multiplier toggle -->
     <div style="margin:8px 0 4px">
-      <button id="multToggleBtn" onclick="toggleMultiplier()" style="background:transparent;border:1px solid #444;color:#7d8590;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">× Multiplier: OFF</button>
+      <button id="multToggleBtn" id="multToggleBtn" style="background:transparent;border:1px solid #444;color:#7d8590;border-radius:99px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">× Multiplier: OFF</button>
     </div>
     <div id="multWrap" style="display:none;margin-bottom:8px">
       <div class="frow">
@@ -838,7 +838,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="mhandle"></div>
     <div class="mtitle" id="eiTitle">Add Item</div>
     <div class="fg"><label class="fl">Description</label><input class="fi" id="ei_name" type="text" placeholder="e.g. Exterior Walls – North Wing"></div>
-    <div class="fg"><label class="fl">Product</label><div class="prod-picker" id="eiPicker"></div></div>
+    <div class="fg" id="ei_prod_row" style="display:none"><label class="fl">Material</label><div id="ei_prod_label" style="font-size:13px;color:#58a6ff;padding:6px 0;font-weight:600"></div></div>
     <div class="frow">
       <div class="fg"><label class="fl">Square Feet</label><input class="fi" id="ei_sf" type="number" placeholder="0" min="0"></div>
       <div class="fg" id="ei_inch_wrap" style="display:none"><label class="fl">Thickness (in)</label><input class="fi" id="ei_inch" type="number" placeholder="0" step="0.5" min="0"></div>
@@ -1246,6 +1246,7 @@ function showEP(id,tab){
 // PROJECT
 document.getElementById('btnOpenProj').addEventListener('click',function(){openProjModal();});
 document.getElementById('fieldProjName').addEventListener('click', function(){ openProjModal(); });
+(function(){ var mb=document.getElementById('multToggleBtn'); if(mb) mb.addEventListener('click', toggleMultiplier); })();
 document.getElementById('projCloseBtn').addEventListener('click',function(){closeOv('projOverlay');});
 document.getElementById('createProjBtn').addEventListener('click',function(){createProj();});
 function openProjModal(){renderProjList();openOv('projOverlay');}
@@ -1299,14 +1300,24 @@ function renderProjList(){
     var p=projs[i];var active=currentProj&&currentProj.id===p.id;
     var safeId=p.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     h+='<div class="proj-item '+(active?'active':'inactive')+'">';
-    h+='<button class="proj-btn" onclick="switchProjById(\''+safeId+'\')" style="flex:1;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font-family:inherit;color:inherit">';
+    h+='<button class="proj-btn" data-act="switch" data-pid="'+safeId+'" style="flex:1;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font-family:inherit;color:inherit">';
     h+='<div class="proj-name">'+esc(p.name)+(active?' ✓':'')+'</div>';
     h+='<div class="proj-meta">'+(p.address?esc(p.address)+' · ':'')+''+(p.areas?p.areas.length:0)+' areas · '+p.created+'</div>';
     h+='</button>';
-    h+='<button class="proj-del" onclick="deleteProjById(\''+safeId+'\')">🗑</button>';
+    h+='<button class="proj-del" data-act="del" data-pid="'+safeId+'">🗑</button>';
     h+='</div>';
   }
   list.innerHTML=h;
+  var newList=list.cloneNode(true);list.parentNode.replaceChild(newList,list);
+  newList.addEventListener('click',function(e){
+    var btn=e.target;
+    while(btn&&btn!==newList){if(btn.tagName==='BUTTON'&&btn.getAttribute('data-act'))break;btn=btn.parentNode;}
+    if(!btn||btn===newList)return;
+    var act=btn.getAttribute('data-act');
+    var pid=btn.getAttribute('data-pid');
+    if(act==='switch')switchProjById(pid);
+    else if(act==='del')deleteProjById(pid);
+  });
 }
 function createProj(){
   var name=document.getElementById('newProjName').value.trim();
@@ -1664,7 +1675,7 @@ function renderRows(mode){
     h+='<input class="fi" type="text" data-field="l" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].l+'" placeholder="12+15+8" style="font-size:16px"></div>';
     h+='<div class="mrow-h"><div class="mrow-lbl">'+(i===0?(mode==='wall'?'Height':'Width'):'')+'</div>';
     h+='<input class="fi" type="text" data-field="h" data-row="'+i+'" data-mode="'+mode+'" value="'+rows[i].h+'" placeholder="9" style="font-size:16px"></div>';
-    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" onclick="deleteRow(this)">×</button>';
+    if(rows.length>1)h+='<button class="mrow-del" data-row="'+i+'" data-mode="'+mode+'" data-act="delrow">×</button>';
     h+='</div>';
   }
   container.innerHTML=h;
@@ -1703,6 +1714,30 @@ function setMMode(mode,btn){
 }
 
 
+
+function clearJobEstimate(pid){
+  appConfirm('Remove this job from Estimator? (Takeoff areas are kept)',function(){
+    var projs=loadProjs();
+    for(var i=0;i<projs.length;i++){
+      if(projs[i].id===pid){
+        projs[i].estItems=[];
+        projs[i].quoteInfo={client:projs[i].name,address:projs[i].address||''};
+        break;
+      }
+    }
+    saveProjs(projs);
+    // If this is the active project, clear estItems in memory too
+    if(currentProj&&currentProj.id===pid){
+      estItems=[];window.estItems=estItems;
+      quoteInfo={client:currentProj.name,address:currentProj.address||''};
+      window.quoteInfo=quoteInfo;
+    }
+    renderJobsList();
+    toast('Job removed from Estimator');
+  });
+}
+window.clearJobEstimate=clearJobEstimate;
+
 function renderJobsList(){
   var projs = loadProjs();
   var container = document.getElementById('jobsList');
@@ -1710,7 +1745,13 @@ function renderJobsList(){
     container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4d5560;font-size:13px">No saved jobs yet.<br>Create a project to get started.</div>';
     return;
   }
+  // Only show projects that have estimator items
+  projs = projs.filter(function(p){ return p.estItems && p.estItems.length > 0; });
   var h = '';
+  if(!projs.length){
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4d5560;font-size:13px">No estimator jobs yet.<br>Import areas from takeoff to create a job.</div>';
+    return;
+  }
   for(var i=0; i<projs.length; i++){
     var p = projs[i];
     var isActive = currentProj && currentProj.id === p.id;
@@ -1757,12 +1798,27 @@ function renderJobsList(){
     h += '</div>';
     // Action buttons
     h += '<div style="display:flex;gap:8px">';
-    h += '<button style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer" onclick="openJobFromList(\''+safeId+'\')">'+(isActive?'✓ Editing':'Open Job')+'</button>';
-    h += '<button style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer" onclick="deleteProjById(\''+safeId+'\')">🗑</button>';
+    h += '<button class="job-open-btn" data-act="open" data-pid="'+p.id+'" style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
+    h += '<button class="job-del-btn" data-act="del" data-pid="'+p.id+'" style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer">🗑</button>';
     h += '</div>';
     h += '</div></div>';
   }
   container.innerHTML = h;
+  // cloneNode removes all accumulated listeners, then add one clean listener
+  var newContainer = container.cloneNode(true);
+  container.parentNode.replaceChild(newContainer, container);
+  newContainer.addEventListener('click', function(e) {
+    var btn = e.target;
+    while(btn && btn !== newContainer) {
+      if(btn.tagName === 'BUTTON' && btn.getAttribute('data-act')) break;
+      btn = btn.parentNode;
+    }
+    if(!btn || btn === newContainer) return;
+    var act = btn.getAttribute('data-act');
+    var pid = btn.getAttribute('data-pid');
+    if(act === 'open') openJobFromList(pid);
+    else if(act === 'del') clearJobEstimate(pid);
+  });
 }
 window.renderJobsList = renderJobsList;
 
@@ -1797,6 +1853,18 @@ function openJobFromList(pid){
 window.openJobFromList = openJobFromList;
 
 // Samsung-safe event delegation handler for measurement rows
+var _rowClickHandler = function(e){
+  var btn=e.target;
+  if(!btn||btn.tagName!=='BUTTON') return;
+  if(btn.getAttribute('data-act')!=='delrow') return;
+  var row=parseInt(btn.getAttribute('data-row'));
+  var mode=btn.getAttribute('data-mode');
+  if(isNaN(row)||!mode) return;
+  if(mode==='wall'){wallRows.splice(row,1);if(!wallRows.length)wallRows=[{l:'',h:''}];renderRows('wall');}
+  else{floorRows.splice(row,1);if(!floorRows.length)floorRows=[{l:'',h:''}];renderRows('floor');}
+  recalcSF();
+};
+
 var _rowInputHandler = function(e){
   var el = e.target;
   if(!el || el.tagName !== 'INPUT') return;
@@ -1828,10 +1896,14 @@ function initCalc(){
     if(wc){
       wc.removeEventListener('input',_rowInputHandler);
       wc.addEventListener('input',_rowInputHandler);
+      wc.removeEventListener('click',_rowClickHandler);
+      wc.addEventListener('click',_rowClickHandler);
     }
     if(fc){
       fc.removeEventListener('input',_rowInputHandler);
       fc.addEventListener('input',_rowInputHandler);
+      fc.removeEventListener('click',_rowClickHandler);
+      fc.addEventListener('click',_rowClickHandler);
     }
   })();
   var m=document.getElementById('fa_sf_m');if(m)m.value='';
@@ -2225,10 +2297,40 @@ function openEIModal(idx){
   var eiGalEl=document.getElementById('eiGal');
   if(eiCamEl) eiCamEl.value='';
   if(eiGalEl) eiGalEl.value='';
-  if(idx>=0){var it=estItems[idx];document.getElementById('ei_name').value=it.name;document.getElementById('ei_sf').value=it.sf;document.getElementById('ei_price').value=it.pricePerInch||it.price;document.getElementById('ei_inch').value=it.inches||'';document.getElementById('ei_notes').value=it.notes||'';eiProd=it.productId||null;eiPendPh=it.photos?it.photos.slice():[];}
-  else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
+  if(idx>=0){
+    var it=estItems[idx];
+    document.getElementById('ei_name').value=it.name;
+    document.getElementById('ei_sf').value=it.sf;
+    document.getElementById('ei_price').value=it.pricePerInch||it.price;
+    document.getElementById('ei_inch').value=it.inches||'';
+    document.getElementById('ei_notes').value=it.notes||'';
+    eiProd=it.productId||null;
+    eiPendPh=it.photos?it.photos.slice():[];
+    // Show material label if item has a product
+    var pr=getProd(eiProd);
+    var prodRow=document.getElementById('ei_prod_row');
+    var prodLbl=document.getElementById('ei_prod_label');
+    if(pr&&prodRow&&prodLbl){
+      prodRow.style.display='block';
+      prodLbl.textContent=(pr.emoji||'')+(pr.emoji?' ':'')+pr.name;
+    } else if(prodRow){
+      prodRow.style.display='none';
+    }
+  }
+  else{
+    document.getElementById('ei_name').value='';
+    document.getElementById('ei_sf').value='';
+    document.getElementById('ei_price').value='';
+    document.getElementById('ei_inch').value='';
+    document.getElementById('ei_notes').value='';
+    eiProd=null;
+    // Hide material label for new manual items
+    var prodRow=document.getElementById('ei_prod_row');
+    if(prodRow) prodRow.style.display='none';
+  }
   updateEIPricingUI();
-  renderPicker('ei');renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
+  // product picker removed - material shown as label
+  renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
 }
 function isPerInch(){
   var pr=getProd(eiProd);
@@ -2311,21 +2413,34 @@ function delEI(idx){appConfirm('Delete this item?',function(){estItems.splice(id
 function renderPicker(mode){
   var id=mode==='fa'?'faPicker':'eiPicker';
   var sel=mode==='fa'?faProd:eiProd;
-  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" onclick="openProdModal(-1)">+ New Type</button></div>';
+  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="picker-add-btn" data-act="addprod">+ New Type</button></div>';
   for(var i=0;i<products.length;i++){
     var pr=products[i];var on=pr.id===sel?' on':'';
     h+='<div class="popt-wrap">';
-    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="selProd(this)">';
+    h+='<button class="popt'+on+'" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="sel">';
     h+='<div class="po-l"><div class="po-em">'+pr.emoji+'</div><div><div class="po-nm">'+esc(pr.name)+'</div><div class="po-ct">'+esc(pr.cat)+'</div></div></div>';
     h+='<div style="display:flex;align-items:center">';
     if(mode==='ei')h+='<div class="po-pr">$'+parseFloat(pr.price).toFixed(2)+'/SF</div>';
     h+='<div class="po-ck">✓</div></div></button>';
-    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" onclick="delProdFromPicker(this.dataset.pid,this.dataset.mode)" title="Delete">×</button>';
+    h+='<button class="popt-del" data-pid="'+pr.id+'" data-mode="'+mode+'" data-act="delprod" title="Delete">×</button>';
     h+='</div>';
   }
   if(products.length===0)h+='<div style="padding:14px;color:#4d5560;font-size:12px;text-align:center">No products — tap + New Type</div>';
   var container=document.getElementById(id);
-  if(container) container.innerHTML=h;
+  if(!container) return;
+  container.innerHTML=h;
+  var newC=container.cloneNode(true);container.parentNode.replaceChild(newC,container);
+  newC.addEventListener('click',function(e){
+    var btn=e.target;
+    while(btn&&btn!==newC){if(btn.tagName==='BUTTON')break;btn=btn.parentNode;}
+    if(!btn||btn===newC)return;
+    var act=btn.getAttribute('data-act');
+    var pid=btn.getAttribute('data-pid');
+    var mode=btn.getAttribute('data-mode');
+    if(act==='addprod')openProdModal(-1);
+    else if(act==='delprod')delProdFromPicker(pid,mode);
+    else if(act==='sel')selProd(btn);
+  });
 }
 function delProdFromPicker(pid,mode){
   var idx=-1;
@@ -2504,7 +2619,9 @@ function doImport(){
     // Priority: 1) lastPrice on area object, 2) lastPrice by name, 3) lastPrice by product, 4) product default
     var _nameKey='name_'+a.name.trim().toLowerCase().replace(/\s+/g,'_');
     var _savedProdId=getLastPrice(_nameKey+'__prod',null);
-    var _useProd=_savedProdId?getProd(_savedProdId):(a.lastProdId?getProd(a.lastProdId):pr);
+    // If matType is explicitly known (ign, cc, oc, fg, mw, cel), trust it over name history
+    var _hasKnownMat = a.matType && a.matType !== 'other' && pr;
+    var _useProd=_hasKnownMat ? pr : (_savedProdId?getProd(_savedProdId):(a.lastProdId?getProd(a.lastProdId):pr));
     var lastP = 0;
     if(a.lastPrice>0) lastP=a.lastPrice;
     else{ lastP=getLastPrice(_nameKey, 0); }
