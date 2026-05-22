@@ -838,7 +838,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div class="mhandle"></div>
     <div class="mtitle" id="eiTitle">Add Item</div>
     <div class="fg"><label class="fl">Description</label><input class="fi" id="ei_name" type="text" placeholder="e.g. Exterior Walls – North Wing"></div>
-    <div class="fg"><label class="fl">Product</label><div class="prod-picker" id="eiPicker"></div></div>
+    <div class="fg" id="ei_prod_row" style="display:none"><label class="fl">Material</label><div id="ei_prod_label" style="font-size:13px;color:#58a6ff;padding:6px 0;font-weight:600"></div></div>
     <div class="frow">
       <div class="fg"><label class="fl">Square Feet</label><input class="fi" id="ei_sf" type="number" placeholder="0" min="0"></div>
       <div class="fg" id="ei_inch_wrap" style="display:none"><label class="fl">Thickness (in)</label><input class="fi" id="ei_inch" type="number" placeholder="0" step="0.5" min="0"></div>
@@ -2225,10 +2225,29 @@ function openEIModal(idx){
   var eiGalEl=document.getElementById('eiGal');
   if(eiCamEl) eiCamEl.value='';
   if(eiGalEl) eiGalEl.value='';
-  if(idx>=0){var it=estItems[idx];document.getElementById('ei_name').value=it.name;document.getElementById('ei_sf').value=it.sf;document.getElementById('ei_price').value=it.pricePerInch||it.price;document.getElementById('ei_inch').value=it.inches||'';document.getElementById('ei_notes').value=it.notes||'';eiProd=it.productId||null;eiPendPh=it.photos?it.photos.slice():[];}
+  if(idx>=0){
+    var it=estItems[idx];
+    document.getElementById('ei_name').value=it.name;
+    document.getElementById('ei_sf').value=it.sf;
+    document.getElementById('ei_price').value=it.pricePerInch||it.price;
+    document.getElementById('ei_inch').value=it.inches||'';
+    document.getElementById('ei_notes').value=it.notes||'';
+    eiProd=it.productId||null;
+    eiPendPh=it.photos?it.photos.slice():[];
+    // Show material label if item has a product
+    var pr=getProd(eiProd);
+    var prodRow=document.getElementById('ei_prod_row');
+    var prodLbl=document.getElementById('ei_prod_label');
+    if(pr&&prodRow&&prodLbl){
+      prodRow.style.display='block';
+      prodLbl.textContent=(pr.emoji||'')+(pr.emoji?' ':'')+pr.name;
+    } else if(prodRow){
+      prodRow.style.display='none';
+    }
+  }
   else{document.getElementById('ei_name').value='';document.getElementById('ei_sf').value='';document.getElementById('ei_price').value=products.length?products[0].price:'0';document.getElementById('ei_inch').value='';document.getElementById('ei_notes').value='';eiProd=products.length?products[0].id:null;}
   updateEIPricingUI();
-  renderPicker('ei');renderPPGrid('ei');updateEIHint();openOv('eiOverlay');
+  // product picker removed - material shown as labelrenderPPGrid('ei');updateEIHint();openOv('eiOverlay');
 }
 function isPerInch(){
   var pr=getProd(eiProd);
