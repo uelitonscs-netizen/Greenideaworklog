@@ -485,7 +485,6 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
       <div style="display:flex;gap:6px;align-items:center">
         <span class="sec-ct" id="fAreaSub"></span>
         <button id="exportFieldBtn" style="padding:6px 12px;background:#1e2530;border:1px solid #2a3340;border-radius:8px;color:#58a6ff;font-size:12px;font-weight:700;display:none">📤 Export</button>
-      <button id="proofCertBtn" style="padding:6px 12px;background:#1a6b2a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;display:none">📋 Certificate</button>
       </div>
     </div>
     <div id="fieldAreaList" class="cards"></div>
@@ -637,6 +636,7 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
       <button id="newJobBtn" style="background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ New Job</button>
     </div>
     <div id="jobsList"></div>
+    <div style="padding:12px 0 4px"><button id="proofCertBtn" style="width:100%;padding:12px;background:#1a6b2a;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.02em">&#x1F4CB; Generate Proof of Insulation</button></div>
   </div>
 </div>
 <button class="fab e" id="estFab" style="display:none">+</button>
@@ -1680,7 +1680,7 @@ function renderFA(){
   document.getElementById('fAreaSub').textContent=fieldAreas.length?fieldAreas.length+' area'+(fieldAreas.length>1?'s':'')+' measured':'';
   var expBtn=document.getElementById('exportFieldBtn');
   if(expBtn)expBtn.style.display=fieldAreas.length?'block':'none';
-  var certBtn=document.getElementById('proofCertBtn');if(certBtn)certBtn.style.display=fieldAreas.length?'block':'none';
+
   checkImportBar();
   if(!fieldAreas.length){list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-title">No areas yet</div><div class="empty-body">Tap + to measure your first area</div></div>';return;}
   var matEmoji={'cc':'🫧','oc':'💧','hybrid':'🔀','hybrid_foam_fg':'🔀','hybrid_foam_mw':'🔀','fg_r11':'🧶','fg_r13':'🧶','fg_r15':'🧶','fg_r19':'🧶','fg_r21':'🧶','fg_r25':'🧶','fg_r30':'🧶','fg_r38':'🧶','fg_r49':'🧶','fg_custom':'🧶','cel_blown':'📦','cel_dense':'📦','mw_r15':'🪨','mw_r23':'🪨','mw_r30':'🪨','mw_custom':'🪨','ign':'🔥','fb':'🧱','foam_cans':'🫙','insulation_removal':'🗑️','other':'📦'};
