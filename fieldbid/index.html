@@ -636,7 +636,6 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
       <button id="newJobBtn" style="background:#1a6b2a;color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ New Job</button>
     </div>
     <div id="jobsList"></div>
-    <div style="padding:12px 0 4px"><button id="proofCertBtn" style="width:100%;padding:12px;background:#1a6b2a;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.02em">&#x1F4CB; Generate Proof of Insulation</button></div>
   </div>
 </div>
 <button class="fab e" id="estFab" style="display:none">+</button>
@@ -1481,7 +1480,7 @@ function formatDimRows(a, opts){
 
 
 // ── PROOF OF INSULATION CERTIFICATE ────────────────────────────────
-function generateProofPDF(){
+function generateProofPDF(pid){
   if(!window.jspdf){toast('PDF library loading, try again');return;}
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
@@ -1534,7 +1533,15 @@ function generateProofPDF(){
     y = 50;
 
     // ── PROJECT INFO ──
-    var proj=currentProj||{};
+    // If pid provided, use that project; else use currentProj
+  var proj=currentProj||{};
+  var areas=fieldAreas;
+  if(pid){
+    var projs=loadProjs();
+    for(var _pi=0;_pi<projs.length;_pi++){
+      if(projs[_pi].id===pid){proj=projs[_pi];areas=projs[_pi].areas||[];break;}
+    }
+  }
     var addr=(proj.address||proj.desc||'—');
     var date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
     var installDate=proj.start?new Date(proj.start).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}):date;
@@ -1581,8 +1588,8 @@ function generateProofPDF(){
     y+=8;
 
     var totalSF=0;
-    for(var i=0;i<fieldAreas.length;i++){
-      var a=fieldAreas[i];
+    for(var i=0;i<areas.length;i++){
+      var a=areas[i];
       if(!a||!a.sf) continue;
       totalSF+=parseFloat(a.sf)||0;
       var rowBg=i%2===0?[255,255,255]:[245,250,245];
@@ -1994,9 +2001,10 @@ function renderJobsList(){
     }
     h += '</div>';
     // Action buttons
-    h += '<div style="display:flex;gap:8px">';
-    h += '<button class="job-open-btn" data-act="open" data-pid="'+p.id+'" style="flex:1;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
-    h += '<button class="job-del-btn" data-act="del" data-pid="'+p.id+'" style="background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:9px 13px;font-size:16px;cursor:pointer">🗑</button>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px">';
+    h += '<button class="job-open-btn" data-act="open" data-pid="'+p.id+'" style="width:100%;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
+    h += '<button class="job-cert-btn" data-act="cert" data-pid="'+p.id+'" style="width:100%;background:#f59e0b;border:none;color:#000;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">📋 Generate Certificate</button>';
+    h += '<button class="job-del-btn" data-act="del" data-pid="'+p.id+'" style="width:100%;background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">🗑 Delete</button>';
     h += '</div>';
     h += '</div></div>';
   }
@@ -2014,6 +2022,7 @@ function renderJobsList(){
     var act = btn.getAttribute('data-act');
     var pid = btn.getAttribute('data-pid');
     if(act === 'open') openJobFromList(pid);
+    else if(act === 'cert') generateProofPDF(pid);
     else if(act === 'del') clearJobEstimate(pid);
   });
 }
