@@ -1536,10 +1536,16 @@ function generateProofPDF(pid){
     // If pid provided, use that project; else use currentProj
   var proj=currentProj||{};
   var areas=fieldAreas;
+  var projEstItems=estItems;
   if(pid){
     var projs=loadProjs();
     for(var _pi=0;_pi<projs.length;_pi++){
-      if(projs[_pi].id===pid){proj=projs[_pi];areas=projs[_pi].areas||[];break;}
+      if(projs[_pi].id===pid){
+        proj=projs[_pi];
+        areas=projs[_pi].areas||[];
+        projEstItems=projs[_pi].estItems||[];
+        break;
+      }
     }
   }
     var addr=(proj.address||proj.desc||'—');
@@ -1590,10 +1596,16 @@ function generateProofPDF(pid){
     var totalSF=0;
     // Match areas with estItems to get edited thickness/price data
     var estMap={};
-    for(var ei=0;ei<estItems.length;ei++){
-      estMap[estItems[ei].name]=estItems[ei];
+    for(var ei=0;ei<projEstItems.length;ei++){
+      estMap[projEstItems[ei].name]=projEstItems[ei];
     }
-    for(var i=0;i<areas.length;i++){
+    // If no takeoff areas, use estItems as the source
+    var srcItems=areas.length>0?areas:projEstItems.map(function(it){
+      return {name:it.name,sf:it.sf,matCat:it.matCat||'',matType:it.matType||'',
+              ccInch:0,ocInch:0,fgR:0,mwR:0,fgInch:0};
+    });
+    for(var i=0;i<srcItems.length;i++){
+      var a=srcItems[i];
       var a=areas[i];
       if(!a||!a.sf) continue;
       totalSF+=parseFloat(a.sf)||0;
