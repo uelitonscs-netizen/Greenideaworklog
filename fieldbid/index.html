@@ -1104,13 +1104,7 @@ function parseSum(str){
   return total;
 }
 
-function saveFA(){
-  if(currentProj){ saveProjAreas(); }
-  localStorage.setItem('fb6_fa',JSON.stringify(fieldAreas));
-  localStorage.setItem('fb6_ei',JSON.stringify(estItems));
-  localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo));
-  save();
-}
+function saveFA(){ saveEI(); } // alias - same operation
 function saveEI(){
   if(currentProj){ saveProjAreas(); }
   localStorage.setItem('fb6_fa',JSON.stringify(fieldAreas));
@@ -1122,9 +1116,10 @@ function saveQI(){localStorage.setItem('fb6_qi',JSON.stringify(quoteInfo)); save
 function savePR(){localStorage.setItem('fb6_pr',JSON.stringify(products)); save();}
 function saveCfg(){localStorage.setItem('fb6_cfg',JSON.stringify(cfg)); save();}
 
-function loadProjs(){var p=localStorage.getItem('fb6_projs');return p?JSON.parse(p):[];}
+function loadProjs(){try{var p=localStorage.getItem('fb6_projs');return p?JSON.parse(p):[]}catch(e){return [];}}
 function saveProjs(p){localStorage.setItem('fb6_projs',JSON.stringify(p)); save();}
 function saveProjAreas(){
+  if(!currentProj) return;
   var projs=loadProjs();
   for(var i=0;i<projs.length;i++){
     if(projs[i].id===currentProj.id){
@@ -1150,16 +1145,15 @@ function updateProjHeader(){
 }
 
 function load(){
-  var fa=localStorage.getItem('fb6_fa');if(fa){fieldAreas=JSON.parse(fa);window.fieldAreas=fieldAreas;}
-  var ei=localStorage.getItem('fb6_ei');if(ei)estItems=JSON.parse(ei);
-  var c=localStorage.getItem('fb6_cfg');if(c){var cp=JSON.parse(c);for(var k in cp)cfg[k]=cp[k];}
-  var pr=localStorage.getItem('fb6_pr');products=pr?JSON.parse(pr):JSON.parse(JSON.stringify(DEFAULTS));
-  if(!pr)savePR();
-  var q=localStorage.getItem('fb6_qi');if(q)quoteInfo=JSON.parse(q);
-  var n=localStorage.getItem('fb6_qn');if(n)quoteNum=parseInt(n);
-  var ct=localStorage.getItem('fb6_ct');if(ct)ctData=JSON.parse(ct);
-  var sg=localStorage.getItem('fb6_sg');if(sg)sigData=JSON.parse(sg);
-  var wc=localStorage.getItem('fb6_wc');if(wc)woChecked=JSON.parse(wc);
+  try{var fa=localStorage.getItem('fb6_fa');if(fa){fieldAreas=JSON.parse(fa);window.fieldAreas=fieldAreas;}}catch(e){fieldAreas=[];}
+  try{var ei=localStorage.getItem('fb6_ei');if(ei)estItems=JSON.parse(ei);}catch(e){estItems=[];}
+  try{var c=localStorage.getItem('fb6_cfg');if(c){var cp=JSON.parse(c);for(var k in cp)cfg[k]=cp[k];}}catch(e){}
+  try{var pr=localStorage.getItem('fb6_pr');products=pr?JSON.parse(pr):JSON.parse(JSON.stringify(DEFAULTS));if(!pr)savePR();}catch(e){products=JSON.parse(JSON.stringify(DEFAULTS));}
+  try{var q=localStorage.getItem('fb6_qi');if(q)quoteInfo=JSON.parse(q);}catch(e){quoteInfo={};}
+  try{var n=localStorage.getItem('fb6_qn');if(n)quoteNum=parseInt(n);}catch(e){}
+  try{var ct=localStorage.getItem('fb6_ct');if(ct)ctData=JSON.parse(ct);}catch(e){}
+  try{var sg=localStorage.getItem('fb6_sg');if(sg)sigData=JSON.parse(sg);}catch(e){}
+  try{var wc=localStorage.getItem('fb6_wc');if(wc)woChecked=JSON.parse(wc);}catch(e){}
   applySettings();applyCtFields();
   if(sigData&&sigData.img){
     document.getElementById('sigSaved').style.display='block';
@@ -2034,7 +2028,7 @@ function clearJobEstimate(pid){
     // If this is the active project, clear estItems in memory too
     if(currentProj&&currentProj.id===pid){
       estItems=[];window.estItems=estItems;
-      quoteInfo={client:currentProj.name,address:currentProj.address||''};
+      quoteInfo={client:currentProj?currentProj.name:'',address:currentProj?currentProj.address||'':''};
       window.quoteInfo=quoteInfo;
     }
     renderJobsList();
@@ -2060,7 +2054,6 @@ function renderJobsList(){
   for(var i=0; i<projs.length; i++){
     var p = projs[i];
     var isActive = currentProj && currentProj.id === p.id;
-    var safeId = p.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     // Calc totals from saved project data
     var totalSF = 0;
     var quoteTotal = 0;
@@ -3367,32 +3360,6 @@ function sendToWorkLog(){
     return m?parseFloat(m[1]):0;
   }
 
-  function getHybridInches(spec){
-    var s=spec.toLowerCase();
-    var nums=[];
-    var re=/(\d+\.?\d*)/g; var m2;
-    while((m2=re.exec(s))!==null){var n=parseFloat(m2[1]);if(n>0&&n<24)nums.push({v:n,p:m2.index});}
-    var ccPos=9999,ocPos=9999;
-    var ccM=s.match(/closed[\s-]*cell|(?:^|\s)cc(?:\s|$)/);
-    var ocM=s.match(/open[\s-]*cell|(?:^|\s)oc(?:\s|$)/);
-    if(ccM) ccPos=s.indexOf(ccM[0]);
-    if(ocM) ocPos=s.indexOf(ocM[0]);
-    var ccIn=0,ocIn=0;
-    if(nums.length>=2){
-      if(ccPos<9999){var best=null,bd=9999;nums.forEach(function(n){var d=Math.abs(n.p-ccPos);if(d<bd){bd=d;best=n;}});if(best)ccIn=best.v;}
-      if(ocPos<9999){var best2=null,bd2=9999;nums.forEach(function(n){var d=Math.abs(n.p-ocPos);if(d<bd2){bd2=d;best2=n;}});if(best2)ocIn=best2.v;}
-      if(!ccIn&&!ocIn){ccIn=nums[0].v;ocIn=nums[1].v;}
-      else if(ccIn&&!ocIn){ocIn=nums.find(function(n){return n.v!==ccIn;})||{v:0};ocIn=ocIn.v||0;}
-      else if(ocIn&&!ccIn){ccIn=nums.find(function(n){return n.v!==ocIn;})||{v:0};ccIn=ccIn.v||0;}
-      if(ccIn===ocIn&&nums.length>=2){
-        if(ccPos<ocPos)ocIn=nums.find(function(n){return n.v!==ccIn;})||{v:ocIn};
-        else ccIn=nums.find(function(n){return n.v!==ocIn;})||{v:ccIn};
-        if(typeof ccIn==='object')ccIn=ccIn.v||0;
-        if(typeof ocIn==='object')ocIn=ocIn.v||0;
-      }
-    }
-    return{cc:ccIn,oc:ocIn};
-  }
 
   // Combine fieldAreas + estItems
   var all=[];
