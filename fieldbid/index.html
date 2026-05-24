@@ -1588,6 +1588,11 @@ function generateProofPDF(pid){
     y+=8;
 
     var totalSF=0;
+    // Match areas with estItems to get edited thickness/price data
+    var estMap={};
+    for(var ei=0;ei<estItems.length;ei++){
+      estMap[estItems[ei].name]=estItems[ei];
+    }
     for(var i=0;i<areas.length;i++){
       var a=areas[i];
       if(!a||!a.sf) continue;
@@ -1598,13 +1603,21 @@ function generateProofPDF(pid){
 
       doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(30,30,30);
       var mname=matLabel[a.matCat||a.matType]||'—';
+      // Use estItem inches if available (user edited), else fall back to area fields
+      var estItem=estMap[a.name]||null;
+      var inchVal=estItem&&estItem.inches?parseFloat(estItem.inches):0;
       var rval='';
-      if(a.ccInch>0) rval='R-'+(Math.round(a.ccInch*6.5));
-      else if(a.ocInch>0) rval='R-'+(Math.round(a.ocInch*3.7));
+      if(inchVal>0){
+        if(a.matType==='cc'||a.matCat==='cc') rval='R-'+(Math.round(inchVal*7.5));
+        else if(a.matType==='oc'||a.matCat==='oc') rval='R-'+(Math.round(inchVal*4.2));
+        else rval=inchVal+'" thick';
+      } else if(a.ccInch>0) rval='R-'+(Math.round(a.ccInch*7.5));
+      else if(a.ocInch>0) rval='R-'+(Math.round(a.ocInch*4.2));
       else if(a.fgR>0) rval='R-'+a.fgR;
       else if(a.mwR>0) rval='R-'+a.mwR;
       var thick='';
-      if(a.ccInch>0) thick=a.ccInch+'"';
+      if(inchVal>0) thick=inchVal+'"';
+      else if(a.ccInch>0) thick=a.ccInch+'"';
       else if(a.ocInch>0) thick=a.ocInch+'"';
       else if(a.fgInch>0) thick=a.fgInch+'"';
 
