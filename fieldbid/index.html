@@ -1599,14 +1599,16 @@ function generateProofPDF(pid){
     for(var ei=0;ei<projEstItems.length;ei++){
       estMap[projEstItems[ei].name]=projEstItems[ei];
     }
-    // If no takeoff areas, use estItems as the source
-    var srcItems=areas.length>0?areas:projEstItems.map(function(it){
-      return {name:it.name,sf:it.sf,matCat:it.matCat||'',matType:it.matType||'',
-              ccInch:0,ocInch:0,fgR:0,mwR:0,fgInch:0};
-    });
+    // Always use projEstItems as source - they have the complete/edited data
+    // Fall back to areas if estItems empty
+    var srcItems=projEstItems.length>0?projEstItems:areas;
     for(var i=0;i<srcItems.length;i++){
       var a=srcItems[i];
-      var a=areas[i];
+      // If coming from estItems, enrich with product info
+      if(a&&!a.matCat&&!a.matType&&a.productId){
+        var _pr=getProd(a.productId);
+        if(_pr){ a.matCat=_pr.cat||''; }
+      }
       if(!a||!a.sf) continue;
       totalSF+=parseFloat(a.sf)||0;
       var rowBg=i%2===0?[255,255,255]:[245,250,245];
@@ -1614,7 +1616,9 @@ function generateProofPDF(pid){
       doc.rect(margin,y,W-margin*2,8,'F');
 
       doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(30,30,30);
-      var mname=matLabel[a.matCat||a.matType]||'—';
+      var mname=matLabel[a.matCat||a.matType]||'';
+      if(!mname&&a.productId){var _p=getProd(a.productId);if(_p)mname=_p.name;}
+      if(!mname) mname='—';
       // Use estItem inches if available (user edited), else fall back to area fields
       var estItem=estMap[a.name]||null;
       var inchVal=estItem&&estItem.inches?parseFloat(estItem.inches):0;
@@ -1990,9 +1994,10 @@ function renderJobsList(){
     var quoteTotal = 0;
     var areas = p.areas || [];
     var items = p.estItems || [];
-    for(var j=0; j<areas.length; j++) totalSF += Number(areas[j].sf)||0;
+    // Use estItems SF as source of truth (includes manually added items)
     for(var k=0; k<items.length; k++){
       var sf=Number(items[k].sf)||0;
+      totalSF += sf;
       var pr=Number(items[k].price)||0;
       var mk=Number(cfg&&cfg.markup)||0;
       quoteTotal += sf*pr*(1+mk/100);
@@ -2000,7 +2005,7 @@ function renderJobsList(){
     var taxRate=Number(cfg&&cfg.taxRate)||0;
     if(taxRate>0) quoteTotal = quoteTotal*(1+taxRate/100);
     quoteTotal = Math.round(quoteTotal);
-    var areaCount = areas.length;
+    var areaCount = items.length > 0 ? items.length : areas.length;
     var itemCount = items.length;
     h += '<div style="background:'+(isActive?'#1a2f1e':'#131920')+';border:1px solid '+(isActive?'#2a6b35':'#1e2530')+';border-radius:12px;margin-bottom:10px;overflow:hidden;">';
     // Active badge
