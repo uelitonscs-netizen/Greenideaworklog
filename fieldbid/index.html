@@ -1396,7 +1396,7 @@ function exportField(){
   for(var i=0;i<fieldAreas.length;i++){
     var a=fieldAreas[i];var pr=getProd(a.productId);
     lines.push((i+1)+'. '+a.name);
-    var matLabelMap={'cc':'Closed Cell Spray Foam','oc':'Open Cell Spray Foam','hybrid':'Hybrid CC+OC','hybrid_foam_fg':'Hybrid Foam+Fiberglass','hybrid_foam_mw':'Hybrid Foam+Mineral Wool','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel_blown':'Cellulose Open Blown','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','foam_cans':'Foam Cans','insulation_removal':'Insulation Removal','other':'Other'};
+    var matLabelMap={'cc':'Closed Cell Spray Foam','oc':'Open Cell Spray Foam','hybrid':'Hybrid CC+OC','hybrid_foam_fg':'Hybrid Foam+Fiberglass','hybrid_foam_mw':'Hybrid Foam+Mineral Wool','fg_r11':'Fiberglass R-11','fg_r13':'Fiberglass R-13','fg_r15':'Fiberglass R-15','fg_r19':'Fiberglass R-19','fg_r21':'Fiberglass R-21','fg_r25':'Fiberglass R-25','fg_r30':'Fiberglass R-30','fg_r38':'Fiberglass R-38','fg_r49':'Fiberglass R-49','fg_custom':'Fiberglass','cel':'Cellulose Dense Pack','cel_blown':'Cellulose Blown-In','cel_dense':'Cellulose Dense Pack','mw_r15':'Mineral Wool R-15','mw_r23':'Mineral Wool R-23','mw_r30':'Mineral Wool R-30','mw_custom':'Mineral Wool','ign':'Ignition Barrier','fb':'Fire Blocking','foam_cans':'Foam Cans','insulation_removal':'Insulation Removal','other':'Other'};
     var productName=a.matCat?matLabelMap[a.matCat]:(pr?pr.name:'Unknown');
     lines.push('   Product: '+productName);
     lines.push('   SF: '+fmtN(a.sf)+(a.spec?' | '+a.spec:''));
@@ -1482,7 +1482,8 @@ function detectMatCatFromText(text){
   if(t.match(/open.?cell|\boc\b|ocspf|open cell spray foam/)) return 'oc';
   if(t.match(/spray foam|sprayfoam/) && !t.match(/open/)) return 'cc'; // default spray foam = CC
   if(t.match(/fiberglass|fiber glass|\bfg\b|batt|blown.?in fiberglass/)) return 'fg_custom';
-  if(t.match(/cellulose|\bcel\b/)) return 'cel_blown';
+  if(t.match(/dense.?pack.*cellulose|cellulose.*dense.?pack/)) return 'cel';
+  if(t.match(/cellulose|\bcel\b|blown.?in|loose.?fill|open.?blow/)) return 'cel_blown';
   if(t.match(/mineral.?wool|rockwool|\bmw\b/)) return 'mw_custom';
   if(t.match(/ignition.?barrier|ign\b/)) return 'ign';
   return '';
@@ -1692,6 +1693,15 @@ function generateProofPDF(pid){
       } else if(a.mwR>0){
         // 5. Mineral wool R-value from takeoff
         rNum=a.mwR;
+      } else if(a.celR>0||(a.matCat==='cel'||a.matCat==='cel_blown')){
+        // 6. Cellulose - depth from GreenFiber table
+        var _celR=a.celR||rFromName;
+        if(_celR>0){
+          rNum=_celR;
+          var _isDense2=(a.matCat==='cel')||isCelDensePack(a.name||'',a.notes||'');
+          var _celDepth=getCelDepth(_celR,_isDense2);
+          if(_celDepth>0) thick=_celDepth+'"';
+        }
       } else if(rFromName>0){
         // 6. R-value from item name
         rNum=rFromName;
@@ -3332,7 +3342,49 @@ function sendToWorkLog(){
 
   // ── MATERIAL BUDGET CALC ──
   var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
-  var CEL_SQFT_BAG=40;
+  // GreenFiber Cel-Pak Cellulose tables (25 lb bag)
+  // Dense Pack - Walls/Enclosed Cavities
+  var CEL_DENSE_TABLE=[
+    [7,2,44.1],[9,2.5,35.0],[11,3,29.0],[13,3.5,24.6],[15,4,21.4],
+    [16,4.5,18.9],[18,5,16.9],[20,5.5,15.2],[22,6,13.9],[24,6.5,12.7],
+    [26,7,11.7],[27,7.5,10.9],[29,8,10.1],[31,8.5,9.4],[33,9,8.9],
+    [35,9.5,8.3],[37,10,7.9],[38,10.5,7.4],[40,11,7.1],[42,11.5,6.7],
+    [44,12,6.4],[46,12.5,6.1],[47,13,5.8],[49,13.5,5.6],[51,14,5.3],
+    [53,14.5,5.1],[55,15,4.9],[57,15.5,4.7],[58,16,4.5],[60,16.5,4.4],
+    [62,17,4.2],[64,17.5,4.1],[66,18,3.9]
+  ]; // [r_value, depth_in, sqft_per_bag]
+  // Loose Fill - Attic/Open Cavities (1.4 lbs/cuft)
+  var CEL_LOOSE_TABLE=[
+    [13,4.3,3.8,85.8],[15,4.8,4.3,72.0],[19,5.9,5.3,50.5],[22,6.8,6.1,41.6],
+    [26,7.9,7.1,33.9],[30,9.1,8.1,28.3],[34,10.1,9.1,24.5],[38,11.4,10.2,21.4],
+    [40,11.8,10.7,20.1],[45,13.2,12.0,17.7],[49,14.5,13.1,16.0],[53,15.5,14.2,14.7],
+    [56,16.4,14.9,13.9],[60,17.7,16.0,12.8],[64,18.7,17.1,12.0],[68,19.8,18.1,11.3],
+    [72,21.0,19.1,10.6],[76,22.1,20.2,10.0],[80,23.3,21.3,9.5],[84,24.5,22.3,9.0],
+    [88,25.6,23.4,8.6],[92,26.8,24.4,8.2],[96,27.9,25.5,7.8],[100,29.1,26.5,7.5],
+    [104,30.2,27.6,7.1],[108,31.4,28.6,6.9],[112,32.6,29.7,6.6],[116,33.7,30.8,6.3],
+    [120,34.9,31.8,6.1],[124,36.0,32.9,5.9]
+  ]; // [r_value, installed_in, settled_in, sqft_per_bag]
+  function getCelLookup(rVal, isDense){
+    var tbl=isDense?CEL_DENSE_TABLE:CEL_LOOSE_TABLE;
+    var rv=Math.round(parseFloat(rVal)||0);
+    var best=tbl[0];
+    for(var _i=0;_i<tbl.length;_i++){
+      if(Math.abs(tbl[_i][0]-rv)<Math.abs(best[0]-rv)) best=tbl[_i];
+    }
+    return best; // dense:[r,depth,sqft_per_bag] loose:[r,installed,settled,sqft_per_bag]
+  }
+  function getCelSqftPerBag(rVal, isDense){
+    var row=getCelLookup(rVal,isDense);
+    return isDense?row[2]:row[3];
+  }
+  function getCelDepth(rVal, isDense){
+    var row=getCelLookup(rVal,isDense);
+    return isDense?row[1]:row[1]; // installed depth
+  }
+  function isCelDensePack(nameStr, notesStr){
+    var t=((nameStr||'')+' '+(notesStr||'')).toLowerCase();
+    return t.indexOf('dense')>=0||t.indexOf('dense pack')>=0||t.indexOf('wall')>=0||t.indexOf('cavity')>=0||t.indexOf('enclosed')>=0;
+  }
   // Roxul/Rockwool coverage per bag by R-value (15.25" width)
   function getRoxSqftPerBag(r){
     var map={13:59.7, 15:59.7, 21:39.8, 23:39, 30:29.86};
@@ -3353,7 +3405,7 @@ function sendToWorkLog(){
   }
   var ccSqft=0, ocSqft=0, ccInchTotal=0, ocInchTotal=0, ccCount=0, ocCount=0;
   var IGN_SQFT_BUCKET=450; // 1 bucket covers 450 sq ft
-  var celSqft=0, roxBagsTotal=0, fbgBagsTotal=0, ignSqft=0, ignBuckets=0, fbSqft=0;
+  var celSqft=0, celBagsTotal=0, roxBagsTotal=0, fbgBagsTotal=0, ignSqft=0, ignBuckets=0, fbSqft=0;
 
   function getInches(spec){
     var m=(spec||'').match(/(\d+\.?\d*)\s*(?:in|inch|inches|")/i);
@@ -3400,7 +3452,13 @@ function sendToWorkLog(){
         if(ci4>0){ccInchTotal+=ci4*sf;ccCount+=sf;}
       } else if(mtype==='fg'){
         fbgBagsTotal+=Math.ceil(sf/getFgSqftPerBag(a.fgR||0));
-      } else if(mtype==='cel'){
+      } else if(mtype==='cel'||mtype==='cel_blown'){
+        var _rCel=a.celR||a.mwR||0;
+        // Extract R from name if not set
+        if(!_rCel){var _nm=(a.name||'');var _rm=_nm.match(/R[\-]?(\d+)/i);if(_rm)_rCel=parseInt(_rm[1]);}
+        var _isDense=isCelDensePack(a.name,a.notes);
+        var _celSpb=getCelSqftPerBag(_rCel,_isDense);
+        celBagsTotal+=Math.ceil(sf/_celSpb);
         celSqft+=sf;
       } else if(mtype==='mw'){
         roxBagsTotal+=Math.ceil(sf/getRoxSqftPerBag(a.mwR||0));
@@ -3430,7 +3488,7 @@ function sendToWorkLog(){
   var matBudget={
     cc:{sqft:Math.round(ccSqft),inch:ccInchAvg,bfPerSet:CC_BF_SET,galPerSet:CC_GAL_SET},
     oc:{sqft:Math.round(ocSqft),inch:ocInchAvg,bfPerSet:OC_BF_SET,galPerSet:OC_GAL_SET},
-    celBags:celSqft>0?Math.ceil(celSqft/CEL_SQFT_BAG):0,
+    celBags:celBagsTotal,
     roxBags:roxBagsTotal,
     fbgBags:fbgBagsTotal,
     ignSqft:Math.round(ignSqft),
