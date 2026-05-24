@@ -1478,6 +1478,268 @@ function formatDimRows(a, opts){
 
 
 // ── PROOF OF INSULATION CERTIFICATE ────────────────────────────────
+function generateEstimatePDF(pid){
+  if(!window.jspdf){toast('PDF library loading, try again');return;}
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
+  var W=215.9,H=279.4,margin=16,y=0;
+
+  // Load project data
+  var proj=currentProj||{};
+  var projEstItems=estItems||[];
+  var projQuoteInfo=quoteInfo||{};
+  if(pid){
+    var projs=loadProjs();
+    for(var _i=0;_i<projs.length;_i++){
+      if(projs[_i].id===pid){
+        proj=projs[_i];
+        projEstItems=projs[_i].estItems||[];
+        projQuoteInfo=projs[_i].quoteInfo||{};
+        break;
+      }
+    }
+  }
+
+  var clientName=projQuoteInfo.client||proj.name||'Client';
+  var clientAddr=projQuoteInfo.address||proj.address||'';
+  var estNum=projQuoteInfo.quoteNum||quoteNum||'';
+  var dateStr=new Date().toLocaleDateString('en-US',{year:'numeric',month:'2-digit',day:'2-digit'});
+
+  // ── HELPERS ──
+  function setFont(style,size,color){
+    doc.setFont('helvetica',style||'normal');
+    doc.setFontSize(size||10);
+    if(color) doc.setTextColor(color[0],color[1],color[2]);
+    else doc.setTextColor(30,30,30);
+  }
+  function line(x1,y1,x2,y2,color,w){
+    doc.setDrawColor(color?color[0]:200,color?color[1]:200,color?color[2]:200);
+    doc.setLineWidth(w||0.3);
+    doc.line(x1,y1,x2,y2);
+  }
+  function txt(s,x,yy,opts){
+    if(!s&&s!==0)return;
+    doc.text(String(s),x,yy,opts||{});
+  }
+  function checkNewPage(needed){
+    if(y+needed>H-20){
+      doc.addPage();
+      y=20;
+    }
+  }
+
+  // ── HEADER BG ──
+  doc.setFillColor(255,255,255);
+  doc.rect(0,0,W,H,'F');
+
+  y=14;
+
+  // Logo
+  var LOGO=null;
+  try{ LOGO=LOGO_B64; }catch(e){}
+  if(LOGO){
+    var lh=22,lw=lh*(750/1334);
+    doc.setFillColor(0,0,0);
+    doc.roundedRect(margin,y-1,lw+2,lh+2,1.5,1.5,'F');
+    doc.addImage(LOGO,'JPEG',margin+1,y,lw,lh);
+  }
+
+  // Company info
+  var cx=margin+(LOGO?12.5+4:0);
+  setFont('bold',12,[20,20,20]);
+  txt('Green Idea Insulation',cx,y+5);
+  setFont('normal',8,[100,100,100]);
+  txt('238 Webster Street #3 · Worcester, Ma 01603',cx,y+10);
+  txt('+7745787186 / 508-579-0762',cx,y+15);
+  txt('greenideainsulation@gmail.com · www.greenideainsulation.com',cx,y+20);
+
+  // Estimate meta - right side
+  var rx=W-margin;
+  setFont('normal',8,[150,150,150]);
+  txt('Estimate #',rx-30,y+5,{align:'right'});
+  txt('Date',rx-30,y+11,{align:'right'});
+  txt('Payment',rx-30,y+17,{align:'right'});
+  setFont('bold',8,[20,20,20]);
+  txt(estNum||dateStr.replace(/\//g,''),rx,y+5,{align:'right'});
+  txt(dateStr,rx,y+11,{align:'right'});
+  txt('Upon receipt',rx,y+17,{align:'right'});
+
+  y+=28;
+
+  // Accent bar
+  doc.setFillColor(26,107,42);
+  doc.rect(0,y,W,1.5,'F');
+  doc.setFillColor(74,222,128);
+  doc.rect(60,y,80,1.5,'F');
+  doc.setFillColor(220,240,220);
+  doc.rect(140,y,W-140,1.5,'F');
+  y+=6;
+
+  // ── PREPARED FOR ──
+  setFont('normal',7.5,[150,150,150]);
+  doc.setLetterSpacing(0.5);
+  txt('PREPARED FOR',margin,y+4);
+  doc.setLetterSpacing(0);
+  y+=8;
+  setFont('bold',12,[20,20,20]);
+  txt(clientName,margin,y);
+  y+=5;
+  if(clientAddr){
+    setFont('normal',9,[100,100,100]);
+    txt(clientAddr,margin,y);
+    y+=4;
+  }
+  y+=6;
+  line(margin,y,W-margin,y,[220,220,220],0.4);
+  y+=6;
+
+  // ── ITEMS HEADER ──
+  setFont('normal',8,[150,150,150]);
+  doc.setLetterSpacing(0.4);
+  txt('DESCRIPTION',margin,y);
+  txt('AMOUNT',W-margin,y,{align:'right'});
+  doc.setLetterSpacing(0);
+  y+=2;
+  line(margin,y,W-margin,y,[20,20,20],0.6);
+  y+=5;
+
+  // ── ITEMS ──
+  var subtotal=0;
+  for(var i=0;i<projEstItems.length;i++){
+    var item=projEstItems[i];
+    var itemPrice=0;
+    if(item.price>0&&item.sf>0) itemPrice=item.price*item.sf;
+    else if(item.price>0) itemPrice=item.price;
+    // apply markup
+    var mk=Number(cfg&&cfg.markup)||0;
+    if(mk>0) itemPrice=itemPrice*(1+mk/100);
+    subtotal+=itemPrice;
+
+    var nameLines=doc.splitTextToSize(item.name||'',W-margin*2-30);
+    var notesLines=item.notes?doc.splitTextToSize(item.notes,W-margin*2-30):[];
+    var rowH=(nameLines.length*4.5)+(notesLines.length*3.8)+5;
+    checkNewPage(rowH+4);
+
+    setFont('bold',10,[20,20,20]);
+    var nameY=y;
+    for(var ni=0;ni<nameLines.length;ni++){
+      txt(nameLines[ni],margin,nameY);
+      nameY+=4.5;
+    }
+    if(notesLines.length>0){
+      setFont('normal',8,[130,130,130]);
+      var noteY=nameY;
+      for(var nni=0;nni<notesLines.length;nni++){
+        txt(notesLines[nni],margin,noteY);
+        noteY+=3.8;
+      }
+    }
+    // price
+    setFont('normal',10,[20,20,20]);
+    if(itemPrice>0){
+      txt('$'+itemPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y+1,{align:'right'});
+    } else {
+      setFont('normal',9,[180,180,180]);
+      txt('—',W-margin,y+1,{align:'right'});
+    }
+
+    y+=rowH;
+    line(margin,y,W-margin,y,[240,237,232],0.3);
+    y+=3;
+  }
+
+  // ── TOTALS ──
+  y+=4;
+  var totX=W-margin-50;
+  setFont('normal',9,[130,130,130]);
+  txt('Subtotal',totX,y,{align:'right'});
+  setFont('normal',10,[20,20,20]);
+  txt('$'+subtotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y,{align:'right'});
+  y+=5;
+
+  // Tax
+  var taxRate=Number(cfg&&cfg.taxRate)||0;
+  var total=subtotal;
+  if(taxRate>0){
+    var taxAmt=subtotal*(taxRate/100);
+    total=subtotal+taxAmt;
+    setFont('normal',9,[130,130,130]);
+    txt('Tax ('+taxRate+'%)',totX,y,{align:'right'});
+    setFont('normal',10,[20,20,20]);
+    txt('$'+taxAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y,{align:'right'});
+    y+=5;
+  }
+
+  line(totX-10,y,W-margin,y,[20,20,20],0.5);
+  y+=4;
+  setFont('bold',12,[20,20,20]);
+  txt('Total',totX,y,{align:'right'});
+  setFont('bold',12,[26,107,42]);
+  txt('$'+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y,{align:'right'});
+  y+=10;
+
+  // ── TERMS ──
+  checkNewPage(20);
+  doc.setFillColor(249,247,244);
+  doc.rect(0,y,W,8,'F');
+  y+=2;
+  setFont('normal',7.5,[150,150,150]);
+  doc.setLetterSpacing(0.4);
+  txt('TERMS & CONDITIONS',margin,y+4);
+  doc.setLetterSpacing(0);
+  y+=10;
+
+  var terms=[
+    '-Price includes all material and labor for project as listed above. Price is guaranteed for 30 days from the day of the estimate was done.',
+    '-Work Place needs to be safe, clean, a bathroom for employees.',
+    '-All exposed Foam needs to be covered by an approved Thermal Barrier, i.e. drywall. Unless clearly stated above, this is not included in the bid. If required by local code official, we can install an intumescent paint covering at a cost of $1.2 per square foot.',
+    '-All subcontractors on job site when spray foam is being installed are required to wear Personal Protection Equipment.',
+    '-Manufacture recommends customers should not be in home during spraying process. Chemical sensitive customers should not be in the house at least 24 to 48 hours after work is completed.',
+    '-Open Cell foam will offgas for 24-48 hours, it is just the smell of the spray foam, there are no toxins being put into the air at that point.',
+    '-If customer chooses not to remove any existing insulation in the area, and there is a smell issue, the next suggestion by manufacturer would be to remove it.',
+    '-Terms of payment are 1/2 upon agreement and 1/2 upon completion. If final payment is not received within 30 days after completion, an interest of 5% will be added monthly. Forms of payment: Cash, check or credit card. If credit card is chosen add 4% charge fee.',
+    'By signing this document, the customer agrees to the services and conditions outlined in this document.'
+  ];
+
+  doc.setFillColor(249,247,244);
+  for(var ti=0;ti<terms.length;ti++){
+    var tLines=doc.splitTextToSize(terms[ti],W-margin*2);
+    var tH=tLines.length*3.6+2;
+    checkNewPage(tH+2);
+    doc.setFillColor(249,247,244);
+    doc.rect(0,y-2,W,tH+2,'F');
+    setFont('normal',7.5,[100,100,100]);
+    for(var tl=0;tl<tLines.length;tl++){
+      txt(tLines[tl],margin,y);
+      y+=3.6;
+    }
+    y+=2;
+  }
+
+  // ── SIGNATURE ──
+  checkNewPage(30);
+  y+=6;
+  line(margin,y+18,margin+70,y+18,[20,20,20],0.5);
+  setFont('normal',8,[150,150,150]);
+  txt('Customer Signature',margin,y+23);
+  setFont('normal',9,[20,20,20]);
+  txt(clientName,margin,y+28);
+  y+=34;
+
+  // ── FOOTER ──
+  var footerY=Math.max(y+6,H-14);
+  doc.setFillColor(26,107,42);
+  doc.rect(0,footerY,W,14,'F');
+  setFont('normal',9,[255,255,255]);
+  txt('Green Idea Insulation  ·  Worcester, MA',margin,footerY+9);
+  setFont('normal',8,[180,230,180]);
+  txt('Estimate'+(estNum?' #'+estNum:''),W-margin,footerY+9,{align:'right'});
+
+  // Save
+  doc.save('Estimate-'+(clientName||'GreenIdea').replace(/[^a-zA-Z0-9]/g,'_')+'-'+dateStr.replace(/\//g,'')+'.pdf');
+  toast('📄 Estimate generated!');
+}
+
 // Detect material category from text keywords
 function detectMatCatFromText(text){
   if(!text) return '';
@@ -2113,6 +2375,7 @@ function renderJobsList(){
     h += '<div style="display:flex;flex-direction:column;gap:6px">';
     h += '<button class="job-open-btn" data-act="open" data-pid="'+p.id+'" style="width:100%;background:#1a6b2a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">'+(isActive?'✓ Editing':'Open Job')+'</button>';
     h += '<button class="job-cert-btn" data-act="cert" data-pid="'+p.id+'" style="width:100%;background:#f59e0b;border:none;color:#000;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">📋 Generate Certificate</button>';
+    h += '<button class="job-est-btn" data-act="est" data-pid="'+p.id+'" style="width:100%;background:#2563eb;border:none;color:#fff;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">📄 Generate Estimate</button>';
     h += '<button class="job-del-btn" data-act="del" data-pid="'+p.id+'" style="width:100%;background:#1e2530;border:1px solid #2a3340;color:#f87171;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">🗑 Delete</button>';
     h += '</div>';
     h += '</div></div>';
@@ -2135,7 +2398,11 @@ function renderJobsList(){
       try{ generateProofPDF(pid); }
       catch(e){ toast('Certificate error: '+(e&&e.message||e),'err'); }
     }
-    else if(act === 'del') deleteProjById(pid);
+    else if(act === 'est'){
+      try{ generateEstimatePDF(pid); }
+      catch(e){ toast('Estimate error: '+(e&&e.message||e),'err'); }
+    }
+    else if(act === 'del') clearJobEstimate(pid);
   });
 }
 window.renderJobsList = renderJobsList;
@@ -2948,6 +3215,13 @@ function doImport(){
     estItems.push({name:a.name,productId:_useProd?_useProd.id:(pr?pr.id:a.productId),sf:a.sf,price:lastP,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
   }
   if(added>0){
+    // Set currentProj to source project so saveProjAreas saves correctly
+    if(_importProjId && !currentProj){
+      var _iprojs=loadProjs();
+      for(var _ip=0;_ip<_iprojs.length;_ip++){
+        if(_iprojs[_ip].id===_importProjId){currentProj=_iprojs[_ip];break;}
+      }
+    }
     if(_importProjName){quoteInfo.client=_importProjName;}
     else if(currentProj&&currentProj.name){quoteInfo.client=currentProj.name;}
     if(_importProjAddress){quoteInfo.address=_importProjAddress;}
