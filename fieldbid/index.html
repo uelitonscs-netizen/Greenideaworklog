@@ -900,6 +900,17 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
 </div>
 
 <div class="lb" id="lb"><button class="lb-x" id="lbClose">✕</button><img id="lbImg" src="" alt=""><div class="lb-cap" id="lbCap"></div></div>
+<div class="overlay" id="estModeOverlay">
+  <div class="modal" style="padding-bottom:28px">
+    <div class="mhandle"></div>
+    <div class="mtitle">Estimate Format</div>
+    <div style="padding:8px 20px 16px;font-size:13px;color:#94a3b8;text-align:center">Choose how to display pricing</div>
+    <div style="padding:0 20px;display:flex;flex-direction:column;gap:10px">
+      <button id="estModeLineItems" style="width:100%;background:#1a6b2a;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">📋 Line Items + Total</button>
+      <button id="estModeTotalOnly" style="width:100%;background:#1e2530;border:1px solid #2a3340;color:#f0f0f0;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">💰 Total Only</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="confirmOverlay">
   <div class="modal" style="padding-bottom:32px">
     <div class="mhandle"></div>
@@ -1478,7 +1489,7 @@ function formatDimRows(a, opts){
 
 
 // ── PROOF OF INSULATION CERTIFICATE ────────────────────────────────
-function generateEstimatePDF(pid){
+function generateEstimatePDF(pid, totalOnly){
   if(!window.jspdf){toast('PDF library loading, try again');return;}
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter'});
@@ -1594,7 +1605,7 @@ function generateEstimatePDF(pid){
   // ── ITEMS HEADER ──
   setFont('normal',8,[150,150,150]);
   txt('DESCRIPTION',margin,y);
-  txt('AMOUNT',W-margin,y,{align:'right'});
+  if(!totalOnly) txt('AMOUNT',W-margin,y,{align:'right'});
   y+=2;
   line(margin,y,W-margin,y,[20,20,20],0.6);
   y+=5;
@@ -1631,12 +1642,14 @@ function generateEstimatePDF(pid){
       }
     }
     // price
-    setFont('normal',10,[20,20,20]);
-    if(itemPrice>0){
-      txt('$'+itemPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y+1,{align:'right'});
-    } else {
-      setFont('normal',9,[180,180,180]);
-      txt('—',W-margin,y+1,{align:'right'});
+    if(!totalOnly){
+      setFont('normal',10,[20,20,20]);
+      if(itemPrice>0){
+        txt('$'+itemPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),W-margin,y+1,{align:'right'});
+      } else {
+        setFont('normal',9,[180,180,180]);
+        txt('—',W-margin,y+1,{align:'right'});
+      }
     }
 
     y+=rowH;
@@ -2393,8 +2406,9 @@ function renderJobsList(){
       catch(e){ toast('Certificate error: '+(e&&e.message||e),'err'); }
     }
     else if(act === 'est'){
-      try{ generateEstimatePDF(pid); }
-      catch(e){ toast('Estimate error: '+(e&&e.message||e),'err'); }
+      window._estPendingPid = pid;
+      var el=document.getElementById('estModeOverlay');
+      if(el){el.classList.add('on');el.style.display='flex';}
     }
     else if(act === 'del') clearJobEstimate(pid);
   });
@@ -3574,6 +3588,24 @@ for(var oi=0;oi<ovs.length;oi++){
 load();
 
 // Boot save removed - save handles saves after user actions
+
+// Estimate mode modal
+document.getElementById('estModeLineItems').addEventListener('click', function(){
+  var el=document.getElementById('estModeOverlay');
+  if(el){el.classList.remove('on');el.style.display='none';}
+  var pid=window._estPendingPid;
+  window._estPendingPid=null;
+  try{ generateEstimatePDF(pid, false); }
+  catch(e){ toast('Estimate error: '+(e&&e.message||e),'err'); }
+});
+document.getElementById('estModeTotalOnly').addEventListener('click', function(){
+  var el=document.getElementById('estModeOverlay');
+  if(el){el.classList.remove('on');el.style.display='none';}
+  var pid=window._estPendingPid;
+  window._estPendingPid=null;
+  try{ generateEstimatePDF(pid, true); }
+  catch(e){ toast('Estimate error: '+(e&&e.message||e),'err'); }
+});
 
 // Confirm modal
 document.getElementById('confirmNo').addEventListener('click', function() {
