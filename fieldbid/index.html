@@ -1018,7 +1018,7 @@ function appConfirm(msg, onYes) {
   document.getElementById('confirmMsg').textContent = msg;
   window._confirmResolve = onYes;
   window._confirmReject = null;
-  document.getElementById('confirmOverlay').className = 'overlay on';
+  openOv('confirmOverlay');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
