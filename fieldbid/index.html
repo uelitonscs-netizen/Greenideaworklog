@@ -2135,7 +2135,7 @@ function renderJobsList(){
       try{ generateProofPDF(pid); }
       catch(e){ toast('Certificate error: '+(e&&e.message||e),'err'); }
     }
-    else if(act === 'del') clearJobEstimate(pid);
+    else if(act === 'del') deleteProjById(pid);
   });
 }
 window.renderJobsList = renderJobsList;
