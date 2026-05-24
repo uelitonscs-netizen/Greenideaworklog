@@ -1577,9 +1577,7 @@ function generateEstimatePDF(pid){
 
   // ── PREPARED FOR ──
   setFont('normal',7.5,[150,150,150]);
-  doc.setLetterSpacing(0.5);
   txt('PREPARED FOR',margin,y+4);
-  doc.setLetterSpacing(0);
   y+=8;
   setFont('bold',12,[20,20,20]);
   txt(clientName,margin,y);
@@ -1595,10 +1593,8 @@ function generateEstimatePDF(pid){
 
   // ── ITEMS HEADER ──
   setFont('normal',8,[150,150,150]);
-  doc.setLetterSpacing(0.4);
   txt('DESCRIPTION',margin,y);
   txt('AMOUNT',W-margin,y,{align:'right'});
-  doc.setLetterSpacing(0);
   y+=2;
   line(margin,y,W-margin,y,[20,20,20],0.6);
   y+=5;
@@ -1684,9 +1680,7 @@ function generateEstimatePDF(pid){
   doc.rect(0,y,W,8,'F');
   y+=2;
   setFont('normal',7.5,[150,150,150]);
-  doc.setLetterSpacing(0.4);
   txt('TERMS & CONDITIONS',margin,y+4);
-  doc.setLetterSpacing(0);
   y+=10;
 
   var terms=[
