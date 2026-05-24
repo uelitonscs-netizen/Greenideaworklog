@@ -3343,6 +3343,27 @@ var CEL_LOOSE_TABLE=[
   [104,30.2,27.6,7.1],[108,31.4,28.6,6.9],[112,32.6,29.7,6.6],[116,33.7,30.8,6.3],
   [120,34.9,31.8,6.1],[124,36.0,32.9,5.9]
 ]; // [r_value, installed_in, settled_in, sqft_per_bag]
+function getCelLookup(rVal, isDense){
+  var tbl=isDense?CEL_DENSE_TABLE:CEL_LOOSE_TABLE;
+  var rv=Math.round(parseFloat(rVal)||0);
+  var best=tbl[0];
+  for(var _i=0;_i<tbl.length;_i++){
+    if(Math.abs(tbl[_i][0]-rv)<Math.abs(best[0]-rv)) best=tbl[_i];
+  }
+  return best;
+}
+function getCelSqftPerBag(rVal, isDense){
+  var row=getCelLookup(rVal,isDense);
+  return isDense?row[2]:row[3];
+}
+function getCelDepth(rVal, isDense){
+  var row=getCelLookup(rVal,isDense);
+  return row[1]; // installed depth
+}
+function isCelDensePack(nameStr, notesStr){
+  var t=((nameStr||'')+' '+(notesStr||'')).toLowerCase();
+  return t.indexOf('dense')>=0||t.indexOf('dense pack')>=0||t.indexOf('wall')>=0||t.indexOf('cavity')>=0||t.indexOf('enclosed')>=0;
+}
 function sendToWorkLog(){
   // ── GUARD CHECKS ──
   var cEl=document.getElementById('qClient');
@@ -3365,27 +3386,7 @@ function sendToWorkLog(){
 
   // ── MATERIAL BUDGET CALC ──
   var CC_BF_SET=4500, CC_GAL_SET=55, OC_BF_SET=17000, OC_GAL_SET=55;
-  function getCelLookup(rVal, isDense){
-    var tbl=isDense?CEL_DENSE_TABLE:CEL_LOOSE_TABLE;
-    var rv=Math.round(parseFloat(rVal)||0);
-    var best=tbl[0];
-    for(var _i=0;_i<tbl.length;_i++){
-      if(Math.abs(tbl[_i][0]-rv)<Math.abs(best[0]-rv)) best=tbl[_i];
-    }
-    return best; // dense:[r,depth,sqft_per_bag] loose:[r,installed,settled,sqft_per_bag]
-  }
-  function getCelSqftPerBag(rVal, isDense){
-    var row=getCelLookup(rVal,isDense);
-    return isDense?row[2]:row[3];
-  }
-  function getCelDepth(rVal, isDense){
-    var row=getCelLookup(rVal,isDense);
-    return isDense?row[1]:row[1]; // installed depth
-  }
-  function isCelDensePack(nameStr, notesStr){
-    var t=((nameStr||'')+' '+(notesStr||'')).toLowerCase();
-    return t.indexOf('dense')>=0||t.indexOf('dense pack')>=0||t.indexOf('wall')>=0||t.indexOf('cavity')>=0||t.indexOf('enclosed')>=0;
-  }
+
   // Roxul/Rockwool coverage per bag by R-value (15.25" width)
   function getRoxSqftPerBag(r){
     var map={13:59.7, 15:59.7, 21:39.8, 23:39, 30:29.86};
