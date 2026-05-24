@@ -2127,7 +2127,10 @@ function renderJobsList(){
     var act = btn.getAttribute('data-act');
     var pid = btn.getAttribute('data-pid');
     if(act === 'open') openJobFromList(pid);
-    else if(act === 'cert') generateProofPDF(pid);
+    else if(act === 'cert'){
+      try{ generateProofPDF(pid); }
+      catch(e){ toast('Certificate error: '+(e&&e.message||e),'err'); }
+    }
     else if(act === 'del') clearJobEstimate(pid);
   });
 }
