@@ -1015,10 +1015,13 @@ function fbLoad() {
 
 // All code runs after DOM is ready
 function appConfirm(msg, onYes) {
-  document.getElementById('confirmMsg').textContent = msg;
-  window._confirmResolve = onYes;
-  window._confirmReject = null;
-  openOv('confirmOverlay');
+  try{
+    document.getElementById('confirmMsg').textContent = msg;
+    window._confirmResolve = onYes;
+    window._confirmReject = null;
+    openOv('confirmOverlay');
+    toast('Confirm dialog opened','wait');
+  }catch(e){ toast('appConfirm error: '+(e&&e.message||e),'err'); }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1313,7 +1316,11 @@ function renderProjList(){
     var act=btn.getAttribute('data-act');
     var pid=btn.getAttribute('data-pid');
     if(act==='switch')switchProjById(pid);
-    else if(act==='del')deleteProjById(pid);
+    else if(act==='del'){
+      toast('Proj del tapped','wait');
+      try{ deleteProjById(pid); }
+      catch(e){ toast('Proj del error: '+(e&&e.message||e),'err'); }
+    }
   });
 }
 function createProj(){
@@ -2131,7 +2138,11 @@ function renderJobsList(){
       try{ generateProofPDF(pid); }
       catch(e){ toast('Certificate error: '+(e&&e.message||e),'err'); }
     }
-    else if(act === 'del') clearJobEstimate(pid);
+    else if(act === 'del'){
+      toast('Del tapped','wait');
+      try{ clearJobEstimate(pid); }
+      catch(e){ toast('Del error: '+(e&&e.message||e),'err'); }
+    }
   });
 }
 window.renderJobsList = renderJobsList;
