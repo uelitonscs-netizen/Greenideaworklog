@@ -1480,6 +1480,19 @@ function formatDimRows(a, opts){
 
 
 // ── PROOF OF INSULATION CERTIFICATE ────────────────────────────────
+// Detect material category from text keywords
+function detectMatCatFromText(text){
+  if(!text) return '';
+  var t=text.toLowerCase();
+  if(t.match(/closed.?cell|\bcc\b|ccspf|closed cell spray foam/)) return 'cc';
+  if(t.match(/open.?cell|\boc\b|ocspf|open cell spray foam/)) return 'oc';
+  if(t.match(/spray foam|sprayfoam/) && !t.match(/open/)) return 'cc'; // default spray foam = CC
+  if(t.match(/fiberglass|fiber glass|\bfg\b|batt|blown.?in fiberglass/)) return 'fg_custom';
+  if(t.match(/cellulose|\bcel\b/)) return 'cel_blown';
+  if(t.match(/mineral.?wool|rockwool|\bmw\b/)) return 'mw_custom';
+  if(t.match(/ignition.?barrier|ign\b/)) return 'ign';
+  return '';
+}
 function generateProofPDF(pid){
   if(!window.jspdf){toast('PDF library loading, try again');return;}
   var jsPDF=window.jspdf.jsPDF;
@@ -1594,21 +1607,61 @@ function generateProofPDF(pid){
     y+=8;
 
     var totalSF=0;
-    // Match areas with estItems to get edited thickness/price data
+    // Build a map of estItems by name to pick up manual edits (inches, price)
     var estMap={};
     for(var ei=0;ei<projEstItems.length;ei++){
       estMap[projEstItems[ei].name]=projEstItems[ei];
     }
-    // Always use projEstItems as source - they have the complete/edited data
-    // Fall back to areas if estItems empty
-    var srcItems=projEstItems.length>0?projEstItems:areas;
+    // Strategy:
+    // 1. Use takeoff AREAS as base (they have ccInch, ocInch, matCat, etc.)
+    // 2. Merge estItem overrides when user edited (inches, productId)
+    // 3. If an estItem has no matching area (manually created), include it too
+    var areaNames={};
+    var srcItems=[];
+    // First add all takeoff areas (merged with estItem overrides)
+    for(var ai=0;ai<areas.length;ai++){
+      var _a=JSON.parse(JSON.stringify(areas[ai]));
+      var _ei=estMap[_a.name]||null;
+      if(_ei){
+        // User edited this item: override inches/productId if set
+        if(_ei.inches&&parseFloat(_ei.inches)>0) _a._editedInches=parseFloat(_ei.inches);
+        if(_ei.productId&&!_a.productId) _a.productId=_ei.productId;
+        // Use estItem sf if set (may differ from takeoff)
+        if(_ei.sf&&parseFloat(_ei.sf)>0) _a.sf=parseFloat(_ei.sf);
+        // Detect matCat from estItem name+notes if not set in takeoff
+        if(!_a.matCat||_a.matCat==='other'){
+          var _det=detectMatCatFromText((_ei.name||'')+' '+(_ei.notes||''));
+          if(_det) _a.matCat=_det;
+        }
+      }
+      // Also try to detect from takeoff area name/notes if matCat still missing
+      if(!_a.matCat||_a.matCat==='other'){
+        var _det2=detectMatCatFromText((_a.name||'')+' '+(_a.notes||''));
+        if(_det2) _a.matCat=_det2;
+      }
+      areaNames[_a.name]=1;
+      srcItems.push(_a);
+    }
+    // Then add estItems that have no matching area (manually created in estimator)
+    for(var mi=0;mi<projEstItems.length;mi++){
+      var _m=projEstItems[mi];
+      if(!areaNames[_m.name]&&_m.sf>0){
+        var _mc=JSON.parse(JSON.stringify(_m));
+        // Enrich with product matCat if missing
+        if(!_mc.matCat&&!_mc.matType&&_mc.productId){
+          var _pr=getProd(_mc.productId);
+          if(_pr) _mc.matCat=_pr.cat||'';
+        }
+        // Detect from name + notes if matCat still missing
+        if(!_mc.matCat||_mc.matCat==='other'){
+          var _det3=detectMatCatFromText((_mc.name||'')+' '+(_mc.notes||''));
+          if(_det3) _mc.matCat=_det3;
+        }
+        srcItems.push(_mc);
+      }
+    }
     for(var i=0;i<srcItems.length;i++){
       var a=srcItems[i];
-      // If coming from estItems, enrich with product info
-      if(a&&!a.matCat&&!a.matType&&a.productId){
-        var _pr=getProd(a.productId);
-        if(_pr){ a.matCat=_pr.cat||''; }
-      }
       if(!a||!a.sf) continue;
       totalSF+=parseFloat(a.sf)||0;
       var rowBg=i%2===0?[255,255,255]:[245,250,245];
@@ -1619,23 +1672,42 @@ function generateProofPDF(pid){
       var mname=matLabel[a.matCat||a.matType]||'';
       if(!mname&&a.productId){var _p=getProd(a.productId);if(_p)mname=_p.name;}
       if(!mname) mname='—';
-      // Use estItem inches if available (user edited), else fall back to area fields
-      var estItem=estMap[a.name]||null;
-      var inchVal=estItem&&estItem.inches?parseFloat(estItem.inches):0;
-      var rval='';
+      // Extract R-value from item name (e.g. "Roof R49", "Rim Joist R21")
+      var nameRMatch=(a.name||'').match(/R[\-]?(\d+)/i);
+      var rFromName=nameRMatch?parseInt(nameRMatch[1]):0;
+      // Use _editedInches (set when user manually edited in estimator), else area fields
+      var inchVal=a._editedInches||0;
+      var matIsCC=(a.matType==='cc'||a.matCat==='cc');
+      var matIsOC=(a.matType==='oc'||a.matCat==='oc');
+      var rNum=0; var thick='';
       if(inchVal>0){
-        if(a.matType==='cc'||a.matCat==='cc') rval='R-'+(Math.round(inchVal*7.5));
-        else if(a.matType==='oc'||a.matCat==='oc') rval='R-'+(Math.round(inchVal*4.2));
-        else rval=inchVal+'" thick';
-      } else if(a.ccInch>0) rval='R-'+(Math.round(a.ccInch*7.5));
-      else if(a.ocInch>0) rval='R-'+(Math.round(a.ocInch*4.2));
-      else if(a.fgR>0) rval='R-'+a.fgR;
-      else if(a.mwR>0) rval='R-'+a.mwR;
-      var thick='';
-      if(inchVal>0) thick=inchVal+'"';
-      else if(a.ccInch>0) thick=a.ccInch+'"';
-      else if(a.ocInch>0) thick=a.ocInch+'"';
-      else if(a.fgInch>0) thick=a.fgInch+'"';
+        // 1. User explicitly edited inches — highest priority
+        if(matIsCC){ rNum=Math.round(inchVal*7.5); thick=inchVal+'"'; }
+        else if(matIsOC){ rNum=Math.round(inchVal*4.2); thick=inchVal+'"'; }
+        else{ thick=inchVal+'" thick'; }
+      } else if(a.ccInch>0){
+        // 2. Takeoff area CC inches
+        rNum=Math.round(a.ccInch*7.5); thick=a.ccInch+'"';
+      } else if(a.ocInch>0){
+        // 3. Takeoff area OC inches
+        rNum=Math.round(a.ocInch*4.2); thick=a.ocInch+'"';
+      } else if(a.fgR>0){
+        // 4. Fiberglass R-value from takeoff
+        rNum=a.fgR;
+        if(a.fgInch>0) thick=a.fgInch+'"';
+      } else if(a.mwR>0){
+        // 5. Mineral wool R-value from takeoff
+        rNum=a.mwR;
+      } else if(rFromName>0){
+        // 6. R-value from item name
+        rNum=rFromName;
+      }
+      // If we have R-value and CC/OC but no thickness yet → back-calculate
+      if(rNum>0&&!thick){
+        if(matIsCC) thick=(Math.round(rNum/7.5*100)/100)+'"';
+        else if(matIsOC) thick=(Math.round(rNum/4.2*100)/100)+'"';
+      }
+      var rval=rNum>0?'R-'+rNum:'';
 
       // Truncate long names
       var aname=a.name||'—'; if(aname.length>22) aname=aname.substring(0,22)+'...';
