@@ -2902,7 +2902,9 @@ function openEIModal(idx){
       for(var _tai=0;_tai<_tareas.length;_tai++){
         var _ta=_tareas[_tai];
         if(_ta.name===it.name){
-          if(_ta.ccInch>0&&_ta.ocInch>0) _itInch=parseFloat(_ta.ccInch)+parseFloat(_ta.ocInch);
+          var _mtype2=_ta.matType||'';
+          if(_mtype2==='hybrid'&&_ta.ccInch>0&&_ta.ocInch>0) _itInch=parseFloat(_ta.ccInch)+parseFloat(_ta.ocInch);
+          else if(_mtype2==='hybrid_foam_fg'||_mtype2==='hybrid_foam_mw') _itInch=parseFloat(_ta.ccInch)||0;
           else if(_ta.ccInch>0) _itInch=parseFloat(_ta.ccInch);
           else if(_ta.ocInch>0) _itInch=parseFloat(_ta.ocInch);
           else if(_ta.fgInch>0) _itInch=parseFloat(_ta.fgInch);
@@ -3207,7 +3209,7 @@ function doImport(){
     var pr=getProd(a.productId);
     // If no product, find best match from matType
     if(!pr&&a.matType){
-      var mtMap={'cc':'p2','oc':'p1','hybrid':'p3','cel_blown':'p4','cel_dense':'p4','fg_r11':'p6','fg_r13':'p6','fg_r15':'p6','fg_r19':'p7','fg_r21':'p7','fg_r25':'p7','fg_r30':'p7','fg_r38':'p7','fg_r49':'p7','fg_custom':'p6','mw_r15':'p8','mw_r23':'p8','mw_r30':'p8','mw_custom':'p8','ign':'p11','fb':'p11','other':'p10'};
+      var mtMap={'cc':'p2','oc':'p1','hybrid':'p3','hybrid_foam_fg':'p3','hybrid_foam_mw':'p3','cel_blown':'p4','cel':'p4','cel_dense':'p4','fg_r11':'p6','fg_r13':'p6','fg_r15':'p6','fg_r19':'p7','fg_r21':'p7','fg_r25':'p7','fg_r30':'p7','fg_r38':'p7','fg_r49':'p7','fg_custom':'p6','mw_r15':'p8','mw_r23':'p8','mw_r30':'p8','mw_custom':'p8','ign':'p11','fb':'p11','other':'p10'};
       var mappedId=mtMap[a.matType];
       if(mappedId) pr=getProd(mappedId);
     }
@@ -3237,7 +3239,9 @@ function doImport(){
     if(!lastP&&pr) lastP=pr.price||0;
     // Calculate inches from takeoff area fields
     var _importInch=0;
-    if(a.ccInch>0&&a.ocInch>0) _importInch=parseFloat(a.ccInch)+parseFloat(a.ocInch); // hybrid = cc+oc total
+    var _mtype=a.matType||'';
+    if(_mtype==='hybrid'&&a.ccInch>0&&a.ocInch>0) _importInch=parseFloat(a.ccInch)+parseFloat(a.ocInch);
+    else if(_mtype==='hybrid_foam_fg'||_mtype==='hybrid_foam_mw') _importInch=parseFloat(a.ccInch)||0; // cc foam part only
     else if(a.ccInch>0) _importInch=parseFloat(a.ccInch);
     else if(a.ocInch>0) _importInch=parseFloat(a.ocInch);
     else if(a.fgInch>0) _importInch=parseFloat(a.fgInch);
