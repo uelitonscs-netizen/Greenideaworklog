@@ -531,8 +531,12 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div id="estItemList" class="cards"></div>
   </div>
   <div id="ep-quote" class="page">
-    <div style="padding:10px 16px 0">
-      <button id="btnShowWO" style="background:#1e2530;border:1px solid #2a3340;color:#94a3b8;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">🔧 Work Order</button>
+    <div style="padding:14px 14px 4px;display:flex;gap:8px">
+      <button id="btnShowWO" style="flex:1;background:#1a2535;border:1px solid #2a3a50;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left">
+        <span style="font-size:16px">🔧</span>
+        <span style="font-size:13px;font-weight:600;color:#60a5fa">Work Order</span>
+        <span style="margin-left:auto;color:#3a5070;font-size:14px">›</span>
+      </button>
     </div>
     <div class="q-info">
       <div class="q-row"><span class="q-lbl">Client</span><span class="q-val tap" id="qClient">Tap to add</span></div>
@@ -608,8 +612,12 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div id="productList"></div>
   </div>
   <div id="ep-settings" class="page">
-    <div style="padding:14px 16px 0">
-      <button id="btnShowContract" style="background:#1e2530;border:1px solid #2a3340;color:#94a3b8;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">📄 Contract</button>
+    <div style="padding:14px 14px 4px;display:flex;gap:8px">
+      <button id="btnShowContract" style="flex:1;background:#1a2535;border:1px solid #2a3a50;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left">
+        <span style="font-size:16px">📄</span>
+        <span style="font-size:13px;font-weight:600;color:#60a5fa">Contract</span>
+        <span style="margin-left:auto;color:#3a5070;font-size:14px">›</span>
+      </button>
     </div>
     <div class="st-g"><div class="st-t">Markup &amp; Tax</div>
       <div class="st-row"><div><div class="st-lbl">Markup</div><div class="st-sub">On top of material cost</div></div><div style="display:flex;align-items:center;gap:4px"><input class="st-inp" type="number" id="cfgMarkup" value="30"><span style="color:#7d8590">%</span></div></div>
