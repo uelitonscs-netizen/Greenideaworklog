@@ -2895,7 +2895,22 @@ function openEIModal(idx){
     document.getElementById('ei_name').value=it.name;
     document.getElementById('ei_sf').value=it.sf;
     document.getElementById('ei_price').value=it.pricePerInch||it.price;
-    document.getElementById('ei_inch').value=it.inches||'';
+    // If inches not set, look up from takeoff area
+    var _itInch=parseFloat(it.inches)||0;
+    if(!_itInch&&currentProj){
+      var _tareas=currentProj.areas||fieldAreas||[];
+      for(var _tai=0;_tai<_tareas.length;_tai++){
+        var _ta=_tareas[_tai];
+        if(_ta.name===it.name){
+          if(_ta.ccInch>0&&_ta.ocInch>0) _itInch=parseFloat(_ta.ccInch)+parseFloat(_ta.ocInch);
+          else if(_ta.ccInch>0) _itInch=parseFloat(_ta.ccInch);
+          else if(_ta.ocInch>0) _itInch=parseFloat(_ta.ocInch);
+          else if(_ta.fgInch>0) _itInch=parseFloat(_ta.fgInch);
+          break;
+        }
+      }
+    }
+    document.getElementById('ei_inch').value=_itInch||'';
     document.getElementById('ei_notes').value=it.notes||'';
     eiProd=it.productId||null;
     eiPendPh=it.photos?it.photos.slice():[];
@@ -3220,7 +3235,14 @@ function doImport(){
     else{ lastP=getLastPrice(_nameKey, 0); }
     if(!lastP&&_useProd) lastP=getLastPrice('prod_'+_useProd.id, _useProd.price);
     if(!lastP&&pr) lastP=pr.price||0;
-    estItems.push({name:a.name,productId:_useProd?_useProd.id:(pr?pr.id:a.productId),sf:a.sf,price:lastP,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
+    // Calculate inches from takeoff area fields
+    var _importInch=0;
+    if(a.ccInch>0&&a.ocInch>0) _importInch=parseFloat(a.ccInch)+parseFloat(a.ocInch); // hybrid = cc+oc total
+    else if(a.ccInch>0) _importInch=parseFloat(a.ccInch);
+    else if(a.ocInch>0) _importInch=parseFloat(a.ocInch);
+    else if(a.fgInch>0) _importInch=parseFloat(a.fgInch);
+    else if(a.celInch>0) _importInch=parseFloat(a.celInch);
+    estItems.push({name:a.name,productId:_useProd?_useProd.id:(pr?pr.id:a.productId),sf:a.sf,price:lastP,inches:_importInch||0,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
   }
   if(added>0){
     // Set currentProj to source project so saveProjAreas saves correctly
