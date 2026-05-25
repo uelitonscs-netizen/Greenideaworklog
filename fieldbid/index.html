@@ -3246,7 +3246,23 @@ function doImport(){
     else if(a.ocInch>0) _importInch=parseFloat(a.ocInch);
     else if(a.fgInch>0) _importInch=parseFloat(a.fgInch);
     else if(a.celInch>0) _importInch=parseFloat(a.celInch);
-    estItems.push({name:a.name,productId:_useProd?_useProd.id:(pr?pr.id:a.productId),sf:a.sf,price:lastP,inches:_importInch||0,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null});added++;
+    var _newProdId=_useProd?_useProd.id:(pr?pr.id:a.productId);
+    // Check if item with same name already exists → UPDATE it instead of duplicate
+    var _existIdx=-1;
+    for(var _ei2=0;_ei2<estItems.length;_ei2++){
+      if(estItems[_ei2].name===a.name){_existIdx=_ei2;break;}
+    }
+    var _newItem={name:a.name,productId:_newProdId,sf:a.sf,price:lastP,inches:_importInch||0,notes:a.notes||'',photos:a.photos?a.photos.slice():[],calcMode:a.calcMode||'',wallRows:a.wallRows?JSON.parse(JSON.stringify(a.wallRows)):null,floorRows:a.floorRows?JSON.parse(JSON.stringify(a.floorRows)):null};
+    if(_existIdx>=0){
+      // Update existing: fix productId and inches but keep user-edited price if set
+      var _old=estItems[_existIdx];
+      _newItem.price=(_old.price&&_old.price>0)?_old.price:lastP;
+      _newItem.photos=_old.photos&&_old.photos.length?_old.photos:_newItem.photos;
+      estItems[_existIdx]=_newItem;
+    } else {
+      estItems.push(_newItem);
+    }
+    added++;
   }
   if(added>0){
     // Set currentProj to source project so saveProjAreas saves correctly
