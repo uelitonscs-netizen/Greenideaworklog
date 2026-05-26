@@ -430,6 +430,12 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
 .empty-body{font-size:12px;color:#4d5560;margin-top:4px;}
 
 
+
+.nav-pill-btn{width:100%;background:#111827;border:1px solid #1e3a5f;border-radius:10px;padding:0;cursor:pointer;margin-bottom:10px;display:block}
+.nav-pill-btn .inner{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;gap:10px;padding:10px 14px}
+.nav-pill-btn .inner .ico{font-size:15px;flex-shrink:0}
+.nav-pill-btn .inner .lbl{font-size:13px;font-weight:600;color:#60a5fa;flex:1;text-align:left}
+.nav-pill-btn .inner .arr{font-size:16px;color:#2a4a6a}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -531,13 +537,9 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div id="estItemList" class="cards"></div>
   </div>
   <div id="ep-quote" class="page">
-    <div style="padding:12px 14px 6px">
-      <button id="btnShowWO" style="width:100%;background:#111827;border:1px solid #1e3a5f;border-radius:10px;padding:0;cursor:pointer;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
-          <span style="font-size:15px">🔧</span>
-          <span style="font-size:13px;font-weight:600;color:#60a5fa">Work Order</span>
-          <span style="margin-left:auto;color:#2a4a6a;font-size:16px">›</span>
-        </div>
+    <div style="padding:12px 14px 0">
+      <button id="btnShowWO" class="nav-pill-btn">
+        <div class="inner"><span class="ico">🔧</span><span class="lbl">Work Order</span><span class="arr">›</span></div>
       </button>
     </div>
     <div class="q-info">
@@ -614,13 +616,9 @@ canvas#sigCanvas{width:100%;height:88px;cursor:crosshair;display:block;touch-act
     <div id="productList"></div>
   </div>
   <div id="ep-settings" class="page">
-    <div style="padding:12px 14px 6px">
-      <button id="btnShowContract" style="width:100%;background:#111827;border:1px solid #1e3a5f;border-radius:10px;padding:0;cursor:pointer;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
-          <span style="font-size:15px">📄</span>
-          <span style="font-size:13px;font-weight:600;color:#60a5fa">Contract</span>
-          <span style="margin-left:auto;color:#2a4a6a;font-size:16px">›</span>
-        </div>
+    <div style="padding:12px 14px 0">
+      <button id="btnShowContract" class="nav-pill-btn">
+        <div class="inner"><span class="ico">📄</span><span class="lbl">Contract</span><span class="arr">›</span></div>
       </button>
     </div>
     <div class="st-g"><div class="st-t">Markup &amp; Tax</div>
