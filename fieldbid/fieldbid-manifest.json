@@ -1,20 +1,21 @@
 {
-  "name": "FieldBid",
+  "name": "FieldBid \u2014 Green Idea",
   "short_name": "FieldBid",
+  "id": "/Greenideaworklog/fieldbid/",
   "description": "Field takeoff and estimator for Green Idea Insulation",
   "start_url": "/Greenideaworklog/fieldbid/index.html",
   "scope": "/Greenideaworklog/fieldbid/",
   "display": "standalone",
   "background_color": "#0a0a0a",
-  "theme_color": "#3fb950",
+  "theme_color": "#f59e0b",
   "icons": [
     {
-      "src": "/Greenideaworklog/icon-192.png",
+      "src": "/Greenideaworklog/fieldbid/fieldbid-icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/Greenideaworklog/icon-512.png",
+      "src": "/Greenideaworklog/fieldbid/fieldbid-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
