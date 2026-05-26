@@ -1,6 +1,7 @@
 {
   "name": "WorkLog",
   "short_name": "WorkLog",
+  "id": "/Greenideaworklog/",
   "description": "Work hours tracker by Green Idea Insulation",
   "start_url": "/Greenideaworklog/",
   "scope": "/Greenideaworklog/",
