@@ -598,6 +598,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bot
             <div><label style="font-size:9px;color:var(--muted)">Cellulose bags</label><input id="proj-cel-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
             <div><label style="font-size:9px;color:var(--muted)">Roxul bags</label><input id="proj-rox-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
             <div><label style="font-size:9px;color:var(--muted)">Fiberglass bags</label><input id="proj-fbg-bags" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Rigid Board 2&quot; (boards)</label><input id="proj-rb2-boards" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
+            <div><label style="font-size:9px;color:var(--muted)">Rigid Board 1&quot; (boards)</label><input id="proj-rb1-boards" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
             <div><label style="font-size:9px;color:var(--muted)">Ignition Barrier (sq ft)</label><input id="proj-ign-sqft" type="number" placeholder="0" style="background:#fff;border:1px solid #ccc;border-radius:6px;padding:5px 8px;font-size:11px;width:100%"/></div>
@@ -1997,7 +1999,7 @@ function exportProjectReport(pid){
   var mbRows='';
   if(mb){
     function matchMat(d,kws){for(var i=0;i<kws.length;i++)if(d.indexOf(kws[i])>=0)return true;return false;}
-    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0,ignU=0,fbkU=0;
+    var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0,ignU=0,fbkU=0,rb2U=0,rb1U=0;
     expenses.forEach(function(e){
       var d=(e.desc||'').toLowerCase();
       var qty=parseFloat((e.desc||'').match(/^[\d.]+/)||0)||0;
@@ -2006,6 +2008,8 @@ function exportProjectReport(pid){
       else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
       else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
       else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['rigid board 2','rigid 2','rigidboard 2','rb2','rigid foam 2'])) rb2U+=qty;
+      else if(matchMat(d,['rigid board 1','rigid 1','rigidboard 1','rb1','rigid foam 1'])) rb1U+=qty;
       else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
@@ -2050,7 +2054,9 @@ function exportProjectReport(pid){
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
            mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
            mbRow('🔥 Ignition Barrier',mb.ignSqft||0,ignU,'sq ft')+
-           mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft');
+           mbRow('🧱 Fire Blocking',mb.fbSqft||0,fbkU,'sq ft')+
+           ((mb.rb2Boards||0)>0?mbRow('🟫 Rigid Board 2"',mb.rb2Boards||0,rb2U,'boards'):'')+
+           ((mb.rb1Boards||0)>0?mbRow('🟫 Rigid Board 1"',mb.rb1Boards||0,rb1U,'boards'):'');
   }
 
   // Labor by helper
@@ -2386,7 +2392,7 @@ function renderProjects(filter){
     // Expenses
     if(expenses.length) html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">EXPENSES</div>'+expenses.map(function(e){
       var _d=(e.desc||'').toLowerCase();
-      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run','foam can','foam cans','insulation removal','removal'];
+      var _kws=['closed cell','closedcell','close cell','c.c.','open cell','opencell','open-cell','o.c.','cellulose','celulose','roxul','mineral wool','rockwool','fiberglass','fiber glass','kraft','unfaced','batt','ignition barrier','ignition bar','intumescent','fire blocking','fireblocking','fire block','dump','disposal','dump run','foam can','foam cans','insulation removal','removal','rigid board','rigid foam','rigidboard','rb2','rb1'];
       var _matched=false;for(var _ki=0;_ki<_kws.length;_ki++){if(_d.indexOf(_kws[_ki])>=0){_matched=true;break;}}
       if(!_matched) _matched=/\bcc\b/.test(_d)||/\boc\b/.test(_d)||/\bfg\b/.test(_d)||/r-[0-9]+/.test(_d);
       var _warn=!_matched?'<span style="background:#f59e0b;color:#000;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;margin-left:4px">⚠ untracked</span>':'';
@@ -2435,7 +2441,9 @@ function addProject(){
     roxBags:parseFloat(document.getElementById('proj-rox-bags').value)||0,
     fbgBags:parseFloat(document.getElementById('proj-fbg-bags').value)||0,
     ignSqft:parseFloat(document.getElementById('proj-ign-sqft').value)||0,
-    fbSqft:parseFloat(document.getElementById('proj-fb-sqft').value)||0
+    fbSqft:parseFloat(document.getElementById('proj-fb-sqft').value)||0,
+    rb2Boards:parseFloat(document.getElementById('proj-rb2-boards').value)||0,
+    rb1Boards:parseFloat(document.getElementById('proj-rb1-boards').value)||0
   };
   db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
@@ -2566,6 +2574,8 @@ function openEditProj(id){
   document.getElementById('ep-fbg-bags').value=mb.fbgBags||'';
   document.getElementById('ep-ign-sqft').value=mb.ignSqft||'';
   document.getElementById('ep-fb-sqft').value=mb.fbSqft||'';
+  document.getElementById('proj-rb2-boards').value=mb.rb2Boards||'';
+  document.getElementById('proj-rb1-boards').value=mb.rb1Boards||'';
   document.getElementById('modal-edit-project').classList.add('open');
 }
 window.openEditProj=openEditProj;
