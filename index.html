@@ -2012,7 +2012,7 @@ function exportProjectReport(pid){
       else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
       else if(matchMat(d,['rigid board 2','rigid 2','rigidboard 2','rb2','rigid foam 2'])) rb2U+=qty;
       else if(matchMat(d,['rigid board 1','rigid 1','rigidboard 1','rb1','rigid foam 1'])) rb1U+=qty;
-      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=qty;
+      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=(d.indexOf('bucket')>=0?qty*500:qty);
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
     var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
@@ -2322,7 +2322,7 @@ function renderProjects(filter){
         else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
         else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
-        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=qty;
+        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=(desc.indexOf('bucket')>=0?qty*500:qty);
         else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
       // Convert gallons used to BF used
