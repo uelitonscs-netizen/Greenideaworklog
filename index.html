@@ -1995,9 +1995,11 @@ function exportProjectReport(pid){
   var margin=budget>0?(profit/budget)*100:0;
 
   // Material budget calcs
-  var mb=p.matBudget;
+  var mb=p.matBudget||{};
+  mb.cc=mb.cc||{sqft:0,inch:0,bfPerSet:4500,galPerSet:55};
+  mb.oc=mb.oc||{sqft:0,inch:0,bfPerSet:17000,galPerSet:55};
   var mbRows='';
-  if(mb){
+  if(mb&&(mb.cc.sqft>0||mb.oc.sqft>0||mb.roxBags>0||mb.celBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.rb2Boards>0||mb.rb1Boards>0)){
     function matchMat(d,kws){for(var i=0;i<kws.length;i++)if(d.indexOf(kws[i])>=0)return true;return false;}
     var ccGal=0,ocGal=0,celU=0,roxU=0,fbgU=0,ignU=0,fbkU=0,rb2U=0,rb1U=0;
     expenses.forEach(function(e){
