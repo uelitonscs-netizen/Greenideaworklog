@@ -2042,15 +2042,14 @@ function exportProjectReport(pid){
                '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
            })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
+           mbRow('🔥 Ignition Barrier',parseFloat(((mb.ignSqft||0)/500).toFixed(1)),parseFloat((ignU/500).toFixed(1)),'bkt')+
            (function(){
-             var ocGalPerSet=mb.oc.galPerSet||55; var ocBFPerSet=mb.oc.bfPerSet||17000;
-             var ocGalQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*ocGalPerSet*10)/10:0;
-             var ocSetsQ=ocBFq>0?Math.round(ocBFq/ocBFPerSet*100)/100:0;
-             var ocSetsU=ocGal>0?Math.round(ocGal/ocGalPerSet*100)/100:0;
-             if(!ocGalQ&&!ocGal) return '';
+             var ibQ=mb.ignSqft||0; var ibU=ignU;
+             if(!ibQ&&!ibU) return '';
+             var qBkt=parseFloat((ibQ/500).toFixed(1)); var uBkt=parseFloat((ibU/500).toFixed(1));
              return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
-               '📋 Cotado: '+ocSetsQ+' sets · '+ocGalQ+' gal &nbsp;|&nbsp; '+
-               '🔧 Usado: '+ocSetsU+' sets · '+ocGal+' gal</td></tr>';
+               '📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '+
+               '🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
            })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
@@ -2399,14 +2398,10 @@ function renderProjects(filter){
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
           var qBkt=parseFloat((ibQ/500).toFixed(1)); var uBkt=parseFloat((ibU/500).toFixed(1));
-          var ibDiff=parseFloat((uBkt-qBkt).toFixed(1)); var ibPct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
-          var ibColor=ibDiff>0?'#dc2626':ibDiff<0?'#16a34a':'#111';
-          var ibBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(ibDiff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+ibPct+'%"></div></div>';
-          html+='<tr><td>🔥 Ignition Barrier</td>'
-            +'<td>'+qBkt+' bkt<br><span style="font-size:10px;color:#888">'+ibQ.toLocaleString()+' sqft</span></td>'
-            +'<td>'+uBkt+' bkt<br><span style="font-size:10px;color:#888">'+ibU.toLocaleString()+' sqft</span></td>'
-            +'<td style="color:'+ibColor+';font-weight:700">'+(ibDiff>0?'+':'')+ibDiff+' bkt</td>'
-            +'<td>'+ibBar+'</td></tr>';
+          html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
+          html+='<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'
+            +'📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '
+            +'🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
         }
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
