@@ -2012,7 +2012,7 @@ function exportProjectReport(pid){
       else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
       else if(matchMat(d,['rigid board 2','rigid 2','rigidboard 2','rb2','rigid foam 2'])) rb2U+=qty;
       else if(matchMat(d,['rigid board 1','rigid 1','rigidboard 1','rb1','rigid foam 1'])) rb1U+=qty;
-      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=(d.indexOf('bucket')>=0?qty*500:qty);
+      else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=(d.indexOf('bucket')>=0?qty*800:qty);
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
     var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
@@ -2042,11 +2042,11 @@ function exportProjectReport(pid){
                '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
            })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
-           mbRow('🔥 Ignition Barrier',parseFloat(((mb.ignSqft||0)/500).toFixed(1)),parseFloat((ignU/500).toFixed(1)),'bkt')+
+           mbRow('🔥 Ignition Barrier',parseFloat(((mb.ignSqft||0)/800).toFixed(1)),parseFloat((ignU/800).toFixed(1)),'bkt')+
            (function(){
              var ibQ=mb.ignSqft||0; var ibU=ignU;
              if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/500).toFixed(1)); var uBkt=parseFloat((ibU/500).toFixed(1));
+             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
              return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
                '📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '+
                '🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
@@ -2057,7 +2057,7 @@ function exportProjectReport(pid){
            (function(){
              var ibQ=mb.ignSqft||0; var ibU=ignU;
              if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/500).toFixed(1)); var uBkt=parseFloat((ibU/500).toFixed(1));
+             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
              var diff=parseFloat((uBkt-qBkt).toFixed(1)); var pct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
              var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
              var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
@@ -2333,7 +2333,7 @@ function renderProjects(filter){
         else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
         else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
-        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=(desc.indexOf('bucket')>=0?qty*500:qty);
+        else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=(desc.indexOf('bucket')>=0?qty*800:qty);
         else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
       // Convert gallons used to BF used
@@ -2397,11 +2397,12 @@ function renderProjects(filter){
         if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
-          var qBkt=parseFloat((ibQ/500).toFixed(1)); var uBkt=parseFloat((ibU/500).toFixed(1));
+          var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
           html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
-          html+='<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'
-            +'📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '
-            +'🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
+          html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
+          if(ibQ>0) html+='📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
+          if(ibU>0) html+='🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft';
+          html+='</div>';
         }
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
