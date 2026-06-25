@@ -1597,7 +1597,14 @@ function renderEntriesList(){
     html+='<div id="hent-'+h.id+'" style="display:none;border-top:1px solid var(--border)">';
     hEnts.forEach(function(e){
       var proj=e.projectId?projects.find(function(p){return p.id===e.projectId;}):null;
-      var apOpts='<option value="">No project</option>'+projects.filter(function(p){return p.status==='active';}).map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+lbl+'</option>';}).join('');
+      // Show active projects, but ALSO include this entry's assigned project even
+      // if it's completed/paused, so marking a project done doesn't make its
+      // entries appear as "No project".
+      var apList=projects.filter(function(p){return p.status==='active';});
+      if(proj&&proj.status!=='active'&&!apList.some(function(p){return p.id===proj.id;})){
+        apList=apList.concat([proj]);
+      }
+      var apOpts='<option value="">No project</option>'+apList.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'')+(p.status&&p.status!=='active'?' ('+(p.status==='completed'?'done':p.status)+')':'');return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+lbl+'</option>';}).join('');
       var hasLoc=e.clockInLocation||e.clockOutLocation;
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
