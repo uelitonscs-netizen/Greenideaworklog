@@ -2438,13 +2438,38 @@ function renderProjects(filter){
         var _det = Array.isArray(mb.detail) ? mb.detail : null;
         var _detFg = _det ? _det.filter(function(d){ return /^fg/.test(d.key||''); }) : [];
         var _detMw = _det ? _det.filter(function(d){ return /^mw/.test(d.key||''); }) : [];
+        // Cost comes from FieldBid (already includes sales tax). It is shown as the
+        // EXPECTED cost with a one-tap button — expenses are not created
+        // automatically, so the P&L only reflects money actually spent.
+        function costTag(d, pid){
+          if(!d || !(d.cost>0)) return '';
+          return '<div style="display:flex;align-items:center;justify-content:space-between;margin:-4px 0 8px;padding-left:2px">'+
+                 '<span style="font-size:10.5px;color:var(--muted)">💵 Previsto: $'+d.cost.toFixed(2)+
+                 ' <span style="opacity:.7">($'+ (d.unitCost||0).toFixed(2) +'/'+(d.unit||'un')+' c/ tax)</span></span>'+
+                 '<button data-pid="'+pid+'" data-desc="'+String(d.qty+' '+(d.unit||'')+' '+d.label).replace(/"/g,'')+'" data-amt="'+d.cost+'" '+
+                 'onclick="addMatExpense(this.dataset.pid,this.dataset.desc,this.dataset.amt)" '+
+                 'style="background:transparent;border:1px solid var(--border2);color:var(--blue);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer">+ despesa</button>'+
+                 '</div>';
+        }
         if(_detFg.length){
-          _detFg.forEach(function(d){ html+=matRow('🧶 '+d.label, d.qty, 0, 'bags'); });
+          _detFg.forEach(function(d){ html+=matRow('🧶 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
         } else if(mb.fbgBags>0||fbgUsed>0){
           html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
         }
         if(_detMw.length){
-          _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags'); });
+          _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
+        }
+        // Everything else FieldBid priced (spray foam sets, cellulose, board, caulk…)
+        if(_det){
+          var _shown={};
+          _detFg.concat(_detMw).forEach(function(d){ _shown[d.key]=1; });
+          var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0; });
+          if(_rest.length){
+            html+='<div style="font-size:10.5px;color:var(--muted);font-weight:700;margin:10px 0 4px">OUTROS MATERIAIS (previsto)</div>';
+            _rest.forEach(function(d){
+              html+='<div style="font-size:12px;color:var(--text);margin-bottom:2px">'+d.label+' — '+d.qty+' '+(d.unit||'')+'</div>'+costTag(d,p.id);
+            });
+          }
         }
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
@@ -2570,6 +2595,25 @@ window.toggleAssign=toggleAssign;
 
 function toggleExpForm(pid){var el=document.getElementById('expf-'+pid); if(el) el.style.display=el.style.display==='none'?'block':'none';}
 window.toggleExpForm=toggleExpForm;
+
+
+// One-tap expense from the FieldBid material budget. Adds to projectExpenses with
+// the same shape as a manual entry, so nothing downstream needs to change.
+function addMatExpense(pid, desc, amt){
+  var v=parseFloat(amt)||0;
+  if(!pid || v<=0) return;
+  db.collection('projectExpenses').add({
+    projectId:pid,
+    desc:String(desc||'Material'),
+    amount:v,
+    type:'🧱 Materials',   // must match the option value used by the manual form
+    date:new Date().toISOString().slice(0,10),
+    createdAt:new Date().toISOString(),
+    source:'fieldbid-budget'
+  });
+  showToast('Despesa lançada: $'+v.toFixed(2));
+}
+window.addMatExpense=addMatExpense;
 
 function saveExpense(pid){
   var desc=document.getElementById('exd-'+pid).value.trim(), amount=parseFloat(document.getElementById('exa-'+pid).value), type=document.getElementById('ext-'+pid).value, date=document.getElementById('exdt-'+pid).value;
