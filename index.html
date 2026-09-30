@@ -2079,8 +2079,18 @@ function exportProjectReport(pid){
                '🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
            })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
-           mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags')+
-           mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags')+
+           ((Array.isArray(mb.detail)&&mb.detail.some(function(d){return /^mw/.test(d.key||'');}))?'':mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags'))+
+           (function(){
+             var det=Array.isArray(mb.detail)?mb.detail:null;
+             var fg=det?det.filter(function(d){return /^fg/.test(d.key||'');}):[];
+             if(fg.length) return fg.map(function(d){ return mbRow('🧶 '+d.label, d.qty, 0, 'bags'); }).join('');
+             return mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags');
+           })()+
+           (function(){
+             var det=Array.isArray(mb.detail)?mb.detail:null;
+             var mw=det?det.filter(function(d){return /^mw/.test(d.key||'');}):[];
+             return mw.length ? mw.map(function(d){ return mbRow('🪨 '+d.label, d.qty, 0, 'bags'); }).join('') : '';
+           })()+
            (function(){
              var ibQ=mb.ignSqft||0; var ibU=ignU;
              if(!ibQ&&!ibU) return '';
@@ -2367,7 +2377,7 @@ function renderProjects(filter){
       var ccBFUsed = mb.cc.galPerSet>0 ? Math.round(ccGalUsed/mb.cc.galPerSet*mb.cc.bfPerSet) : 0;
       var ocBFUsed = mb.oc.galPerSet>0 ? Math.round(ocGalUsed/mb.oc.galPerSet*mb.oc.bfPerSet) : 0;
 
-      var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0;
+      var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0||(Array.isArray(mb.detail)&&mb.detail.length>0);
       if(hasMat){
         html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
         html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
@@ -2422,7 +2432,20 @@ function renderProjects(filter){
         }
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
         if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
-        if(mb.fbgBags>0||fbgUsed>0) html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        // FieldBid now sends a per-SKU breakdown. When present, show one row per
+        // material (Fiberglass R-19, R-38, Roxul R-21...) instead of one merged
+        // total, which made two different products look like a single line.
+        var _det = Array.isArray(mb.detail) ? mb.detail : null;
+        var _detFg = _det ? _det.filter(function(d){ return /^fg/.test(d.key||''); }) : [];
+        var _detMw = _det ? _det.filter(function(d){ return /^mw/.test(d.key||''); }) : [];
+        if(_detFg.length){
+          _detFg.forEach(function(d){ html+=matRow('🧶 '+d.label, d.qty, 0, 'bags'); });
+        } else if(mb.fbgBags>0||fbgUsed>0){
+          html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+        }
+        if(_detMw.length){
+          _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags'); });
+        }
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
           var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
@@ -2641,6 +2664,13 @@ function saveEditProject(){
     celBags:parseFloat(document.getElementById('ep-cel-bags').value)||0,
     roxBags:parseFloat(document.getElementById('ep-rox-bags').value)||0,
     fbgBags:parseFloat(document.getElementById('ep-fbg-bags').value)||0,
+    // Keep the per-SKU breakdown that FieldBid sent; editing here must not erase it.
+    detail:(function(){
+      try{
+        var _p=(typeof projects!=='undefined'&&projects)?projects.filter(function(x){return x.id===editingProjId;})[0]:null;
+        return (_p&&_p.matBudget&&Array.isArray(_p.matBudget.detail))?_p.matBudget.detail:[];
+      }catch(e){ return []; }
+    })(),
     ignSqft:parseFloat(document.getElementById('ep-ign-sqft').value)||0,
     fbSqft:parseFloat(document.getElementById('ep-fb-sqft').value)||0
   };
