@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20260421114158 -->
+<!-- WorkLog GreenIdea v20261001-pricebook -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1072,6 +1072,123 @@ function setSyncStatus(ok){
 }
 
 // ── FIREBASE LISTENERS ─────────────────────────────────
+// ── PRICE BOOK (read-only from FieldBid: collection "fieldbid", docs "matcost" + "mattax") ──
+// Auto-fills the Amount field of "Add Expense" from the FieldBid supplier prices.
+var PB={cost:{},tax:{rate:6.25,on:true},ready:false};
+var PB_DEFS={
+  ccSet:{label:'Closed Cell',unit:'set'}, ocSet:{label:'Open Cell',unit:'set'}, celBag:{label:'Cellulose',unit:'bag'},
+  fgR15:{label:'Fiberglass R-15',unit:'bag'}, fgR19:{label:'Fiberglass R-19',unit:'bag'}, fgR21:{label:'Fiberglass R-21',unit:'bag'},
+  fgR30:{label:'Fiberglass R-30',unit:'bag'}, fgR38:{label:'Fiberglass R-38',unit:'bag'}, fgR49:{label:'Fiberglass R-49',unit:'bag'},
+  mwR13:{label:'Roxul R-13',unit:'bag'}, mwR15:{label:'Roxul R-15',unit:'bag'}, mwR21:{label:'Roxul R-21',unit:'bag'}, mwR23:{label:'Roxul R-23',unit:'bag'},
+  fb1:{label:'Foam Board 1"',unit:'sheet'}, fb2:{label:'Foam Board 2"',unit:'sheet'}, ignBucket:{label:'Ignition Barrier',unit:'bucket'},
+  caulkTube:{label:'Caulking tube',unit:'tube'}, wdCan:{label:'Window & door can',unit:'can'}, thermDome:{label:'Thermal dome',unit:'un'},
+  baffle:{label:'Ventilation baffle',unit:'un'}, exhWrap:{label:'Exhaust / pipe wrap',unit:'un'}, dumpster:{label:'Disposal / dumpster',unit:'un'},
+  plywood:{label:'Plywood sheet',unit:'sheet'}
+};
+function pbNorm(s){
+  s=String(s||'').toLowerCase();
+  try{ s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){}
+  return s;
+}
+function pbUnitPrice(k){
+  var b=Number(PB.cost[k])||0;
+  return PB.tax.on ? b*(1+(Number(PB.tax.rate)||0)/100) : b;
+}
+var _pbStarted=false;
+function pbStart(){
+  if(_pbStarted) return; _pbStarted=true;
+  try{
+    db.collection('fieldbid').doc('matcost').onSnapshot(function(doc){
+      try{
+        if(doc.exists){ var o=JSON.parse(doc.data().data||'{}'); var c={}; for(var k in o){ c[k]=Number(o[k])||0; } PB.cost=c; PB.ready=true; pbRefreshFocused(); }
+      }catch(e){}
+    },function(){});
+    db.collection('fieldbid').doc('mattax').onSnapshot(function(doc){
+      try{
+        if(doc.exists){ var t=JSON.parse(doc.data().data||'{}');
+          if(t.rate!==undefined) PB.tax.rate=Number(t.rate)||0;
+          if(t.on!==undefined) PB.tax.on=!!t.on; pbRefreshFocused(); }
+      }catch(e){}
+    },function(){});
+  }catch(e){}
+}
+function pbRefreshFocused(){
+  try{ var el=document.activeElement; if(el&&el.id&&el.id.indexOf('exd-')===0) pbOnInput({target:el}); }catch(e){}
+}
+// Returns null (nothing recognised) or {key,label,unit,qty,price,total,msg}
+function pbMatch(text){
+  var s=pbNorm(text);
+  if(s.replace(/\s/g,'').length<3) return null;
+  var qty=1, m;
+  m=s.match(/^\s*(\d+(?:[.,]\d+)?)\s*(?:x\b)?/);
+  if(m){ qty=parseFloat(m[1].replace(',','.')); }
+  else {
+    m=s.match(/(\d+(?:[.,]\d+)?)\s*(?:bags?|cans?|latas?|sheets?|chapas?|tubes?|tubos?|buckets?|baldes?|sets?|un)\b/);
+    if(m) qty=parseFloat(m[1].replace(',','.'));
+  }
+  if(!(qty>0)) qty=1;
+  var r=null; m=s.match(/\br\s?-?\s?(\d{2})\b/); if(m) r=m[1];
+  var key=null, need=null;
+  if(/fiber ?glass|fibra de vidro|\bfg\b/.test(s)){
+    if(r && PB_DEFS['fgR'+r]) key='fgR'+r; else if(r) need='Fiberglass R-'+r+' não está no banco de preços do FieldBid'; else need='Fiberglass: inclua o R (ex: R15, R19)';
+  } else if(/roxul|rockwool|mineral wool|la mineral|la de rocha/.test(s)){
+    if(r && PB_DEFS['mwR'+r]) key='mwR'+r; else if(r) need='Roxul R-'+r+' não está no banco de preços do FieldBid'; else need='Roxul: inclua o R (ex: R15, R21)';
+  } else if(/cellulose|celulose/.test(s)) key='celBag';
+  else if(/closed ?cell|close cell|\bcc\b|c\.c\./.test(s)) key='ccSet';
+  else if(/open ?cell|\boc\b|o\.c\./.test(s)) key='ocSet';
+  else if(/ignition|intumescent/.test(s)) key='ignBucket';
+  else if(/ridged|rigid|foam ?board|\brb[12]\b/.test(s)) key=(/\brb2\b|\b2\s?(?:"|in\b|inch|pol)/.test(s))?'fb2':'fb1';
+  else if(/caulk/.test(s)) key='caulkTube';
+  else if(/window|door|janela|porta/.test(s)) key='wdCan';
+  else if(/dome/.test(s)) key='thermDome';
+  else if(/baffle/.test(s)) key='baffle';
+  else if(/exhaust|pipe wrap|duct wrap/.test(s)) key='exhWrap';
+  else if(/dumpster|disposal|dump/.test(s)) key='dumpster';
+  else if(/plywood/.test(s)) key='plywood';
+  if(need) return {key:null,msg:need};
+  if(!key) return null;
+  var d=PB_DEFS[key], price=pbUnitPrice(key);
+  return {key:key,label:d.label,unit:d.unit,qty:qty,price:price,total:Math.round(qty*price*100)/100};
+}
+function pbReset(pid){
+  var a=document.getElementById('exa-'+pid), h=document.getElementById('exh-'+pid);
+  if(a) a.setAttribute('data-auto','');
+  if(h){ h.style.display='none'; h.textContent=''; }
+}
+window.pbReset=pbReset;
+function pbOnInput(ev){
+  var t=ev&&ev.target; if(!t||!t.id) return;
+  if(t.id.indexOf('exa-')===0){ t.setAttribute('data-auto',''); return; }   // typed by hand: never overwrite
+  if(t.id.indexOf('exd-')!==0) return;
+  pbStart();
+  var pid=t.id.substring(4);
+  var amt=document.getElementById('exa-'+pid), hint=document.getElementById('exh-'+pid);
+  var auto=amt&&amt.getAttribute('data-auto')==='1';
+  var m=pbMatch(t.value);
+  if(!m||!m.key){
+    if(auto){ amt.value=''; amt.setAttribute('data-auto',''); }
+    if(hint){
+      if(m&&m.msg){ hint.style.display='block'; hint.style.color='#b45309'; hint.textContent='⚠ '+m.msg; }
+      else { hint.style.display='none'; hint.textContent=''; }
+    }
+    return;
+  }
+  if(!(m.price>0)){
+    if(auto){ amt.value=''; amt.setAttribute('data-auto',''); }
+    if(hint){ hint.style.display='block'; hint.style.color='#b45309';
+      hint.textContent='⚠ '+m.label+': sem preço cadastrado no FieldBid'+(PB.ready?'':' (preços ainda carregando)'); }
+    return;
+  }
+  var empty=!amt||amt.value==='';
+  if(amt&&(empty||auto)){ amt.value=m.total.toFixed(2); amt.setAttribute('data-auto','1'); }
+  if(hint){
+    hint.style.display='block'; hint.style.color='#15803d';
+    var manual=amt&&amt.getAttribute('data-auto')!=='1';
+    hint.textContent='💡 '+(manual?'Sugerido: ':'')+m.qty+' × $'+m.price.toFixed(2)+'/'+m.unit+' = $'+m.total.toFixed(2)+' · '+m.label+' (c/ tax)';
+  }
+}
+document.addEventListener('input', pbOnInput, false);
+
 function startListeners(){
   if(window._listenersStarted) return;
   window._listenersStarted = true;
@@ -2501,7 +2618,7 @@ function renderProjects(filter){
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Description</label><input id="exd-'+p.id+'" placeholder="e.g. Lumber" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Amount ($)</label><input id="exa-'+p.id+'" type="number" placeholder="0.00" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
-    html+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    html+='</div><div id="exh-'+p.id+'" style="display:none;font-size:11px;font-weight:600;margin:-2px 0 8px;line-height:1.4"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>🧱 Materials</option><option>📦 General</option><option>🔧 Other</option></select></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
@@ -2593,7 +2710,7 @@ function toggleAssign(projId,helperId){
 }
 window.toggleAssign=toggleAssign;
 
-function toggleExpForm(pid){var el=document.getElementById('expf-'+pid); if(el) el.style.display=el.style.display==='none'?'block':'none';}
+function toggleExpForm(pid){if(window.pbStart) pbStart(); var el=document.getElementById('expf-'+pid); if(el) el.style.display=el.style.display==='none'?'block':'none';}
 window.toggleExpForm=toggleExpForm;
 
 
@@ -2620,7 +2737,7 @@ function saveExpense(pid){
   if(!desc) return showToast('Enter a description','err');
   if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
   db.collection('projectExpenses').add({projectId:pid,desc:desc,amount:amount,type:type,date:date,createdAt:new Date().toISOString()});
-  document.getElementById('exd-'+pid).value=''; document.getElementById('exa-'+pid).value='';
+  document.getElementById('exd-'+pid).value=''; document.getElementById('exa-'+pid).value=''; if(window.pbReset) pbReset(pid);
   showToast('Expense added!');
 }
 window.saveExpense=saveExpense;
