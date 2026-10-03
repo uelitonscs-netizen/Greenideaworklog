@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261003-time-picker -->
+<!-- WorkLog GreenIdea v20261003-foam-gallons-fix -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1124,7 +1124,23 @@ function pbRefreshFocused(){
   try{ var el=document.activeElement; if(el&&el.id&&el.id.indexOf('exd-')===0) pbOnInput({target:el}); }catch(e){}
 }
 // Returns null (nothing recognised) or {key,label,unit,qty,price,total,msg}
-function pbMatch(text){
+function pbProjGalPerSet(pid,kind){
+  try{ for(var i=0;i<projects.length;i++){ if(projects[i].id===pid){ var mb=projects[i].matBudget||{}; var g=mb[kind]&&Number(mb[kind].galPerSet); return g>0?g:55; } } }catch(e){}
+  return 55;
+}
+// Unit words written in the description (null if none).
+function pbUnitInText(s){
+  if(/\b(gal|gals|gallons?|galao|galoes)\b/.test(s)) return 'gal';
+  if(/\bsets?\b|\bjogos?\b/.test(s)) return 'set';
+  if(/\b(buckets?|baldes?)\b/.test(s)) return 'bucket';
+  if(/\b(sq ?ft|sqft|sf|square ?feet|pes2|ft2)\b/.test(s)) return 'sf';
+  if(/\b(bags?|sacos?)\b/.test(s)) return 'bag';
+  if(/\b(cans?|latas?)\b/.test(s)) return 'can';
+  if(/\b(sheets?|chapas?|boards?|placas?)\b/.test(s)) return 'sheet';
+  if(/\b(tubes?|tubos?)\b/.test(s)) return 'tube';
+  return null;
+}
+function pbMatch(text,pid){
   var s=pbNorm(text);
   if(s.replace(/\s/g,'').length<3) return null;
   var qty=1, m;
@@ -1155,8 +1171,25 @@ function pbMatch(text){
   else if(/plywood/.test(s)) key='plywood';
   if(need) return {key:null,msg:need};
   if(!key) return null;
-  var d=PB_DEFS[key], price=pbUnitPrice(key);
-  return {key:key,label:d.label,unit:d.unit,qty:qty,price:price,total:Math.round(qty*price*100)/100};
+  var d=PB_DEFS[key], price=pbUnitPrice(key), unit=d.unit, note='', wrote=pbUnitInText(s);
+  if(key==='ccSet'||key==='ocSet'){
+    // WorkLog convention (Material Budget): the number on a foam expense is GALLONS.
+    // Only "set(s)" switches to whole sets.
+    if(wrote==='set'){ unit='set'; }
+    else if(wrote===null||wrote==='gal'){
+      var gps=pbProjGalPerSet(pid,key==='ccSet'?'cc':'oc');
+      note=' ($'+price.toFixed(2)+'/set ÷ '+gps+' gal)';
+      price=price/gps; unit='gal';
+    } else {
+      return {key:null,msg:d.label+': use galões (ex: 11 gal) ou sets — preencha o valor manualmente'};
+    }
+  } else if(key==='ignBucket'){
+    // WorkLog reads ignition barrier numbers as SQ FT unless "bucket" is written.
+    if(wrote!=='bucket') return {key:null,msg:'Ignition Barrier: só calculo com "bucket" (ex: 3 bucket ignition)'};
+  } else if(wrote && wrote!==unit && !(wrote==='sheet'&&unit==='sheet')){
+    if(!(unit==='un')) return {key:null,msg:d.label+': preço é por '+unit+', mas a descrição diz "'+wrote+'" — preencha o valor manualmente'};
+  }
+  return {key:key,label:d.label+note,unit:unit,qty:qty,price:price,total:Math.round(qty*price*100)/100};
 }
 function pbReset(pid){
   var a=document.getElementById('exa-'+pid), h=document.getElementById('exh-'+pid);
@@ -1172,7 +1205,7 @@ function pbOnInput(ev){
   var pid=t.id.substring(4);
   var amt=document.getElementById('exa-'+pid), hint=document.getElementById('exh-'+pid);
   var auto=amt&&amt.getAttribute('data-auto')==='1';
-  var m=pbMatch(t.value);
+  var m=pbMatch(t.value,pid);
   if(!m||!m.key){
     if(auto){ amt.value=''; amt.setAttribute('data-auto',''); }
     if(hint){
