@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261003-foam-gallons-fix -->
+<!-- WorkLog GreenIdea v20261003-qh-project -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -784,6 +784,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
     <div class="fg"><label>Date</label><input type="date" id="qh-date"/></div>
     <div class="fg"><label>Start</label><input type="time" id="qh-start"/></div>
     <div class="fg"><label>End</label><input type="time" id="qh-end"/></div>
+    <div class="fg"><label>Project (optional)</label><select id="qh-proj"></select></div>
     <div class="fg"><label>Note (optional)</label><input id="qh-note" placeholder="Added by admin"/></div>
     <div id="qh-dur" style="font-family:var(--font-d);font-size:16px;font-weight:800;color:var(--green);text-align:center;padding:8px;background:#f0f8f0;border-radius:8px;display:none"></div>
     <div class="modal-actions">
@@ -2950,6 +2951,7 @@ function openQuickHours(hid,name){
   document.getElementById('qh-end').value='17:00';
   if(window.tpSyncAll) tpSyncAll();
   document.getElementById('qh-note').value='';
+  qhFillProjects();
   document.getElementById('qh-dur').style.display='none';
   document.getElementById('modal-quick-hours').classList.add('open');
   if(!window._qhWired){
@@ -3059,15 +3061,32 @@ window.tpSyncAll=tpSyncAll;
 tpSyncAll();
 
 
+// Project list for "+ Hours": same rule as the entry project picker (active projects).
+function qhFillProjects(){
+  var sel=document.getElementById('qh-proj'); if(!sel) return;
+  while(sel.firstChild) sel.removeChild(sel.firstChild);
+  var o=document.createElement('option'); o.value=''; o.textContent='No project'; sel.appendChild(o);
+  var list=projects.filter(function(p){return p.status==='active';});
+  list.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});
+  for(var i=0;i<list.length;i++){
+    var p=list[i]; o=document.createElement('option'); o.value=p.id;
+    o.textContent=p.name+(p.desc?' · '+p.desc:''); sel.appendChild(o);
+  }
+  sel.value='';
+}
 function saveQuickHours(){
   if(!quickHoursHelperId) return;
   var date=document.getElementById('qh-date').value, start=document.getElementById('qh-start').value, end=document.getElementById('qh-end').value, note=document.getElementById('qh-note').value;
   if(!date||!start||!end) return showToast('Fill in all fields','err');
   var s=new Date(date+'T'+start), e=new Date(date+'T'+end);
   if(e<=s) return showToast('End must be after start','err');
-  db.collection('entries').add({helperId:quickHoursHelperId,startTime:s.toISOString(),endTime:e.toISOString(),note:note||'Added by admin',type:'manual',addedByAdmin:true});
+  var _qhSel=document.getElementById('qh-proj'), _qhPid=_qhSel?_qhSel.value:'';
+  var _qhEntry={helperId:quickHoursHelperId,startTime:s.toISOString(),endTime:e.toISOString(),note:note||'Added by admin',type:'manual',addedByAdmin:true};
+  if(_qhPid) _qhEntry.projectId=_qhPid;   // same link clock-ins use: counts in that project's labor P&L
+  db.collection('entries').add(_qhEntry);
   closeModal('modal-quick-hours');
-  showToast('Hours added! ✅');
+  var _qhP=_qhPid?projects.find(function(x){return x.id===_qhPid;}):null;
+  showToast(_qhP?('Hours added to '+_qhP.name+'! ✅'):'Hours added! ✅');
 }
 window.saveQuickHours=saveQuickHours;
 
