@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261002-client-contact -->
+<!-- WorkLog GreenIdea v20261003-qh-duration-fix -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -2912,8 +2912,31 @@ function openQuickHours(hid,name){
   document.getElementById('qh-note').value='';
   document.getElementById('qh-dur').style.display='none';
   document.getElementById('modal-quick-hours').classList.add('open');
-  function upd(){var s=document.getElementById('qh-start').value,e=document.getElementById('qh-end').value,d=document.getElementById('qh-date').value; if(s&&e&&d){var start=new Date(d+'T'+s),end=new Date(d+'T'+e),mins=Math.round((end-start)/60000); if(mins>0){var el=document.getElementById('qh-dur'); el.textContent='Duration: '+Math.floor(mins/60)+'h '+p2(mins%60)+'m'; el.style.display='block';}}}
-  setTimeout(function(){['qh-start','qh-end','qh-date'].forEach(function(id){document.getElementById(id).addEventListener('change',upd);}); upd();},100);
+  if(!window._qhWired){
+    window._qhWired=true;
+    var _ids=['qh-start','qh-end','qh-date'];
+    for(var _i=0;_i<_ids.length;_i++){
+      document.getElementById(_ids[_i]).addEventListener('change',qhUpdDuration);
+      document.getElementById(_ids[_i]).addEventListener('input',qhUpdDuration);
+    }
+  }
+  qhUpdDuration();
+}
+// Always reflects the current Start/End: never leaves a stale duration on screen.
+function qhUpdDuration(){
+  var s=document.getElementById('qh-start').value,e=document.getElementById('qh-end').value,d=document.getElementById('qh-date').value;
+  var el=document.getElementById('qh-dur');
+  if(!el) return;
+  if(!(s&&e&&d)){ el.style.display='none'; el.textContent=''; return; }
+  var mins=Math.round((new Date(d+'T'+e)-new Date(d+'T'+s))/60000);
+  if(mins>0){
+    el.textContent='Duration: '+Math.floor(mins/60)+'h '+p2(mins%60)+'m';
+    el.style.color='var(--green)'; el.style.background='#f0f8f0';
+  } else {
+    el.textContent='⚠ End is before Start — check AM/PM';
+    el.style.color='var(--red)'; el.style.background='#fdecec';
+  }
+  el.style.display='block';
 }
 window.openQuickHours=openQuickHours;
 
