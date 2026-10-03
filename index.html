@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261001-pricebook -->
+<!-- WorkLog GreenIdea v20261002-client-contact -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -826,6 +826,10 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
     <div class="modal-title">✏️ Edit Project</div>
     <div class="fg"><label>Name</label><input id="ep-name"/></div>
     <div class="fg"><label>Client / Company</label><input id="ep-client" placeholder="e.g. Smith Construction" list="client-suggestions" autocomplete="off"/></div>
+    <div class="form-row">
+      <div class="fg"><label>Phone</label><input id="ep-phone" type="tel" inputmode="tel" placeholder="(508) 555-0000" autocomplete="off"/></div>
+      <div class="fg"><label>Email</label><input id="ep-email" type="email" inputmode="email" placeholder="client@email.com" autocomplete="off" autocapitalize="off"/></div>
+    </div>
     <div class="fg"><label>Description</label><input id="ep-desc"/></div>
     <div class="fg"><label>Budget / Contract Value ($)</label><input id="ep-budget" type="number"/></div>
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">⚙️ OVERHEAD DAYS <span style="font-weight:400">(each team = $484.88/day)</span></div>
@@ -2390,7 +2394,7 @@ function renderProjects(filter){
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
     html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
@@ -2772,6 +2776,16 @@ function saveEditExpense(){
 }
 window.saveEditExpense=saveEditExpense;
 
+// Client phone / email (sent by FieldBid or typed in Edit Project). Escaped: it is free text.
+function wlEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function wlContactLine(p){
+  var ph=p&&p.clientPhone?String(p.clientPhone).trim():'', em=p&&p.clientEmail?String(p.clientEmail).trim():'';
+  if(!ph&&!em) return '';
+  var h='<div style="font-size:11px;margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 12px">';
+  if(ph){ var tel=ph.replace(/[^0-9+]/g,''); h+='<a href="tel:'+wlEsc(tel)+'" style="color:var(--green);font-weight:600;text-decoration:none">📞 '+wlEsc(ph)+'</a>'; }
+  if(em){ h+='<a href="mailto:'+wlEsc(em)+'" style="color:var(--green);font-weight:600;text-decoration:none;word-break:break-all">✉️ '+wlEsc(em)+'</a>'; }
+  return h+'</div>';
+}
 function toggleHist(pid){var el=document.getElementById('hist-'+pid),ar=document.getElementById('ha-'+pid); if(el){var o=el.style.display!=='none'; el.style.display=o?'none':'block'; if(ar) ar.textContent=o?'▼':'▲';}}
 window.toggleHist=toggleHist;
 
@@ -2780,6 +2794,8 @@ function openEditProj(id){
   editingProjId=id;
   document.getElementById('ep-name').value=p.name||'';
   document.getElementById('ep-client').value=p.client||'';
+  document.getElementById('ep-phone').value=p.clientPhone||'';
+  document.getElementById('ep-email').value=p.clientEmail||'';
   document.getElementById('ep-desc').value=p.desc||'';
   document.getElementById('ep-budget').value=p.budget||'';
   var epList=document.getElementById('ep-days-list');
@@ -2835,7 +2851,7 @@ function saveEditProject(){
     ignSqft:parseFloat(document.getElementById('ep-ign-sqft').value)||0,
     fbSqft:parseFloat(document.getElementById('ep-fb-sqft').value)||0
   };
-  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
+  db.collection('projects').doc(editingProjId).update({name:name,client:client||null,clientPhone:(document.getElementById('ep-phone').value.trim()||null),clientEmail:(document.getElementById('ep-email').value.trim()||null),desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
 }
