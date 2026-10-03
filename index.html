@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261003-qh-duration-fix -->
+<!-- WorkLog GreenIdea v20261003-time-picker -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -209,6 +209,14 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
   #tab-qr { display: block !important; }
   body { background: white; }
 }
+/* Time picker: hour / minute / AM-PM */
+.tp{display:flex;align-items:center;gap:6px;}
+.tp select{flex:1;min-width:0;width:auto;padding:10px 4px;font-size:17px;font-weight:700;text-align:center;text-align-last:center;background:#f8fafc;}
+.tp .tp-c{font-weight:800;font-size:17px;color:var(--text);}
+.tp-ap{display:flex;flex-shrink:0;border:1px solid var(--border2);border-radius:10px;overflow:hidden;}
+.tp-ap button{border:none;background:#fff;color:#b0b6bd;font-weight:700;font-size:15px;padding:10px 14px;cursor:pointer;font-family:inherit;}
+.tp-ap button.on-am{background:var(--green);color:#fff;font-weight:800;}
+.tp-ap button.on-pm{background:#d97706;color:#fff;font-weight:800;}
 </style>
 </head>
 <body>
@@ -697,10 +705,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
       <div class="card">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px">ADD MANUAL ENTRY</div>
         <div class="fg"><label>Date</label><input type="date" id="m-date"/></div>
-        <div class="form-row">
-          <div class="fg"><label>Start</label><input type="time" id="m-start"/></div>
-          <div class="fg"><label>End</label><input type="time" id="m-end"/></div>
-        </div>
+        <div class="fg"><label>Start</label><input type="time" id="m-start"/></div>
+        <div class="fg"><label>End</label><input type="time" id="m-end"/></div>
         <div class="fg"><label>Note (optional)</label><input id="m-note" placeholder="e.g. Garden work"/></div>
         <button class="btn" onclick="addManualEntry()">+ Add Entry</button>
       </div>
@@ -776,10 +782,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
   <div class="modal">
     <div class="modal-title" id="qh-title">+ Add Hours</div>
     <div class="fg"><label>Date</label><input type="date" id="qh-date"/></div>
-    <div class="form-row">
-      <div class="fg"><label>Start</label><input type="time" id="qh-start"/></div>
-      <div class="fg"><label>End</label><input type="time" id="qh-end"/></div>
-    </div>
+    <div class="fg"><label>Start</label><input type="time" id="qh-start"/></div>
+    <div class="fg"><label>End</label><input type="time" id="qh-end"/></div>
     <div class="fg"><label>Note (optional)</label><input id="qh-note" placeholder="Added by admin"/></div>
     <div id="qh-dur" style="font-family:var(--font-d);font-size:16px;font-weight:800;color:var(--green);text-align:center;padding:8px;background:#f0f8f0;border-radius:8px;display:none"></div>
     <div class="modal-actions">
@@ -1353,6 +1357,7 @@ function openHelperView(hid){
   document.getElementById('m-date').value=localDateStr();
   document.getElementById('m-start').value='09:00';
   document.getElementById('m-end').value='17:00';
+  if(window.tpSyncAll) tpSyncAll();
   document.getElementById('m-note').value='';
   showScreen('helper');
   updateHelperStats();
@@ -1639,6 +1644,7 @@ function openHelperViewAdmin(id){
   document.getElementById('m-date').value=localDateStr();
   document.getElementById('m-start').value='09:00';
   document.getElementById('m-end').value='17:00';
+  if(window.tpSyncAll) tpSyncAll();
   document.getElementById('m-note').value='';
   // Show admin preview banner
   var banner=document.getElementById('admin-preview-banner');
@@ -2909,6 +2915,7 @@ function openQuickHours(hid,name){
   document.getElementById('qh-date').value=localDateStr();
   document.getElementById('qh-start').value='06:30';
   document.getElementById('qh-end').value='17:00';
+  if(window.tpSyncAll) tpSyncAll();
   document.getElementById('qh-note').value='';
   document.getElementById('qh-dur').style.display='none';
   document.getElementById('modal-quick-hours').classList.add('open');
@@ -2939,6 +2946,85 @@ function qhUpdDuration(){
   el.style.display='block';
 }
 window.openQuickHours=openQuickHours;
+
+// ── TIME PICKER (hour / minute / big AM-PM buttons) ─────────────
+// Replaces the native Android clock for Start/End. The original <input type="time">
+// stays in the page (hidden) and keeps holding the value as "HH:MM" (24h), so every
+// existing read/write of .value keeps working. Call tpSyncAll() after setting values in code.
+var TP_IDS=['m-start','m-end','qh-start','qh-end'];
+function tpEl(id){return document.getElementById(id);}
+function tpPad(n){return (n<10?'0':'')+n;}
+function tpParse(v){
+  var m=/^(\d{1,2}):(\d{2})/.exec(String(v||''));
+  if(!m) return null;
+  var H=parseInt(m[1],10), M=parseInt(m[2],10);
+  return {h12:(H%12===0?12:H%12), m:M, pm:H>=12};
+}
+function tpBuild(id){
+  var inp=tpEl(id); if(!inp||inp.getAttribute('data-tp')) return;
+  inp.setAttribute('data-tp','1');
+  inp.style.display='none';
+  var wrap=document.createElement('div'); wrap.className='tp'; wrap.id='tp-'+id;
+  var hs=document.createElement('select'); hs.className='tp-h'; hs.id='tp-'+id+'-h';
+  var o=document.createElement('option'); o.value=''; o.textContent='--'; hs.appendChild(o);
+  for(var h=1;h<=12;h++){ o=document.createElement('option'); o.value=String(h); o.textContent=String(h); hs.appendChild(o); }
+  var colon=document.createElement('span'); colon.className='tp-c'; colon.textContent=':';
+  var ms=document.createElement('select'); ms.className='tp-m'; ms.id='tp-'+id+'-m';
+  o=document.createElement('option'); o.value=''; o.textContent='--'; ms.appendChild(o);
+  for(var m=0;m<60;m+=5){ o=document.createElement('option'); o.value=String(m); o.textContent=tpPad(m); ms.appendChild(o); }
+  var ap=document.createElement('div'); ap.className='tp-ap';
+  var bAm=document.createElement('button'); bAm.type='button'; bAm.id='tp-'+id+'-am'; bAm.textContent='AM';
+  var bPm=document.createElement('button'); bPm.type='button'; bPm.id='tp-'+id+'-pm'; bPm.textContent='PM';
+  ap.appendChild(bAm); ap.appendChild(bPm);
+  wrap.appendChild(hs); wrap.appendChild(colon); wrap.appendChild(ms); wrap.appendChild(ap);
+  inp.parentNode.insertBefore(wrap, inp.nextSibling);
+  hs.addEventListener('change',function(){ tpCommit(id,null); });
+  ms.addEventListener('change',function(){ tpCommit(id,null); });
+  bAm.addEventListener('click',function(){ tpCommit(id,false); });
+  bPm.addEventListener('click',function(){ tpCommit(id,true); });
+}
+function tpMinuteOption(id,m){
+  var ms=tpEl('tp-'+id+'-m'); if(!ms) return;
+  for(var i=0;i<ms.options.length;i++){ if(ms.options[i].value===String(m)) return; }
+  // keep an existing odd minute (e.g. 07:23) selectable instead of losing it
+  var o=document.createElement('option'); o.value=String(m); o.textContent=tpPad(m);
+  var placed=false;
+  for(var j=1;j<ms.options.length;j++){ if(parseInt(ms.options[j].value,10)>m){ ms.insertBefore(o,ms.options[j]); placed=true; break; } }
+  if(!placed) ms.appendChild(o);
+}
+function tpPaint(id,pm){
+  var a=tpEl('tp-'+id+'-am'), p=tpEl('tp-'+id+'-pm'); if(!a||!p) return;
+  a.className=(pm===false)?'on-am':''; p.className=(pm===true)?'on-pm':'';
+  a.setAttribute('aria-pressed',pm===false?'true':'false'); p.setAttribute('aria-pressed',pm===true?'true':'false');
+}
+function tpSync(id){
+  var inp=tpEl(id); if(!inp) return;
+  if(!inp.getAttribute('data-tp')) tpBuild(id);
+  var t=tpParse(inp.value), hs=tpEl('tp-'+id+'-h'), ms=tpEl('tp-'+id+'-m');
+  if(!hs||!ms) return;
+  if(!t){ hs.value=''; ms.value=''; tpPaint(id,null); return; }
+  tpMinuteOption(id,t.m);
+  hs.value=String(t.h12); ms.value=String(t.m); tpPaint(id,t.pm);
+}
+function tpSyncAll(){ for(var i=0;i<TP_IDS.length;i++) tpSync(TP_IDS[i]); }
+function tpCommit(id,forcePm){
+  var inp=tpEl(id), hs=tpEl('tp-'+id+'-h'), ms=tpEl('tp-'+id+'-m'); if(!inp||!hs||!ms) return;
+  var cur=tpParse(inp.value);
+  var h12=hs.value?parseInt(hs.value,10):(cur?cur.h12:12);
+  var m=ms.value!==''?parseInt(ms.value,10):(cur?cur.m:0);
+  var pm=(forcePm===true||forcePm===false)?forcePm:(cur?cur.pm:false);
+  var H=(h12%12)+(pm?12:0);
+  inp.value=tpPad(H)+':'+tpPad(m);
+  tpSync(id);
+  var evs=['input','change'];
+  for(var i=0;i<evs.length;i++){
+    try{ inp.dispatchEvent(new Event(evs[i],{bubbles:true})); }
+    catch(e){ try{ var ev=document.createEvent('Event'); ev.initEvent(evs[i],true,true); inp.dispatchEvent(ev); }catch(e2){} }
+  }
+}
+window.tpSyncAll=tpSyncAll;
+tpSyncAll();
+
 
 function saveQuickHours(){
   if(!quickHoursHelperId) return;
