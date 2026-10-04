@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage2 theme (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage2b theme (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -265,6 +265,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .sum-total{background:#eaf3e6;border-color:#1e633433;}
 .no-proj-alert{background:#fdf4e3;border-color:#b86e0755;}
 .toast{font-size:14px;padding:12px 24px;}
+/* ── Stage 2b: reach elements that carry inline styles (still CSS only) ── */
+/* bold emphasis and numbers use the display face everywhere */
+.admin-body strong,.admin-body b,.helper-body strong,.helper-body b,.modal strong,.modal b{font-family:var(--font-d);font-weight:800;}
+.admin-body [style*="font-weight:700"],.admin-body [style*="font-weight:800"],
+.helper-body [style*="font-weight:700"],.helper-body [style*="font-weight:800"],
+.modal [style*="font-weight:700"],.modal [style*="font-weight:800"]{font-family:var(--font-d);}
+[style*="font-family:var(--font-d)"]{font-stretch:112%;}
+/* dashboard helper cards */
+.hcard-name{font-size:17px;}
+.hcard-rate{font-size:13px;}
+.hcard>div[style*="line-height:1.8"]{font-size:14px!important;line-height:1.7!important;}
+.hcard>div[style*="line-height:1.8"] strong{font-size:17px;font-stretch:112%;}
+.hcard [style*="color:var(--green2)"]{font-size:21px!important;font-weight:800!important;font-stretch:112%;letter-spacing:-.3px;}
+.hcard [style*="color:var(--muted);font-size:11px"]{font-size:12px!important;}
+.hcard button[onclick^="openQuickHours"]{min-height:40px;padding:8px 16px!important;border-radius:10px!important;font-size:13px!important;}
+.hcard button[data-link]{min-height:40px;font-size:13px!important;}
 </style>
 </head>
 <body>
