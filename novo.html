@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO (copy of v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage2 theme (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="WorkLog"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -217,6 +217,54 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .tp-ap button{border:none;background:#fff;color:#b0b6bd;font-weight:700;font-size:15px;padding:10px 14px;cursor:pointer;font-family:inherit;}
 .tp-ap button.on-am{background:var(--green);color:#fff;font-weight:800;}
 .tp-ap button.on-pm{background:#d97706;color:#fff;font-weight:800;}
+</style>
+<style id="novo-theme">
+/* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
+:root{
+  --bg:#f1f3ee;--surface:#fff;--border:#e1e6de;--border2:#cbd3c8;
+  --text:#14201a;--muted:#5c6862;--green:#1e6334;--green2:#2b8a46;
+  --red:#b93229;--blue:#2453b8;--amber:#b86e07;
+  --font-d:'Archivo','Inter',sans-serif;--font-m:'Inter',sans-serif;
+  --shadow-sm:0 1px 0 rgba(20,32,26,.05);
+  --shadow-md:0 1px 0 rgba(20,32,26,.05),0 6px 16px rgba(20,32,26,.07);
+  --shadow-lg:0 14px 34px rgba(20,32,26,.16);
+  --radius:16px;
+}
+body{font-size:15px;letter-spacing:0;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+::selection{background:#1e633426;}
+/* headers: solid field green instead of gradient */
+.admin-header,.helper-header{background:#17522a;}
+.admin-logo,.helper-name{letter-spacing:-.4px;}
+/* tabs */
+.admin-nav{background:rgba(241,243,238,.94);border-bottom:1px solid var(--border);}
+.nav-btn{font-size:13px;padding:10px 14px;border-radius:10px;min-height:40px;color:var(--muted);}
+.nav-btn.active{background:var(--green);}
+.htab{font-size:12px;padding:11px 4px;border-radius:10px;}
+/* buttons and fields: 44px touch targets */
+.btn{min-height:44px;border-radius:12px;font-size:14px;padding:11px 18px;letter-spacing:.1px;}
+.btn.sm{min-height:36px;font-size:13px;padding:7px 13px;border-radius:10px;}
+input,select,textarea{min-height:44px;font-size:15px;border-radius:12px;background:#fff;border-color:var(--border2);}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #1e63341f;}
+.fg label{font-size:12px;color:var(--muted);font-weight:600;}
+/* cards */
+.card,.hcard,.proj-card,.stat-card,.entry-row,.clock-card{border-color:var(--border);}
+.hcard{border-radius:18px;padding:18px 18px 16px;}
+.hcard.live{border-color:#1e633466;box-shadow:0 0 0 1px #1e633433,var(--shadow-md);}
+.proj-card{border-radius:18px;}
+.proj-stat{background:#f1f3ee;border-radius:12px;}
+.modal{border-radius:22px;}
+/* type: sturdy wide numerals for hours and money (the one bold move) */
+.section-title{font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--text);}
+.hcard-name,.sum-name,.modal-title{letter-spacing:-.2px;}
+.stat-val,.proj-stat-val,.sum-hrs,.entry-dur,.clock-time{font-stretch:112%;letter-spacing:-.3px;}
+.clock-time{font-size:54px;letter-spacing:-1.5px;}
+.stat-label,.clock-status{color:var(--muted);}
+/* pills and period buttons */
+.speriod-btn,.range-btn{background:#e7ebe4;color:var(--muted);min-height:34px;font-size:12px;border-radius:10px;}
+.speriod-btn.active,.range-btn.active{background:var(--green);color:#fff;}
+.sum-total{background:#eaf3e6;border-color:#1e633433;}
+.no-proj-alert{background:#fdf4e3;border-color:#b86e0755;}
+.toast{font-size:14px;padding:12px 24px;}
 </style>
 </head>
 <body>
