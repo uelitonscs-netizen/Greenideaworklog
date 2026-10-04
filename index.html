@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261003-project-ot -->
+<!-- WorkLog GreenIdea v20261003-data-backup -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -474,6 +474,19 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
             <button onclick="adminLogout()" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Logout</button>
           </div>
         </div>
+      </div>
+
+      <!-- Data backup -->
+      <div style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;padding:0 2px;margin-bottom:8px">DATA BACKUP</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px;padding:14px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-weight:600;font-size:14px">Full data backup</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">All WorkLog and FieldBid data in one file. Read-only: changes nothing.</div>
+          </div>
+          <button id="wl-backup-btn" type="button" style="background:var(--green);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;flex-shrink:0">Download</button>
+        </div>
+        <div id="wl-backup-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
 
       <!-- Overtime & Pay -->
@@ -3217,6 +3230,62 @@ function renderQR(){
   } catch(e){ qrDiv.textContent = depotUrl; }
 }
 window.renderQR = renderQR;
+
+// ── FULL DATA BACKUP (read-only) ────────────────────────────────
+// Reads every Firestore collection the apps use and downloads one JSON file.
+// It never writes to Firestore. Timestamps are tagged so a restore can rebuild them.
+var WL_BACKUP_COLLECTIONS=['helpers','entries','payments','advances','absences','projects','projectExpenses','projectPhotos','projectHistory','wl_config','fieldbid'];
+var _wlBackupRunning=false;
+function wlBkPlain(v){
+  if(v===null||v===undefined) return v;
+  if(typeof v.toDate==='function'&&typeof v.seconds==='number') return {__ts:v.toDate().toISOString()};
+  if(Array.isArray(v)){ var a=[]; for(var i=0;i<v.length;i++) a.push(wlBkPlain(v[i])); return a; }
+  if(typeof v==='object'){ var o={}; for(var k in v){ if(Object.prototype.hasOwnProperty.call(v,k)) o[k]=wlBkPlain(v[k]); } return o; }
+  return v;
+}
+function wlBkStatus(t,color){ var el=document.getElementById('wl-backup-status'); if(el){ el.textContent=t; el.style.color=color||'var(--muted)'; } }
+function wlBkShowLast(){
+  try{ var l=localStorage.getItem('wl_last_backup'); if(l&&!_wlBackupRunning) wlBkStatus('Last backup on this phone: '+new Date(l).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})); }catch(e){}
+}
+function wlBackupAll(){
+  if(_wlBackupRunning) return;
+  _wlBackupRunning=true;
+  var btn=document.getElementById('wl-backup-btn'); if(btn) btn.textContent='Reading…';
+  var out={app:'GreenIdea WorkLog + FieldBid',format:'wl-backup-v1',createdAt:new Date().toISOString(),counts:{},failed:{},collections:{}};
+  var i=0;
+  function next(){
+    if(i>=WL_BACKUP_COLLECTIONS.length) return Promise.resolve();
+    var name=WL_BACKUP_COLLECTIONS[i]; i++;
+    wlBkStatus('Reading '+name+' ('+i+' of '+WL_BACKUP_COLLECTIONS.length+')…');
+    return db.collection(name).get().then(function(snap){
+      var docs=[], ds=snap.docs||[]; for(var j=0;j<ds.length;j++){ docs.push({id:ds[j].id,data:wlBkPlain(ds[j].data())}); }
+      out.collections[name]=docs; out.counts[name]=docs.length;
+    },function(err){ out.failed[name]=String(err&&err.message||err); }).then(next);
+  }
+  next().then(function(){
+    var json=JSON.stringify(out);
+    var n=new Date(), pad=function(x){return (x<10?'0':'')+x;};
+    var fname='worklog-backup-'+n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+'-'+pad(n.getHours())+pad(n.getMinutes())+'.json';
+    var blob=new Blob([json],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a'); a.href=url; a.download=fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},10000);
+    var total=0; for(var k in out.counts) total+=out.counts[k];
+    var failedNames=Object.keys(out.failed);
+    try{ localStorage.setItem('wl_last_backup',out.createdAt); }catch(e){}
+    if(failedNames.length){
+      wlBkStatus('Saved '+fname+' ('+total+' records, '+(json.length/1048576).toFixed(1)+' MB) — could not read: '+failedNames.join(', '),'var(--red)');
+    } else {
+      wlBkStatus('Saved '+fname+' ('+total+' records, '+(json.length/1048576).toFixed(1)+' MB). Keep it in Google Drive too.','var(--green)');
+    }
+    showToast('Backup downloaded ✅');
+  }).catch(function(e){
+    wlBkStatus('Backup failed: '+(e&&e.message||e)+'. Nothing was changed.','var(--red)');
+  }).then(function(){ _wlBackupRunning=false; var b=document.getElementById('wl-backup-btn'); if(b) b.textContent='Download'; });
+}
+window.wlBackupAll=wlBackupAll;
+(function(){ var b=document.getElementById('wl-backup-btn'); if(b) b.addEventListener('click',wlBackupAll); wlBkShowLast(); })();
 
 function exportCSV(){
   var rows=[['Helper','Date','Start','End','Minutes','Note','Type','Project']];
