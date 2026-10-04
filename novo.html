@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage5c tabs (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage6 quick add + fieldbid banner (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -422,6 +422,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-tp{display:none;}
 .wl-tp.on{display:block;}
 @media print{.wl-tp{display:block!important;}.wl-tbar{display:none!important;}}
+
+/* ── Stage 6: quick add (+) and new FieldBid job ── */
+.wl-fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:210;width:58px;height:58px;border-radius:50%;border:none;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(20,32,26,.28);cursor:pointer;}
+.wl-fab svg{width:28px;height:28px;}
+.wl-qa{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:951;background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);padding:10px;display:none;max-height:62vh;overflow:auto;}
+.wl-qa.open{display:block;}
+.wl-qa-hd{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;padding:6px 10px 4px;}
+.wl-qa-it{width:100%;display:flex;align-items:center;gap:14px;background:none;border:none;padding:14px 12px;min-height:54px;border-radius:12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--text);cursor:pointer;text-align:left;}
+.wl-qa-it svg{width:24px;height:24px;flex-shrink:0;}
+.wl-qa-back{display:flex;align-items:center;gap:8px;background:none;border:none;padding:8px 6px 10px;font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--text);cursor:pointer;}
+.wl-qa-back svg{width:20px;height:20px;}
+.wl-qa-row{width:100%;display:flex;flex-direction:column;align-items:flex-start;background:none;border:none;border-top:1px solid var(--border);padding:12px;min-height:50px;font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);cursor:pointer;text-align:left;}
+.wl-qa-row span{font-family:var(--font-m);font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;}
+.wl-qa-empty{padding:14px;color:var(--muted);font-size:13px;}
+.proj-card.wl-flash{box-shadow:0 0 0 3px #1e633455,var(--shadow-md);transition:box-shadow .3s;}
+.wl-fbn{display:flex;align-items:center;gap:10px;background:#e6f1fb;border:1px solid #185fa526;border-radius:16px;padding:10px 10px 10px 14px;margin-bottom:10px;}
+.wl-fbn-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.wl-fbn-txt b{font-family:var(--font-d);font-size:12px;color:#185fa5;letter-spacing:.3px;}
+.wl-fbn-txt span{font-family:var(--font-d);font-weight:800;font-size:15px;color:#0c447c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-fbn-open{min-height:36px;padding:0 14px;border-radius:10px;border:none;background:#185fa5;color:#fff;font-family:var(--font-d);font-weight:700;font-size:13px;cursor:pointer;}
+.wl-fbn-x{width:32px;height:32px;border:none;background:none;color:#185fa5;font-size:16px;cursor:pointer;}
+@media print{.wl-fab,.wl-qa{display:none!important;}}
+.admin-body{padding-bottom:calc(164px + env(safe-area-inset-bottom,0px));}
 </style>
 </head>
 <body>
@@ -487,6 +510,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <nav class="wl-bnav" id="wl-bnav" aria-label="Main"><button type="button" data-tab="dashboard" class="active"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Dashboard</button><button type="button" data-tab="helpers"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.6 3.5 5.2"/></svg></span>Helpers</button><button type="button" data-tab="projects"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg></span>Projects</button><button type="button" data-tab="reports"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>Reports</button><button type="button" data-tab="more"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>More</button></nav>
   <div class="wl-more-bg" id="wl-more-bg"></div>
   <div class="wl-more" id="wl-more" role="menu"><button type="button" data-tab="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</button><button type="button" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button></div>
+  <button type="button" class="wl-fab" id="wl-fab" aria-label="Quick add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <div class="wl-more-bg" id="wl-qa-bg"></div>
+  <div class="wl-qa" id="wl-qa" role="dialog" aria-label="Quick add"></div>
   <div class="admin-body">
 
     <!-- DASHBOARD -->
@@ -495,6 +521,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="section-title" style="margin:0" id="dash-week-lbl">Dashboard</div>
         <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">📷 Depot QR</button>
       </div>
+      <div id="wl-fbnew"></div>
       <div id="wl-onclock"></div>
       <div id="no-proj-alert"></div>
       <div id="dash-grid" class="helpers-grid"></div>
@@ -1913,6 +1940,7 @@ function renderDashboard(){
 
   // On the clock now (stage 4)
   if(window.wlRenderOnClock) wlRenderOnClock();
+  if(window.wlRenderFbNew) wlRenderFbNew();
 
   // No-project alert
   var alert=document.getElementById('no-proj-alert');
@@ -1995,6 +2023,84 @@ function wlWeekBarHtml(wm){
          '<div class="wl-wb-mk" style="left:'+pct(th)+'"></div></div><div class="wl-wb-lab '+cls+'">'+lab+'</div></div>';
 }
 window.wlRenderOnClock=wlRenderOnClock; window.wlWeekBarHtml=wlWeekBarHtml;
+// ── QUICK ADD (+) and NEW FIELDBID JOB banner (stage 6) ─────────────
+// Every action opens an EXISTING form (+ Hours modal, project expense form,
+// project photo controls). Nothing here writes data by itself.
+var WL_QA_IC={hours:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',exp:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',pho:'<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',back:'<path d="M15 6l-6 6 6 6"/>'};
+function wlQaSvg(k,c){return '<svg viewBox="0 0 24 24" fill="none" stroke="'+(c||'currentColor')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+WL_QA_IC[k]+'</svg>';}
+function wlQaClose(){ var q=document.getElementById('wl-qa'),b=document.getElementById('wl-qa-bg'); if(q) q.classList.remove('open'); if(b) b.classList.remove('open'); }
+function wlQaShow(html){ var q=document.getElementById('wl-qa'),b=document.getElementById('wl-qa-bg'); if(!q) return; q.innerHTML=html; q.classList.add('open'); if(b) b.classList.add('open'); }
+function wlQaMain(){
+  wlQaShow('<div class="wl-qa-hd">Quick add</div>'+
+    '<button type="button" class="wl-qa-it" data-qa="hours">'+wlQaSvg('hours','#1e6334')+'Add hours</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="exp">'+wlQaSvg('exp','#2453b8')+'Add expense</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>');
+}
+function wlQaPick(kind){
+  var h='<button type="button" class="wl-qa-back" data-qa="main">'+wlQaSvg('back')+(kind==='hours'?'Add hours for…':(kind==='exp'?'Add expense to…':'Add photo to…'))+'</button><div class="wl-qa-list">';
+  if(kind==='hours'){
+    var hs=helpers.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    for(var i=0;i<hs.length;i++) h+='<button type="button" class="wl-qa-row" data-qa="h" data-id="'+wlEsc(hs[i].id)+'">'+wlEsc(hs[i].name)+'</button>';
+    if(!hs.length) h+='<div class="wl-qa-empty">No helpers yet.</div>';
+  } else {
+    var ps=projects.filter(function(p){return (p.status||'active')==='active';}).sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    for(var j=0;j<ps.length;j++) h+='<button type="button" class="wl-qa-row" data-qa="'+kind+'-go" data-id="'+wlEsc(ps[j].id)+'">'+wlEsc(ps[j].name)+(ps[j].desc?'<span>'+wlEsc(ps[j].desc)+'</span>':'')+'</button>';
+    if(!ps.length) h+='<div class="wl-qa-empty">No active projects.</div>';
+  }
+  wlQaShow(h+'</div>');
+}
+function wlGoProject(pid,tab,action){
+  wlQaClose();
+  if(window.wlBnGo) wlBnGo('projects');
+  var p=projects.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  var st=p.status||'active';
+  if(_projStatusFilter!=='all'&&_projStatusFilter!==st) setProjFilter(st,null);
+  var q=document.getElementById('proj-search'); if(q&&q.value){ q.value=''; }
+  _wlPT[pid]=tab; renderProjects();
+  setTimeout(function(){
+    var a=document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
+    if(action==='exp'){ if(a.style.display==='none') toggleExpForm(pid); }
+    try{ a.scrollIntoView({block:'center'}); }catch(e){}
+    var card=a.closest('.proj-card'); if(card){ card.classList.add('wl-flash'); setTimeout(function(){card.classList.remove('wl-flash');},1600); }
+    if(action==='exp'){ var d=document.getElementById('exd-'+pid); if(d) d.focus(); }
+  },60);
+}
+window.wlGoProject=wlGoProject;
+document.addEventListener('click',function(ev){
+  var t=ev.target;
+  if(t.closest&&t.closest('#wl-fab')){ wlQaMain(); return; }
+  if(t.id==='wl-qa-bg'){ wlQaClose(); return; }
+  var b=t.closest?t.closest('#wl-qa [data-qa]'):null; if(!b) return;
+  var k=b.getAttribute('data-qa'), id=b.getAttribute('data-id');
+  if(k==='main') wlQaMain();
+  else if(k==='hours'||k==='exp'||k==='pho') wlQaPick(k);
+  else if(k==='h'){ var hp=hById(id); wlQaClose(); if(hp) openQuickHours(hp.id,hp.name); }
+  else if(k==='exp-go') wlGoProject(id,'mat','exp');
+  else if(k==='pho-go') wlGoProject(id,'pho','pho');
+});
+// New job from FieldBid: shown until opened or dismissed (remembered on this phone).
+function wlFbSeen(){ try{ return JSON.parse(localStorage.getItem('wl_fb_seen')||'null'); }catch(e){ return null; } }
+function wlFbSave(a){ try{ localStorage.setItem('wl_fb_seen',JSON.stringify(a)); }catch(e){} }
+function wlRenderFbNew(){
+  var box=document.getElementById('wl-fbnew'); if(!box) return;
+  var fb=projects.filter(function(p){return p.source==='fieldbid';});
+  var seen=wlFbSeen();
+  if(seen===null){ if(projects.length){ wlFbSave(fb.map(function(p){return p.id;})); } box.innerHTML=''; return; }
+  var news=fb.filter(function(p){return seen.indexOf(p.id)<0;});
+  var h='';
+  for(var i=0;i<news.length;i++){
+    h+='<div class="wl-fbn"><div class="wl-fbn-txt"><b>New job from FieldBid</b><span>'+wlEsc(news[i].name)+'</span></div>'+
+       '<button type="button" class="wl-fbn-open" data-fbn="open" data-id="'+wlEsc(news[i].id)+'">Open</button>'+
+       '<button type="button" class="wl-fbn-x" data-fbn="x" data-id="'+wlEsc(news[i].id)+'" aria-label="Dismiss">✕</button></div>';
+  }
+  box.innerHTML=h;
+}
+window.wlRenderFbNew=wlRenderFbNew;
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest?ev.target.closest('[data-fbn]'):null; if(!b) return;
+  var id=b.getAttribute('data-id'), seen=wlFbSeen()||[]; if(seen.indexOf(id)<0){ seen.push(id); wlFbSave(seen); }
+  if(b.getAttribute('data-fbn')==='open') wlGoProject(id,'sum',''); else wlRenderFbNew();
+});
 setInterval(function(){
   var ts=document.querySelectorAll('#wl-onclock .wl-oc-time');
   for(var i=0;i<ts.length;i++){ var st=ts[i].getAttribute('data-start'); if(st) ts[i].textContent=wlHm((Date.now()-new Date(st))/60000); }
