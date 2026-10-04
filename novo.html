@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage5a job top (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage5a2 days worked (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1971,10 +1971,14 @@ setInterval(function(){
 function wlJobDatesHtml(p){
   var st=p.status||'active';
   if(!p.start) return '';
-  var s0=parseLocalDate(p.start), DAY=86400000, f=function(d,y){return d.toLocaleDateString('en-US',y?{month:'short',day:'numeric',year:'numeric'}:{month:'short',day:'numeric'});};
+  var s0=parseLocalDate(p.start), f=function(d,y){return d.toLocaleDateString('en-US',y?{month:'short',day:'numeric',year:'numeric'}:{month:'short',day:'numeric'});};
+  // days worked = distinct local calendar days with time logged on this project (open entries included)
+  var seen={}, n=0;
+  for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId!==p.id||!e.startTime) continue; var d=new Date(e.startTime), k=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); if(!seen[k]){ seen[k]=1; n++; } }
+  var worked=n?(n+' day'+(n!==1?'s':'')+' worked'):'no days worked yet';
   var txt;
-  if(p.end){ var e0=parseLocalDate(p.end), n=Math.round((e0-s0)/DAY)+1; txt=f(s0,s0.getFullYear()!==e0.getFullYear())+' → '+f(e0,true)+' · '+n+' day'+(n!==1?'s':''); }
-  else { var t=new Date(), td=new Date(t.getFullYear(),t.getMonth(),t.getDate()), d=Math.round((td-s0)/DAY)+1; txt='Started '+f(s0,true)+' → '+(st==='paused'?'paused':'ongoing')+(d>=1?' · day '+d:''); }
+  if(p.end){ var e0=parseLocalDate(p.end); txt=f(s0,s0.getFullYear()!==e0.getFullYear())+' → '+f(e0,true)+' · '+worked; }
+  else { txt='Started '+f(s0,true)+' → '+(st==='paused'?'paused':'ongoing')+' · '+worked; }
   return '<div class="wl-jd"><span>📅 '+txt+'</span></div>';
 }
 window.wlJobDatesHtml=wlJobDatesHtml;
