@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage4 today (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage5a job top (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -348,6 +348,47 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-wb-lab{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 .wl-wb-lab.near{color:#9a5b05;}
 .wl-wb-lab.over{color:var(--red);}
+
+/* ── Stage 5a: job top ── */
+.wl-jt-acts{display:flex;gap:8px;margin:0 0 12px;}
+.wl-jt-act{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:1px solid var(--border2);border-radius:12px;background:#fff;color:var(--text);font-family:var(--font-d);font-weight:700;font-size:14px;text-decoration:none;}
+.wl-jt-act svg{width:18px;height:18px;color:var(--green);}
+.wl-jt-con{background:#f1f3ee;border-radius:14px;padding:12px 14px;margin-bottom:12px;}
+.wl-jt-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-jt-lbl{font-size:12px;color:var(--muted);font-weight:600;}
+.wl-jt-src{font-size:11px;font-weight:700;color:#185fa5;background:#e6f1fb;border-radius:6px;padding:2px 7px;}
+.wl-jt-amt{font-family:var(--font-d);font-weight:800;font-stretch:112%;font-size:24px;color:var(--text);margin-top:2px;}
+.wl-jt-pl{font-family:var(--font-d);font-weight:800;font-size:14px;white-space:nowrap;}
+.wl-jt-pl.pos{color:var(--green);}
+.wl-jt-pl.neg{color:var(--red);}
+.wl-jt-bar{display:flex;height:9px;border-radius:99px;background:#dfe4dc;overflow:hidden;margin-top:10px;}
+.wl-jt-bar i{display:block;height:100%;}
+.wl-jt-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--muted);}
+.wl-jt-leg b{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0;}
+.wl-jt-over{font-size:12px;font-weight:700;color:var(--red);margin-top:6px;}
+
+/* project actions: "⋯" menu next to the status select */
+.wl-pm-btn{position:absolute;top:14px;right:14px;width:34px;height:32px;border:1px solid var(--border2);border-radius:10px;background:#fff;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;}
+.wl-pm-btn svg{width:18px;height:18px;}
+.wl-pm{display:none;position:absolute;top:52px;right:14px;z-index:20;min-width:190px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);padding:6px;}
+.wl-pm.open{display:block;}
+.wl-pm-it{width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:12px;min-height:46px;border-radius:10px;font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);cursor:pointer;text-align:left;}
+.wl-pm-it svg{width:19px;height:19px;flex-shrink:0;}
+.wl-pm-it:active{background:#f1f3ee;}
+.wl-pm-del{color:var(--red);}
+.wl-pm-sep{height:1px;background:var(--border);margin:4px 8px;}
+
+.wl-jd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:6px;font-size:13px;color:var(--muted);}
+.wl-st{font-family:var(--font-d);font-weight:800;font-size:11px;letter-spacing:.3px;border-radius:6px;padding:3px 8px;}
+.wl-st-active{background:#e2efdc;color:#1e6334;}
+.wl-st-paused{background:#eceeea;color:#5c6862;}
+.wl-st-done{background:#e6f1fb;color:#185fa5;}
+
+/* status select: compact pill at the top-right of the project card */
+.proj-card{position:relative;}
+.proj-card select[onchange^="updateProjStatus"]{position:absolute;top:14px;right:54px;width:auto!important;min-height:32px!important;height:32px;padding:0 26px 0 10px!important;font-size:12px!important;border-radius:99px!important;border:1px solid var(--border2)!important;background-color:#fff!important;z-index:1;}
+.proj-card>div:first-child>div:first-child>div:first-child{padding-right:164px;min-height:34px;display:flex;align-items:center;}
+
 </style>
 </head>
 <body>
@@ -1926,6 +1967,53 @@ setInterval(function(){
   for(var i=0;i<ts.length;i++){ var st=ts[i].getAttribute('data-start'); if(st) ts[i].textContent=wlHm((Date.now()-new Date(st))/60000); }
 },30000);
 
+// Start date + status line (stage 5a). The status <select> below still changes it.
+function wlJobDatesHtml(p){
+  var st=p.status||'active';
+  if(!p.start) return '';
+  var s0=parseLocalDate(p.start), DAY=86400000, f=function(d,y){return d.toLocaleDateString('en-US',y?{month:'short',day:'numeric',year:'numeric'}:{month:'short',day:'numeric'});};
+  var txt;
+  if(p.end){ var e0=parseLocalDate(p.end), n=Math.round((e0-s0)/DAY)+1; txt=f(s0,s0.getFullYear()!==e0.getFullYear())+' → '+f(e0,true)+' · '+n+' day'+(n!==1?'s':''); }
+  else { var t=new Date(), td=new Date(t.getFullYear(),t.getMonth(),t.getDate()), d=Math.round((td-s0)/DAY)+1; txt='Started '+f(s0,true)+' → '+(st==='paused'?'paused':'ongoing')+(d>=1?' · day '+d:''); }
+  return '<div class="wl-jd"><span>📅 '+txt+'</span></div>';
+}
+window.wlJobDatesHtml=wlJobDatesHtml;
+// "⋯" project menu (stage 5a): one delegated listener, survives re-renders
+document.addEventListener('click',function(ev){
+  var t=ev.target, btn=t.closest?t.closest('.wl-pm-btn'):null, item=t.closest?t.closest('.wl-pm-it'):null;
+  var open=document.querySelectorAll('.wl-pm.open');
+  if(btn){ var m=btn.nextElementSibling, was=m&&m.classList.contains('open');
+    for(var i=0;i<open.length;i++) open[i].classList.remove('open');
+    if(m&&!was) m.classList.add('open'); return; }
+  if(item||!(t.closest&&t.closest('.wl-pm'))){ for(var j=0;j<open.length;j++) open[j].classList.remove('open'); }
+},true);
+
+// ── JOB TOP (stage 5a): contact actions + contract composition (read-only) ──
+function wlJobTopHtml(p,laborCost,extraCost){
+  var h='', acts='';
+  var ph=p.clientPhone?String(p.clientPhone).trim():'', em=p.clientEmail?String(p.clientEmail).trim():'', ad=p.desc?String(p.desc).trim():'';
+  var ic={call:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+          mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+          map:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'};
+  function a(href,k,label,ext){ return '<a class="wl-jt-act" href="'+wlEsc(href)+'"'+(ext?' target="_blank" rel="noopener"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[k]+'</svg>'+label+'</a>'; }
+  if(ph) acts+=a('tel:'+ph.replace(/[^0-9+]/g,''),'call','Call');
+  if(em) acts+=a('mailto:'+em,'mail','Email');
+  if(ad) acts+=a('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(ad),'map','Map',true);
+  if(acts) h+='<div class="wl-jt-acts">'+acts+'</div>';
+  var budget=p.budget||0;
+  if(budget>0){
+    var oh=p.overhead||0, profit=budget-laborCost-extraCost-oh, cost=laborCost+extraCost+oh, scale=Math.max(budget,cost);
+    var pc=function(x){return (100*Math.max(0,x)/scale).toFixed(2)+'%';};
+    h+='<div class="wl-jt-con"><div class="wl-jt-row"><span class="wl-jt-lbl">Contract</span>'+(p.source==='fieldbid'?'<span class="wl-jt-src">FieldBid estimate</span>':'')+'</div>'+
+       '<div class="wl-jt-row"><span class="wl-jt-amt">'+fmtC(budget)+'</span><span class="wl-jt-pl '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'−')+fmtC(Math.abs(profit))+(profit>=0?' profit':' loss')+'</span></div>'+
+       '<div class="wl-jt-bar"><i style="width:'+pc(laborCost)+';background:#2b8a46"></i><i style="width:'+pc(extraCost)+';background:#97c459"></i><i style="width:'+pc(oh)+';background:#b4b2a9"></i></div>'+
+       '<div class="wl-jt-leg"><span><b style="background:#2b8a46"></b>Labor '+fmtC(laborCost)+'</span><span><b style="background:#97c459"></b>Materials '+fmtC(extraCost)+'</span>'+(oh>0?'<span><b style="background:#b4b2a9"></b>Overhead '+fmtC(oh)+'</span>':'')+'</div>'+
+       (cost>budget?'<div class="wl-jt-over">Costs are '+fmtC(cost-budget)+' over the contract</div>':'')+'</div>';
+  }
+  return h;
+}
+window.wlJobTopHtml=wlJobTopHtml;
+
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 
@@ -2719,13 +2807,12 @@ function renderProjects(filter){
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+(window.wlJobDatesHtml?wlJobDatesHtml(p):'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div>')+'</div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
-    html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
-    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📄</button>';
-    html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>';
+    html+='<button type="button" class="wl-pm-btn" aria-label="Project actions" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button><div class="wl-pm" role="menu"><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#1e6334" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/></svg>Edit project</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#2453b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Report</button><div class="wl-pm-sep"></div><button type="button" class="wl-pm-it wl-pm-del" data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#b93229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete project</button></div>';
     html+='</div></div>';
+    if(window.wlJobTopHtml) html+=wlJobTopHtml(p,laborCost,extraCost);
     // Stats 2x2
     html+='<div class="proj-stats">';
     html+='<div class="proj-stat"><div class="proj-stat-val" style="color:var(--green)">'+fmtD(laborMin)+'</div><div class="proj-stat-lbl">HOURS</div></div>';
