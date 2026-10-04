@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage5b materials (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage5c tabs (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -412,6 +412,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-stb-hd{font-family:var(--font-d);font-weight:800;font-size:15px;}
 .wl-stb-sub{font-size:12px;color:var(--muted);margin:2px 0 8px;}
 .wl-stb-item{font-size:14px;font-weight:600;color:var(--text);}
+
+/* ── Stage 5c: project tabs ── */
+.wl-tbar{display:flex;gap:4px;background:#e9ece6;border-radius:12px;padding:4px;margin:2px 0 14px;}
+.wl-tb{flex:1;min-height:40px;border:none;background:none;border-radius:9px;font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.wl-tb.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(20,32,26,.12);}
+.wl-tb-n{font-size:11px;font-weight:800;background:#dfe4dc;color:var(--muted);border-radius:99px;padding:1px 7px;}
+.wl-tb.on .wl-tb-n{background:#e2efdc;color:var(--green);}
+.wl-tp{display:none;}
+.wl-tp.on{display:block;}
+@media print{.wl-tp{display:block!important;}.wl-tbar{display:none!important;}}
 </style>
 </head>
 <body>
@@ -2005,6 +2015,24 @@ function wlJobDatesHtml(p){
   return '<div class="wl-jd"><span>📅 '+txt+'</span></div>';
 }
 window.wlJobDatesHtml=wlJobDatesHtml;
+// ── PROJECT TABS (stage 5c): Summary · Materials · Photos ───────────
+// Panels are plain divs shown/hidden by class; the chosen tab is remembered per
+// project so a live re-render (new data arriving) keeps it.
+var _wlPT={};
+function wlTabOpen(pid,t){ var cur=_wlPT[pid]||'sum'; return '<div class="wl-tp'+(cur===t?' on':'')+'" data-pid="'+pid+'" data-t="'+t+'">'; }
+function wlTabsBar(pid,nExp,nPh){
+  var cur=_wlPT[pid]||'sum';
+  function b(t,label,n){ return '<button type="button" class="wl-tb'+(cur===t?' on':'')+'" data-pid="'+pid+'" data-t="'+t+'">'+label+(n?'<span class="wl-tb-n">'+n+'</span>':'')+'</button>'; }
+  return '<div class="wl-tbar" role="tablist">'+b('sum','Summary',0)+b('mat','Materials',nExp)+b('pho','Photos',nPh)+'</div>';
+}
+window.wlTabsBar=wlTabsBar; window.wlTabOpen=wlTabOpen;
+document.addEventListener('click',function(ev){
+  var t=ev.target, b=t.closest?t.closest('.wl-tb'):null; if(!b) return;
+  var pid=b.getAttribute('data-pid'), tab=b.getAttribute('data-t'); _wlPT[pid]=tab;
+  var card=b.closest('.proj-card'); if(!card) return;
+  var bs=card.querySelectorAll('.wl-tb'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on',bs[i].getAttribute('data-t')===tab);
+  var ps=card.querySelectorAll('.wl-tp'); for(var j=0;j<ps.length;j++) ps[j].classList.toggle('on',ps[j].getAttribute('data-t')===tab);
+});
 // "⋯" project menu (stage 5a): one delegated listener, survives re-renders
 document.addEventListener('click',function(ev){
   var t=ev.target, btn=t.closest?t.closest('.wl-pm-btn'):null, item=t.closest?t.closest('.wl-pm-it'):null;
@@ -2840,6 +2868,8 @@ function renderProjects(filter){
     html+='<button type="button" class="wl-pm-btn" aria-label="Project actions" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button><div class="wl-pm" role="menu"><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#1e6334" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/></svg>Edit project</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#2453b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Report</button><div class="wl-pm-sep"></div><button type="button" class="wl-pm-it wl-pm-del" data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#b93229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete project</button></div>';
     html+='</div></div>';
     if(window.wlJobTopHtml) html+=wlJobTopHtml(p,laborCost,extraCost);
+    if(window.wlTabsBar) html+=wlTabsBar(p.id,expenses.length,photos.length);
+    html+=wlTabOpen(p.id,'sum');
     // Stats 2x2
     html+='<div class="proj-stats">';
     html+='<div class="proj-stat"><div class="proj-stat-val" style="color:var(--green)">'+fmtD(laborMin)+'</div><div class="proj-stat-lbl">HOURS</div></div>';
@@ -2911,6 +2941,7 @@ function renderProjects(filter){
       html += '</div>';
     }
 
+    html+='</div>'+wlTabOpen(p.id,'mat');
     // Material Budget Section
     var mb=p.matBudget;
     if(mb){
@@ -3034,7 +3065,8 @@ function renderProjects(filter){
         if(_det){
           var _shown={};
           _detFg.concat(_detMw).forEach(function(d){ _shown[d.key]=1; });
-          var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0; });
+          // Spray foam is logged in gallons via Add Expense (auto-price per gallon); a 'set' expense would be read as gallons
+          var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0 && d.key!=='ccSet' && d.key!=='ocSet'; });
           if(_rest.length){
             html+='<div class="wl-stb"><div class="wl-stb-hd">Still to buy</div><div class="wl-stb-sub">Planned in the estimate. Log each one when you buy it.</div></div>';
             _rest.forEach(function(d){
@@ -3066,6 +3098,7 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>🧱 Materials</option><option>📦 General</option><option>🔧 Other</option></select></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
+    html+='</div>'+wlTabOpen(p.id,'pho');
     // Assigned helpers
     // Photos
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
@@ -3076,11 +3109,13 @@ function renderProjects(filter){
     if(photos.length) html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+photos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" data-photoid="'+ph.id+'" onclick="openPhoto(this.dataset.photoid)"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'<br>'+ph.uploadedBy+'</div><button data-pid="'+ph.id+'" onclick="event.stopPropagation();delPhoto(this.dataset.pid)" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#f87171;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button></div>';}).join('')+'</div>';
     else html+='<div style="color:var(--muted);font-size:12px">No photos yet.</div>';
     html+='</div>';
+    html+='</div>'+wlTabOpen(p.id,'sum');
     // History
     if(hist.length){
       html+='<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;cursor:pointer" onclick="toggleHist(\''+p.id+'\')">📋 ASSIGNMENT HISTORY <span id="ha-'+p.id+'">▼</span></div>';
       html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'➕ Assigned':'➖ Removed')+'</span></div><span style="color:var(--muted)">'+parseLocalDate(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
     }
+    html+='</div>';   // close last tab panel
     html+='</div>';
     return html;
   }).join('');
