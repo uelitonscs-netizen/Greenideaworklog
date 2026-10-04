@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage5a2 days worked (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage5b materials (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -389,6 +389,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .proj-card select[onchange^="updateProjStatus"]{position:absolute;top:14px;right:54px;width:auto!important;min-height:32px!important;height:32px;padding:0 26px 0 10px!important;font-size:12px!important;border-radius:99px!important;border:1px solid var(--border2)!important;background-color:#fff!important;z-index:1;}
 .proj-card>div:first-child>div:first-child>div:first-child{padding-right:164px;min-height:34px;display:flex;align-items:center;}
 
+
+/* ── Stage 5b: quoted vs used + still to buy ── */
+.wl-mb{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;}
+.wl-mb-hd{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-d);font-weight:800;font-size:16px;margin-bottom:6px;}
+.wl-mr{padding:10px 0 8px;border-top:1px solid var(--border);}
+.wl-mb-hd+.wl-mr{border-top:none;}
+.wl-mr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-mr-lbl{font-family:var(--font-d);font-weight:800;font-size:15px;}
+.wl-mr-num{font-size:13px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;}
+.wl-mr-bar{height:8px;border-radius:99px;background:#e9ece6;overflow:hidden;margin-top:6px;}
+.wl-mr-bar i{display:block;height:100%;border-radius:99px;}
+.wl-chip{font-family:var(--font-d);font-weight:800;font-size:12px;border-radius:7px;padding:3px 8px;white-space:nowrap;}
+.wl-chip.red{background:#fbe7e5;color:var(--red);}
+.wl-chip.green{background:#e2efdc;color:var(--green);}
+.wl-chip.amber{background:#fdf4e3;color:#9a5b05;}
+.wl-mb div[style*="font-size:10px;color:var(--muted)"]{font-size:12px!important;margin-top:2px!important;}
+.wl-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px;}
+.wl-ct-txt{font-size:12px;color:var(--muted);}
+.wl-ct-btn{flex-shrink:0;min-height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:10px;background:#fff;color:var(--blue);font-family:var(--font-d);font-weight:700;font-size:13px;cursor:pointer;}
+.wl-stb{border-top:1px solid var(--border);margin-top:6px;padding-top:12px;}
+.wl-stb-hd{font-family:var(--font-d);font-weight:800;font-size:15px;}
+.wl-stb-sub{font-size:12px;color:var(--muted);margin:2px 0 8px;}
+.wl-stb-item{font-size:14px;font-weight:600;color:var(--text);}
 </style>
 </head>
 <body>
@@ -2919,8 +2942,8 @@ function renderProjects(filter){
 
       var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0||(Array.isArray(mb.detail)&&mb.detail.length>0);
       if(hasMat){
-        html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
-        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
+        html+='<div class="wl-mb">';
+        html+='<div class="wl-mb-hd"><span>Quoted vs used</span>'+(p.source==='fieldbid'?'<span class="wl-jt-src">FieldBid</span>':'')+'</div>';
 
         function matRow(label, quoted, used, unit){
           if(quoted===0&&used===0) return '';
@@ -2928,15 +2951,13 @@ function renderProjects(filter){
           var pct=quoted>0?Math.min(200,Math.round(used/quoted*100)):0;
           var over=diff>0;
           var barColor=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
-          var html2='<div style="margin-bottom:8px">';
-          html2+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">';
-          html2+='<span>'+label+'</span>';
+          var html2='<div class="wl-mr">';
           var diffR=parseFloat(diff.toFixed(1)); var absDiffR=parseFloat(Math.abs(diff).toFixed(1));
-          html2+='<span style="color:'+(over?'var(--red)':used>0?'var(--green)':'var(--muted)')+'">'+used+' / '+quoted+' '+unit+(over?' <span style="background:#fee2e2;color:var(--red);border-radius:4px;padding:1px 5px;font-size:10px">+'+diffR+' over</span>':diff<0?' <span style="background:#dcfce7;color:var(--green2);border-radius:4px;padding:1px 5px;font-size:10px">'+absDiffR+' left</span>':'')+'</span>';
-          html2+='</div>';
+          var chip=over?'<span class="wl-chip red">+'+diffR+' '+unit+' over</span>':(diff<0?'<span class="wl-chip '+(pct>=80?'amber':'green')+'">'+absDiffR+' '+unit+' left</span>':(used>0?'<span class="wl-chip green">on target</span>':''));
+          html2+='<div class="wl-mr-top"><span class="wl-mr-lbl">'+label+'</span>'+chip+'</div>';
+          html2+='<div class="wl-mr-num">'+used+' / '+quoted+' '+unit+'</div>';
           if(quoted>0){
-            html2+='<div style="background:#e0e0e0;border-radius:99px;height:5px;overflow:hidden">';
-            html2+='<div style="height:5px;border-radius:99px;width:'+Math.min(100,pct)+'%;background:'+barColor+'"></div></div>';
+            html2+='<div class="wl-mr-bar"><i style="width:'+Math.min(100,pct)+'%;background:'+barColor+'"></i></div>';
           }
           html2+='</div>';
           return html2;
@@ -2951,8 +2972,8 @@ function renderProjects(filter){
           var ccSetsQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*100)/100:0;
           var ccSetsUsed=ccGalUsed>0?Math.round(ccGalUsed/ccGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ccGalQuoted>0) html+='📋 Cotado: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
-          if(ccGalUsed>0) html+='🔧 Usado: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
+          if(ccGalQuoted>0) html+='📋 Quoted: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
+          if(ccGalUsed>0) html+='🔧 Used: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
           html+='</div>';
           if(mb.cc.inch===0&&ccBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
         }
@@ -2965,8 +2986,8 @@ function renderProjects(filter){
           var ocSetsQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*100)/100:0;
           var ocSetsUsed=ocGalUsed>0?Math.round(ocGalUsed/ocGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ocGalQuoted>0) html+='📋 Cotado: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
-          if(ocGalUsed>0) html+='🔧 Usado: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
+          if(ocGalQuoted>0) html+='📋 Quoted: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
+          if(ocGalUsed>0) html+='🔧 Used: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
           html+='</div>';
           if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
         }
@@ -2983,12 +3004,12 @@ function renderProjects(filter){
         // automatically, so the P&L only reflects money actually spent.
         function costTag(d, pid){
           if(!d || !(d.cost>0)) return '';
-          return '<div style="display:flex;align-items:center;justify-content:space-between;margin:-4px 0 8px;padding-left:2px">'+
-                 '<span style="font-size:10.5px;color:var(--muted)">💵 Previsto: $'+d.cost.toFixed(2)+
-                 ' <span style="opacity:.7">($'+ (d.unitCost||0).toFixed(2) +'/'+(d.unit||'un')+' c/ tax)</span></span>'+
-                 '<button data-pid="'+pid+'" data-desc="'+String(d.qty+' '+(d.unit||'')+' '+d.label).replace(/"/g,'')+'" data-amt="'+d.cost+'" '+
-                 'onclick="addMatExpense(this.dataset.pid,this.dataset.desc,this.dataset.amt)" '+
-                 'style="background:transparent;border:1px solid var(--border2);color:var(--blue);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer">+ despesa</button>'+
+          var desc=String(d.qty+' '+(d.unit||'')+' '+d.label).replace(/"/g,'');
+          // already logged from this button? (same project, same description, created by this button)
+          var logged=projectExpenses.some(function(x){ return x.projectId===pid && x.source==='fieldbid-budget' && String(x.desc||'')===desc; });
+          return '<div class="wl-ct"><span class="wl-ct-txt">Planned $'+d.cost.toFixed(2)+' · $'+(d.unitCost||0).toFixed(2)+'/'+(d.unit||'un')+' with tax</span>'+
+                 (logged?'<span class="wl-chip green">✓ Logged</span>':
+                 '<button type="button" class="wl-ct-btn" data-pid="'+pid+'" data-desc="'+desc+'" data-amt="'+d.cost+'" onclick="addMatExpense(this.dataset.pid,this.dataset.desc,this.dataset.amt)">Log expense</button>')+
                  '</div>';
         }
         if(_detFg.length){
@@ -2999,28 +3020,28 @@ function renderProjects(filter){
         if(_detMw.length){
           _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
         }
+        if(mb.ignSqft>0||ignUsed>0){
+          var ibQ=mb.ignSqft||0; var ibU=ignUsed;
+          var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
+          html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
+          html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
+          if(ibQ>0) html+='📋 Quoted: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
+          if(ibU>0) html+='🔧 Used: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft';
+          html+='</div>';
+        }
+        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         // Everything else FieldBid priced (spray foam sets, cellulose, board, caulk…)
         if(_det){
           var _shown={};
           _detFg.concat(_detMw).forEach(function(d){ _shown[d.key]=1; });
           var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0; });
           if(_rest.length){
-            html+='<div style="font-size:10.5px;color:var(--muted);font-weight:700;margin:10px 0 4px">OUTROS MATERIAIS (previsto)</div>';
+            html+='<div class="wl-stb"><div class="wl-stb-hd">Still to buy</div><div class="wl-stb-sub">Planned in the estimate. Log each one when you buy it.</div></div>';
             _rest.forEach(function(d){
-              html+='<div style="font-size:12px;color:var(--text);margin-bottom:2px">'+d.label+' — '+d.qty+' '+(d.unit||'')+'</div>'+costTag(d,p.id);
+              html+='<div class="wl-stb-item">'+d.label+', '+d.qty+' '+(d.unit||'')+'</div>'+costTag(d,p.id);
             });
           }
         }
-        if(mb.ignSqft>0||ignUsed>0){
-          var ibQ=mb.ignSqft||0; var ibU=ignUsed;
-          var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
-          html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
-          html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ibQ>0) html+='📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
-          if(ibU>0) html+='🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft';
-          html+='</div>';
-        }
-        if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
       }
