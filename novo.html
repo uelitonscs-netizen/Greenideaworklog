@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage3 bottom nav (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage3b recent activity (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -312,6 +312,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px));}
 #install-banner{bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;}
 @media print{.wl-bnav,.wl-more,.wl-more-bg{display:none!important;}}
+
+/* ── Stage 3b: recent activity ── */
+.wl-rc-day{font-family:var(--font-d);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:12px 0 4px;}
+.wl-rc-day:first-child{padding-top:0;}
+.wl-rc-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);}
+.wl-rc-av{width:36px;height:36px;border-radius:50%;background:#e4eee2;color:var(--green);font-family:var(--font-d);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wl-rc-mid{flex:1;min-width:0;}
+.wl-rc-name{font-family:var(--font-d);font-weight:800;font-size:15px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-rc-sub{font-size:13px;color:var(--muted);line-height:1.35;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-rc-dur{font-family:var(--font-d);font-weight:800;font-stretch:112%;font-size:16px;color:var(--green);white-space:nowrap;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.wl-rc-ot{font-size:10px;font-weight:800;color:#b86e07;background:#fdf4e3;border-radius:6px;padding:1px 6px;font-stretch:100%;}
 </style>
 </head>
 <body>
@@ -1830,7 +1841,29 @@ function renderDashboard(){
   var recent=document.getElementById('dash-recent');
   var rec=entries.filter(function(e){return e.endTime;}).slice(0,8);
   recent.innerHTML=!rec.length?'<div style="color:var(--muted);font-size:13px">No activity yet.</div>':
-    rec.map(function(e){var h=hById(e.helperId); return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span><strong>'+(h?h.name:'?')+'</strong> · '+new Date(e.startTime).toLocaleDateString()+' '+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'–'+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span><span style="color:var(--green);font-family:var(--font-d);font-weight:700">'+fmtD(gMin(e))+'</span></div>';}).join('');
+    wlRecentHtml(rec);
+}
+
+// ── RECENT ACTIVITY (stage 3b) — grouped by day, two-line rows ─────
+function wlRecentHtml(rec){
+  var out='', lastDay='', now=new Date();
+  var today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(), DAY=86400000;
+  function t(d){ return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+  for(var i=0;i<rec.length;i++){
+    var e=rec[i], s0=new Date(e.startTime), s1=new Date(e.endTime);
+    var d0=new Date(s0.getFullYear(),s0.getMonth(),s0.getDate()).getTime();
+    var label=d0===today?'Today':(d0===today-DAY?'Yesterday':s0.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+    if(label!==lastDay){ out+='<div class="wl-rc-day">'+label+'</div>'; lastDay=label; }
+    var h=hById(e.helperId), name=h?h.name:'?';
+    var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
+    var p=e.projectId?projects.filter(function(x){return x.id===e.projectId;})[0]:null;
+    var ot=(typeof wlEntryLabor==='function')?wlEntryLabor(e).otMins:0;
+    out+='<div class="wl-rc-row"><div class="wl-rc-av">'+wlEsc(ini)+'</div>'+
+      '<div class="wl-rc-mid"><div class="wl-rc-name">'+wlEsc(name)+'</div>'+
+      '<div class="wl-rc-sub">'+t(s0)+' – '+t(s1)+(p?' · '+wlEsc(p.name):'')+'</div></div>'+
+      '<div class="wl-rc-dur">'+fmtD(gMin(e))+(ot>0?'<span class="wl-rc-ot">OT '+fmtD(ot)+'</span>':'')+'</div></div>';
+  }
+  return out;
 }
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
