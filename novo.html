@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage2b theme (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage2c theme (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -281,6 +281,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .hcard [style*="color:var(--muted);font-size:11px"]{font-size:12px!important;}
 .hcard button[onclick^="openQuickHours"]{min-height:40px;padding:8px 16px!important;border-radius:10px!important;font-size:13px!important;}
 .hcard button[data-link]{min-height:40px;font-size:13px!important;}
+/* ── Stage 2c: compact helper cards (same big numbers, less empty space) ── */
+.helpers-grid{gap:10px;}
+.hcard{padding:13px 16px 12px;}
+.hcard-name{line-height:1.2;}
+.hcard-rate{margin-bottom:4px;line-height:1.3;}
+.hcard>div[style*="line-height:1.8"]{line-height:1.35!important;}
+.hcard>div[style*="line-height:1.8"] strong{display:inline-block;margin-bottom:2px;}
+.hcard>div[style*="justify-content:space-between"][style*="margin-top:10px"]{margin-top:6px!important;}
+.hcard button[onclick^="openQuickHours"]{min-height:38px;padding:7px 16px!important;}
+.hcard button[data-link]{min-height:38px;}
 </style>
 </head>
 <body>
