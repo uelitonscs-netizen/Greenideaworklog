@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage2c theme (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO stage3 bottom nav (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -291,6 +291,27 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .hcard>div[style*="justify-content:space-between"][style*="margin-top:10px"]{margin-top:6px!important;}
 .hcard button[onclick^="openQuickHours"]{min-height:38px;padding:7px 16px!important;}
 .hcard button[data-link]{min-height:38px;}
+
+/* ── Stage 3: bottom navigation (top tab row stays in the code, hidden) ── */
+.admin-nav{display:none!important;}
+.admin-nav-spacer{height:6px!important;}
+.admin-body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));}
+.wl-bnav{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(20,32,26,.06);}
+.wl-bnav button{flex:1;min-width:0;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;min-height:54px;border-radius:12px;color:var(--muted);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer;}
+.wl-bnav button svg{width:23px;height:23px;}
+.wl-bnav button.active{color:var(--green);}
+.wl-bnav button.active .wl-bi{background:#1e63341a;}
+.wl-bi{display:flex;align-items:center;justify-content:center;width:52px;height:30px;border-radius:99px;transition:background .15s;}
+.wl-more-bg{display:none;position:fixed;inset:0;z-index:950;background:rgba(10,14,20,.35);}
+.wl-more-bg.open{display:block;}
+.wl-more{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:951;background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg);padding:8px;display:none;}
+.wl-more.open{display:block;}
+.wl-more button{width:100%;display:flex;align-items:center;gap:14px;background:none;border:none;padding:14px 14px;min-height:52px;border-radius:12px;font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--text);cursor:pointer;text-align:left;}
+.wl-more button.active{background:#1e63341a;color:var(--green);}
+.wl-more button svg{width:22px;height:22px;flex-shrink:0;}
+.toast{bottom:calc(88px + env(safe-area-inset-bottom,0px));}
+#install-banner{bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;}
+@media print{.wl-bnav,.wl-more,.wl-more-bg{display:none!important;}}
 </style>
 </head>
 <body>
@@ -352,6 +373,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
   </div>
   <div class="admin-nav-spacer"></div>
+  <!-- Bottom navigation (stage 3) -->
+  <nav class="wl-bnav" id="wl-bnav" aria-label="Main"><button type="button" data-tab="dashboard" class="active"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Dashboard</button><button type="button" data-tab="helpers"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.6 3.5 5.2"/></svg></span>Helpers</button><button type="button" data-tab="projects"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg></span>Projects</button><button type="button" data-tab="reports"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>Reports</button><button type="button" data-tab="more"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>More</button></nav>
+  <div class="wl-more-bg" id="wl-more-bg"></div>
+  <div class="wl-more" id="wl-more" role="menu"><button type="button" data-tab="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</button><button type="button" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button></div>
   <div class="admin-body">
 
     <!-- DASHBOARD -->
@@ -1443,8 +1468,41 @@ function aTab(name,btn){
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
   renderAdminTab(name);
+  if(window.wlBnSync) wlBnSync();
 }
 window.aTab=aTab;
+
+// ── BOTTOM NAVIGATION (stage 3) ────────────────────────────────
+// Uses the existing aTab() with the matching (hidden) top button, so every
+// screen opens exactly as before. wlBnSync() mirrors the active tab.
+function wlBnClose(){ var m=document.getElementById('wl-more'),b=document.getElementById('wl-more-bg'); if(m) m.classList.remove('open'); if(b) b.classList.remove('open'); }
+function wlBnGo(name){
+  var top=document.querySelector('.admin-nav .nav-btn[onclick*="\''+name+'\'"]');
+  wlBnClose();
+  if(top) aTab(name,top);
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+function wlBnSync(){
+  // mirror the (hidden) top row: whatever it marks active is what the user sees
+  var a=document.querySelector('.admin-nav .nav-btn.active'), m=a?/aTab\('([a-z]+)'/.exec(a.getAttribute('onclick')||''):null;
+  var t=m?m[1]:(window.currentAdminTab||'dashboard'), inMore=(t==='analytics'||t==='settings');
+  var bs=document.querySelectorAll('#wl-bnav button');
+  for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute('data-tab'); bs[i].classList.toggle('active', k===t || (k==='more'&&inMore)); }
+  var ms=document.querySelectorAll('#wl-more button');
+  for(var j=0;j<ms.length;j++){ ms[j].classList.toggle('active', ms[j].getAttribute('data-tab')===t); }
+}
+window.wlBnSync=wlBnSync;
+(function(){
+  var bs=document.querySelectorAll('#wl-bnav button, #wl-more button');
+  for(var i=0;i<bs.length;i++){
+    bs[i].addEventListener('click',function(){
+      var k=this.getAttribute('data-tab');
+      if(k==='more'){ var m=document.getElementById('wl-more'),bg=document.getElementById('wl-more-bg'); var open=!m.classList.contains('open'); m.classList.toggle('open',open); bg.classList.toggle('open',open); return; }
+      wlBnGo(k);
+    });
+  }
+  var bg=document.getElementById('wl-more-bg'); if(bg) bg.addEventListener('click',wlBnClose);
+})();
 
 function renderAdminTab(n){
   if(n==='dashboard') renderDashboard();
