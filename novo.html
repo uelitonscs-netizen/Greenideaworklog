@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO (copy of v20261003-data-backup) -->
+<!-- WorkLog GreenIdea NOVO (copy of v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -487,6 +487,15 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
           <button id="wl-backup-btn" type="button" style="background:var(--green);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;flex-shrink:0">Download</button>
         </div>
         <div id="wl-backup-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+        <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-weight:600;font-size:14px">Restore from a backup file</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Only for emergencies. Puts records back as they were in the file.</div>
+          </div>
+          <button id="wl-restore-pick" type="button" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:8px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer;flex-shrink:0">Choose file</button>
+          <input id="wl-restore-file" type="file" accept=".json,application/json" style="display:none"/>
+        </div>
+        <div id="wl-restore-panel" style="display:none;margin-top:12px"></div>
       </div>
 
       <!-- Overtime & Pay -->
@@ -3235,7 +3244,8 @@ window.renderQR = renderQR;
 // Reads every Firestore collection the apps use and downloads one JSON file.
 // It never writes to Firestore. Timestamps are tagged so a restore can rebuild them.
 var WL_BACKUP_COLLECTIONS=['helpers','entries','payments','advances','absences','projects','projectExpenses','projectPhotos','projectHistory','wl_config','fieldbid'];
-var _wlBackupRunning=false;
+var _wlBackupRunning=false, _wlRestoreRunning=false, _wlRestoreData=null;
+var WL_BACKUP_LABELS={helpers:'Helpers and rates',entries:'Time entries (hours)',payments:'Payments',advances:'Advances',absences:'Absences',projects:'Projects',projectExpenses:'Project expenses',projectPhotos:'Project photos',projectHistory:'Project history',wl_config:'Settings',fieldbid:'FieldBid app (estimates, prices, photos)'};
 function wlBkPlain(v){
   if(v===null||v===undefined) return v;
   if(typeof v.toDate==='function'&&typeof v.seconds==='number') return {__ts:v.toDate().toISOString()};
@@ -3247,10 +3257,7 @@ function wlBkStatus(t,color){ var el=document.getElementById('wl-backup-status')
 function wlBkShowLast(){
   try{ var l=localStorage.getItem('wl_last_backup'); if(l&&!_wlBackupRunning) wlBkStatus('Last backup on this phone: '+new Date(l).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})); }catch(e){}
 }
-function wlBackupAll(){
-  if(_wlBackupRunning) return;
-  _wlBackupRunning=true;
-  var btn=document.getElementById('wl-backup-btn'); if(btn) btn.textContent='Reading…';
+function wlBuildBackup(){
   var out={app:'GreenIdea WorkLog + FieldBid',format:'wl-backup-v1',createdAt:new Date().toISOString(),counts:{},failed:{},collections:{}};
   var i=0;
   function next(){
@@ -3262,22 +3269,32 @@ function wlBackupAll(){
       out.collections[name]=docs; out.counts[name]=docs.length;
     },function(err){ out.failed[name]=String(err&&err.message||err); }).then(next);
   }
-  next().then(function(){
-    var json=JSON.stringify(out);
-    var n=new Date(), pad=function(x){return (x<10?'0':'')+x;};
-    var fname='worklog-backup-'+n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+'-'+pad(n.getHours())+pad(n.getMinutes())+'.json';
-    var blob=new Blob([json],{type:'application/json'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a'); a.href=url; a.download=fname;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(url);},10000);
+  return next().then(function(){ return out; });
+}
+function wlDownloadJson(out,prefix){
+  var json=JSON.stringify(out);
+  var n=new Date(), pad=function(x){return (x<10?'0':'')+x;};
+  var fname=prefix+n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+'-'+pad(n.getHours())+pad(n.getMinutes())+'.json';
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download=fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},10000);
+  return {fname:fname,mb:json.length/1048576};
+}
+function wlBackupAll(){
+  if(_wlBackupRunning) return;
+  _wlBackupRunning=true;
+  var btn=document.getElementById('wl-backup-btn'); if(btn) btn.textContent='Reading…';
+  wlBuildBackup().then(function(out){
+    var f=wlDownloadJson(out,'worklog-backup-');
     var total=0; for(var k in out.counts) total+=out.counts[k];
     var failedNames=Object.keys(out.failed);
     try{ localStorage.setItem('wl_last_backup',out.createdAt); }catch(e){}
     if(failedNames.length){
-      wlBkStatus('Saved '+fname+' ('+total+' records, '+(json.length/1048576).toFixed(1)+' MB) — could not read: '+failedNames.join(', '),'var(--red)');
+      wlBkStatus('Saved '+f.fname+' ('+total+' records, '+f.mb.toFixed(1)+' MB) — could not read: '+failedNames.join(', '),'var(--red)');
     } else {
-      wlBkStatus('Saved '+fname+' ('+total+' records, '+(json.length/1048576).toFixed(1)+' MB). Keep it in Google Drive too.','var(--green)');
+      wlBkStatus('Saved '+f.fname+' ('+total+' records, '+f.mb.toFixed(1)+' MB). Keep it in Google Drive too.','var(--green)');
     }
     showToast('Backup downloaded ✅');
   }).catch(function(e){
@@ -3285,7 +3302,99 @@ function wlBackupAll(){
   }).then(function(){ _wlBackupRunning=false; var b=document.getElementById('wl-backup-btn'); if(b) b.textContent='Download'; });
 }
 window.wlBackupAll=wlBackupAll;
-(function(){ var b=document.getElementById('wl-backup-btn'); if(b) b.addEventListener('click',wlBackupAll); wlBkShowLast(); })();
+
+// ── RESTORE FROM BACKUP FILE ───────────────────────────────────
+// Writes each backed-up record back exactly as it was (set, not merge).
+// Never deletes: records created after the backup stay. A fresh backup of the
+// current state is downloaded first. FieldBid docs get updatedAt = now so the
+// FieldBid app takes the restored cloud copy instead of re-pushing its local one.
+function wlRsEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function wlRsRevive(v){
+  if(v===null||v===undefined) return v;
+  if(Array.isArray(v)){ var a=[]; for(var i=0;i<v.length;i++) a.push(wlRsRevive(v[i])); return a; }
+  if(typeof v==='object'){
+    if(typeof v.__ts==='string'&&Object.keys(v).length===1){
+      try{ if(firebase.firestore&&firebase.firestore.Timestamp) return firebase.firestore.Timestamp.fromDate(new Date(v.__ts)); }catch(e){}
+      return v.__ts;
+    }
+    var o={}; for(var k in v){ if(Object.prototype.hasOwnProperty.call(v,k)) o[k]=wlRsRevive(v[k]); } return o;
+  }
+  return v;
+}
+function wlRsPanel(html){ var p=document.getElementById('wl-restore-panel'); if(p){ p.innerHTML=html; p.style.display=html?'block':'none'; } }
+function wlRsMsg(t,color){ var el=document.getElementById('wl-rs-msg'); if(el){ el.textContent=t; el.style.color=color||'var(--muted)'; } }
+function wlRsLoadFile(file){
+  _wlRestoreData=null;
+  if(!file) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var d=null; try{ d=JSON.parse(e.target.result); }catch(err){}
+    if(!d||d.format!=='wl-backup-v1'||!d.collections){ wlRsPanel('<div style="font-size:12px;color:var(--red)">This file is not a WorkLog backup. Choose a worklog-backup-….json file.</div>'); return; }
+    _wlRestoreData=d;
+    var h='<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Backup from <b style="color:var(--text)">'+wlRsEsc(new Date(d.createdAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}))+'</b>. Tick only what you need back.</div>';
+    for(var i=0;i<WL_BACKUP_COLLECTIONS.length;i++){
+      var c=WL_BACKUP_COLLECTIONS[i]; if(!d.collections[c]) continue;
+      h+='<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text);text-transform:none;letter-spacing:0;margin:0;cursor:pointer"><input type="checkbox" class="wl-rs-col" value="'+c+'" style="width:18px;height:18px;margin:0;flex-shrink:0"/><span style="flex:1">'+(WL_BACKUP_LABELS[c]||c)+'</span><span style="color:var(--muted);font-weight:400">'+d.collections[c].length+'</span></label>';
+    }
+    h+='<div style="font-size:12px;color:var(--muted);margin:10px 0 6px">Records created after the backup are kept. A backup of the current data downloads first.</div>';
+    h+='<input id="wl-rs-confirm" placeholder="Type RESTORE to confirm" autocomplete="off" autocapitalize="characters" style="width:100%;box-sizing:border-box;margin-bottom:8px"/>';
+    h+='<button id="wl-rs-go" type="button" style="width:100%;background:var(--red);border:none;color:#fff;border-radius:8px;padding:11px;font-size:13px;font-family:var(--font-d);font-weight:700;cursor:pointer">Restore selected</button>';
+    h+='<div id="wl-rs-msg" style="font-size:12px;margin-top:8px"></div>';
+    wlRsPanel(h);
+    var go=document.getElementById('wl-rs-go'); if(go) go.addEventListener('click',wlRestoreRun);
+  };
+  r.onerror=function(){ wlRsPanel('<div style="font-size:12px;color:var(--red)">Could not read the file.</div>'); };
+  r.readAsText(file);
+}
+function wlRestoreRun(){
+  if(_wlRestoreRunning||!_wlRestoreData) return;
+  var boxes=document.querySelectorAll('.wl-rs-col'), cols=[];
+  for(var i=0;i<boxes.length;i++){ if(boxes[i].checked) cols.push(boxes[i].value); }
+  if(!cols.length){ wlRsMsg('Tick at least one item to restore.','var(--red)'); return; }
+  var cf=document.getElementById('wl-rs-confirm');
+  if(!cf||cf.value.trim().toUpperCase()!=='RESTORE'){ wlRsMsg('Type RESTORE in the box to confirm.','var(--red)'); return; }
+  _wlRestoreRunning=true;
+  var go=document.getElementById('wl-rs-go'); if(go) go.textContent='Working…';
+  var data=_wlRestoreData, written=0, nowIso=new Date().toISOString();
+  wlRsMsg('Saving a backup of the current data first…');
+  wlBuildBackup().then(function(cur){
+    var failedNames=Object.keys(cur.failed);
+    if(failedNames.length) throw new Error('could not back up current data ('+failedNames.join(', ')+'). Nothing was restored.');
+    var f=wlDownloadJson(cur,'worklog-before-restore-');
+    wlRsMsg('Saved '+f.fname+'. Restoring…');
+    var ops=[];
+    for(var c=0;c<cols.length;c++){
+      var docs=data.collections[cols[c]]||[];
+      for(var j=0;j<docs.length;j++){
+        var dd=wlRsRevive(docs[j].data)||{};
+        if(cols[c]==='fieldbid'&&dd.updatedAt!==undefined) dd.updatedAt=nowIso;
+        ops.push({col:cols[c],id:docs[j].id,data:dd,size:JSON.stringify(docs[j].data||{}).length});
+      }
+    }
+    var k=0;
+    function nextBatch(){
+      if(k>=ops.length) return Promise.resolve();
+      var batch=db.batch(), n=0, bytes=0;
+      while(k<ops.length&&n<400&&(n===0||bytes+ops[k].size<4000000)){
+        batch.set(db.collection(ops[k].col).doc(ops[k].id),ops[k].data);
+        bytes+=ops[k].size; n++; k++;
+      }
+      return batch.commit().then(function(){ written+=n; wlRsMsg('Restoring… '+written+' of '+ops.length); }).then(nextBatch);
+    }
+    return nextBatch().then(function(){ return ops.length; });
+  }).then(function(total){
+    wlRsMsg('Restored '+total+' records ('+cols.join(', ')+'). Close and reopen the apps.','var(--green)');
+    showToast('Restore finished ✅');
+  }).catch(function(e){
+    wlRsMsg('Stopped: '+(e&&e.message||e)+(written?' '+written+' records were restored before it stopped.':''),'var(--red)');
+  }).then(function(){ _wlRestoreRunning=false; var g=document.getElementById('wl-rs-go'); if(g) g.textContent='Restore selected'; });
+}
+window.wlRestoreRun=wlRestoreRun;
+(function(){
+  var b=document.getElementById('wl-backup-btn'); if(b) b.addEventListener('click',wlBackupAll); wlBkShowLast();
+  var pk=document.getElementById('wl-restore-pick'), fi=document.getElementById('wl-restore-file');
+  if(pk&&fi){ pk.addEventListener('click',function(){ fi.value=''; fi.click(); }); fi.addEventListener('change',function(){ wlRsLoadFile(fi.files&&fi.files[0]); }); }
+})();
 
 function exportCSV(){
   var rows=[['Helper','Date','Start','End','Minutes','Note','Type','Project']];
