@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO stage6b helper clock button (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO update-from-fieldbid (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -448,6 +448,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
 /* helper clock button: the most important button of the helper screen */
 .btn.clock-btn{min-height:64px;padding:16px;font-size:20px;font-weight:800;border-radius:16px;letter-spacing:.2px;}
+/* ── Update from FieldBid ── */
+.wl-fbu-bg{position:fixed;inset:0;z-index:960;background:rgba(10,14,20,.45);display:flex;align-items:flex-end;justify-content:center;}
+.wl-fbu{width:100%;max-width:560px;max-height:86vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow-lg);}
+.wl-fbu-hd{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-d);font-weight:800;font-size:18px;margin-bottom:8px;}
+.wl-fbu-x{border:none;background:#f1f3ee;width:34px;height:34px;border-radius:10px;font-size:15px;cursor:pointer;}
+.wl-fbu-sub{font-size:13px;color:var(--muted);margin-bottom:10px;}
+.wl-fbu-msg{padding:18px 4px;color:var(--muted);font-size:14px;}
+.wl-fbu-msg.bad{color:var(--red);}
+.wl-fbu-row{width:100%;text-align:left;display:flex;flex-direction:column;gap:2px;border:1px solid var(--border);background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}
+.wl-fbu-row b{font-family:var(--font-d);font-size:15px;color:var(--text);}
+.wl-fbu-row span{font-size:12px;color:var(--muted);}
+.wl-fbu-more{width:100%;min-height:42px;border:none;background:none;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer;}
+.wl-fbu-t{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 8px;}
+.wl-fbu-t th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:4px 6px;}
+.wl-fbu-t td{padding:7px 6px;border-top:1px solid var(--border);}
+.wl-fbu-t tr.chg td{background:#fdf4e3;font-weight:700;}
+.wl-fbu-t tr.chg td:last-child{color:#9a5b05;}
+.wl-fbu-note{font-size:12px;color:var(--muted);margin:4px 0 10px;}
+.wl-fbu-go{width:100%;min-height:48px;border:none;border-radius:12px;background:var(--green);color:#fff;font-family:var(--font-d);font-weight:800;font-size:15px;cursor:pointer;margin-bottom:4px;}
 </style>
 </head>
 <body>
@@ -2178,6 +2197,88 @@ function wlJobTopHtml(p,laborCost,extraCost){
 }
 window.wlJobTopHtml=wlJobTopHtml;
 
+// ── UPDATE FROM FIELDBID (WorkLog novo) ────────────────────────────
+// FieldBid keeps fieldbid/wlsync__<estimateId> = what "Send to WorkLog" would send.
+// This refreshes an EXISTING project's contract + material budget from it.
+// Hours, expenses, photos, history and status are not touched.
+var _wlFbu={pid:null,list:[],pick:null};
+function wlFbuNorm(s){ s=String(s||'').toLowerCase(); try{ s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){} return s.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function wlFbuScore(p,sm){
+  var a=wlFbuNorm((p.name||'')+' '+(p.client||'')+' '+(p.desc||'')).split(' '), b=wlFbuNorm((sm.client||'')+' '+(sm.projName||'')+' '+(sm.address||'')), sc=0;
+  for(var i=0;i<a.length;i++){ if(a[i].length>=3&&b.indexOf(a[i])>=0) sc+=a[i].length; }
+  return sc;
+}
+function wlFbuClose(){ var o=document.getElementById('wl-fbu'); if(o) o.parentNode.removeChild(o); }
+function wlFbuShow(inner){
+  var o=document.getElementById('wl-fbu');
+  if(!o){ o=document.createElement('div'); o.id='wl-fbu'; o.className='wl-fbu-bg'; document.body.appendChild(o);
+    o.addEventListener('click',function(e){ if(e.target===o){ wlFbuClose(); return; } var b=e.target.closest?e.target.closest('[data-fbu]'):null; if(b) wlFbuAct(b.getAttribute('data-fbu'),b.getAttribute('data-id')); }); }
+  o.innerHTML='<div class="wl-fbu"><div class="wl-fbu-hd"><span>Update from FieldBid</span><button type="button" class="wl-fbu-x" data-fbu="close" aria-label="Close">✕</button></div>'+inner+'</div>';
+}
+function wlFbuParse(doc){ try{ var d=doc.data()||{}; var sm=JSON.parse(d.data||'{}'); sm._id=String(doc.id).replace('wlsync__',''); sm._at=d.savedAt||''; return sm; }catch(e){ return null; } }
+function wlFbUpdateOpen(pid){
+  var p=projects.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  _wlFbu={pid:pid,list:[],pick:null};
+  wlFbuShow('<div class="wl-fbu-msg">Loading estimates from FieldBid…</div>');
+  var col=db.collection('fieldbid'), q;
+  try{ var FP=firebase.firestore.FieldPath.documentId(); q=col.where(FP,'>=','wlsync__').where(FP,'<','wlsync_`').get(); }
+  catch(e){ q=Promise.reject(e); }
+  q.then(function(snap){
+    var list=[], ds=snap.docs||[];
+    for(var k=0;k<ds.length;k++){ var sm=wlFbuParse(ds[k]); if(sm&&sm.matBudget) list.push(sm); }
+    for(var i=0;i<list.length;i++) list[i]._score=(p.fbProjectId&&list[i]._id===p.fbProjectId)?100000:wlFbuScore(p,list[i]);
+    list.sort(function(a,b){ return (b._score-a._score)||String(b._at).localeCompare(String(a._at)); });
+    _wlFbu.list=list;
+    if(!list.length){ wlFbuShow('<div class="wl-fbu-msg">No FieldBid estimates found yet. Open the estimate in FieldBid once (it saves a summary automatically), then try again.</div>'); return; }
+    if(p.fbProjectId&&list[0]._id===p.fbProjectId){ wlFbuPreview(list[0]._id); return; }
+    wlFbuRenderList(false);
+  }).catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Could not read FieldBid: '+wlEsc(e&&e.message||e)+'</div>'); });
+}
+window.wlFbUpdateOpen=wlFbUpdateOpen;
+function wlFbuRenderList(all){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0]||{};
+  var L=_wlFbu.list, n=all?L.length:Math.min(5,L.length);
+  var h='<div class="wl-fbu-sub">Which FieldBid estimate is <b>'+wlEsc(p.name||'')+'</b>?</div>';
+  for(var i=0;i<n;i++){ var sm=L[i];
+    h+='<button type="button" class="wl-fbu-row" data-fbu="pick" data-id="'+wlEsc(sm._id)+'"><b>'+wlEsc(sm.client||sm.projName||'(no name)')+'</b><span>'+wlEsc(sm.address||'')+' · '+fmtC(sm.budget||0)+(i===0&&sm._score>0?' · best match':'')+'</span></button>'; }
+  if(!all&&L.length>n) h+='<button type="button" class="wl-fbu-more" data-fbu="all">Show all '+L.length+' estimates</button>';
+  wlFbuShow(h);
+}
+function wlFbuMatLines(mb){
+  mb=mb||{}; var cc=mb.cc||{}, oc=mb.oc||{}, det=mb.detail||[], tot=0;
+  for(var i=0;i<det.length;i++) tot+=Number(det[i]&&det[i].cost)||0;
+  return [['Closed cell',(cc.sqft||0)+' sq ft'+(cc.inch?' · '+cc.inch+'"':'')],['Open cell',(oc.sqft||0)+' sq ft'+(oc.inch?' · '+oc.inch+'"':'')],
+          ['Cellulose',(mb.celBags||0)+' bags'],['Roxul',(mb.roxBags||0)+' bags'],['Fiberglass',(mb.fbgBags||0)+' bags'],
+          ['Ignition barrier',(mb.ignBuckets||0)+' bkt'],['Fire blocking',(mb.fbSqft||0)+' sq ft'],
+          ['Planned materials',det.length+' items · '+fmtC(tot)]];
+}
+function wlFbuPreview(id){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.list.filter(function(x){return x._id===id;})[0]; if(!p||!sm) return;
+  _wlFbu.pick=sm;
+  var A=wlFbuMatLines(p.matBudget), B=wlFbuMatLines(sm.matBudget);
+  var h='<div class="wl-fbu-sub">From FieldBid: <b>'+wlEsc(sm.client||sm.projName||'')+'</b>'+(sm._at?' · saved '+wlEsc(new Date(sm._at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):'')+'</div>';
+  h+='<table class="wl-fbu-t"><tr><th></th><th>Now</th><th>After</th></tr>';
+  var ch=(Number(p.budget)||0)!==(Number(sm.budget)||0);
+  h+='<tr class="'+(ch?'chg':'')+'"><td>Contract</td><td>'+fmtC(p.budget||0)+'</td><td>'+fmtC(sm.budget||0)+'</td></tr>';
+  for(var i=0;i<A.length;i++){ var c=A[i][1]!==B[i][1]; h+='<tr class="'+(c?'chg':'')+'"><td>'+A[i][0]+'</td><td>'+A[i][1]+'</td><td>'+B[i][1]+'</td></tr>'; }
+  h+='</table><div class="wl-fbu-note">Hours, expenses, photos and status stay as they are.</div>';
+  h+='<button type="button" class="wl-fbu-go" data-fbu="apply">Update this project</button>';
+  if(_wlFbu.list.length>1) h+='<button type="button" class="wl-fbu-more" data-fbu="list">Choose a different estimate</button>';
+  wlFbuShow(h);
+}
+function wlFbuApply(){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.pick; if(!p||!sm) return;
+  var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:new Date().toISOString()};
+  if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
+  if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
+  wlFbuShow('<div class="wl-fbu-msg">Updating…</div>');
+  db.collection('projects').doc(p.id).update(upd).then(function(){ wlFbuClose(); showToast('Updated from FieldBid ✅'); })
+    .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
+}
+function wlFbuAct(a,id){
+  if(a==='close') wlFbuClose(); else if(a==='pick') wlFbuPreview(id); else if(a==='all') wlFbuRenderList(true); else if(a==='list') wlFbuRenderList(false); else if(a==='apply') wlFbuApply();
+}
+
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 
@@ -2974,7 +3075,7 @@ function renderProjects(filter){
     html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+(window.wlJobDatesHtml?wlJobDatesHtml(p):'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div>')+'</div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
-    html+='<button type="button" class="wl-pm-btn" aria-label="Project actions" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button><div class="wl-pm" role="menu"><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#1e6334" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/></svg>Edit project</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#2453b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Report</button><div class="wl-pm-sep"></div><button type="button" class="wl-pm-it wl-pm-del" data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#b93229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete project</button></div>';
+    html+='<button type="button" class="wl-pm-btn" aria-label="Project actions" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button><div class="wl-pm" role="menu"><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#1e6334" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/></svg>Edit project</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#2453b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Report</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="wlFbUpdateOpen(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#185fa5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-4M4 4v4h4M4 13a8 8 0 0 0 14.9 4M20 20v-4h-4"/></svg>Update from FieldBid</button><div class="wl-pm-sep"></div><button type="button" class="wl-pm-it wl-pm-del" data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#b93229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete project</button></div>';
     html+='</div></div>';
     if(window.wlJobTopHtml) html+=wlJobTopHtml(p,laborCost,extraCost);
     if(window.wlTabsBar) html+=wlTabsBar(p.id,expenses.length,photos.length);
