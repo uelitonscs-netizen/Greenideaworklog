@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO update-from-fieldbid (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO report fixes (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -2847,7 +2847,8 @@ function exportProjectReport(pid){
     var ocBFu=mb.oc.galPerSet>0?Math.round(ocGal/mb.oc.galPerSet*mb.oc.bfPerSet):0;
     function mbRow(label,quoted,used,unit){
       if(!quoted&&!used) return '';
-      var diff=used-quoted;
+      quoted=Math.round((Number(quoted)||0)*100)/100; used=Math.round((Number(used)||0)*100)/100;
+      var diff=Math.round((used-quoted)*100)/100;
       var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
       var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
       var filled=Math.round(Math.min(pct,100)/10); var empty=10-filled;
@@ -2855,6 +2856,33 @@ function exportProjectReport(pid){
       var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
       return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td>'+
         '<td><span class="bar-screen">'+cssBar+'</span><span class="bar-print" style="font-family:monospace;font-size:11px;color:'+color+'">'+bar+' '+pct+'%</span></td></tr>';
+    }
+    // Bags used per R-value, from this project's expense descriptions.
+    // Same R -> that row. If only ONE R was quoted for the material, expenses with another
+    // R (or none) are counted there too and flagged; otherwise they get their own row.
+    function wlSkuRows(skus,kind,icon){
+      var kw=kind==='mw'?['roxul','mineral wool','mineralwool','rockwool','rock wool','stone wool','comfortbatt']:['fiberglass','fiber glass','fibre glass','fibreglass','batt'];
+      var byR={}, other=0, otherRs={};
+      var ex=projectExpenses.filter(function(e){return e.projectId===pid;});
+      for(var i=0;i<ex.length;i++){
+        var d=String(ex[i].desc||'').toLowerCase(); var hit=false;
+        for(var k=0;k<kw.length;k++){ if(d.indexOf(kw[k])>=0){ hit=true; break; } }
+        if(!hit) continue;
+        if(kind==='fg'&&(d.indexOf('roxul')>=0||d.indexOf('mineral')>=0||d.indexOf('rockwool')>=0)) continue;
+        var q=parseFloat((d.match(/^[\d.]+/)||[0])[0])||0; if(!q) continue;
+        var rm=d.match(/\br[\s-]?(\d{2})\b/); var r=rm?parseInt(rm[1],10):0;
+        var matched=false;
+        for(var s2=0;s2<skus.length;s2++){ var sr=parseInt(String(skus[s2].key||'').replace(/\D/g,''),10); if(r&&sr===r){ byR[sr]=(byR[sr]||0)+q; matched=true; break; } }
+        if(!matched){ other+=q; if(r) otherRs['R-'+r]=1; }
+      }
+      var out='';
+      for(var j=0;j<skus.length;j++){
+        var sk=skus[j], srr=parseInt(String(sk.key||'').replace(/\D/g,''),10), used=byR[srr]||0, lbl=icon+' '+sk.label;
+        if(skus.length===1&&other>0){ used+=other; var rs=Object.keys(otherRs); lbl+=rs.length?' <span style="color:#b45309;font-size:11px">⚠ comprado: '+rs.join(', ')+'</span>':''; }
+        out+=mbRow(lbl, sk.qty, used, 'bags');
+      }
+      if(skus.length>1&&other>0) out+=mbRow(icon+' '+(kind==='mw'?'Roxul':'Fiberglass')+' (outro R / sem R)'+(Object.keys(otherRs).length?' <span style="color:#b45309;font-size:11px">'+Object.keys(otherRs).join(', ')+'</span>':''),0,other,'bags');
+      return out;
     }
     mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
            (function(){
@@ -2868,33 +2896,24 @@ function exportProjectReport(pid){
                '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
            })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
-           mbRow('🔥 Ignition Barrier',parseFloat(((mb.ignSqft||0)/800).toFixed(1)),parseFloat((ignU/800).toFixed(1)),'bkt')+
-           (function(){
-             var ibQ=mb.ignSqft||0; var ibU=ignU;
-             if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
-             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
-               '📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '+
-               '🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
-           })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            ((Array.isArray(mb.detail)&&mb.detail.some(function(d){return /^mw/.test(d.key||'');}))?'':mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags'))+
            (function(){
              var det=Array.isArray(mb.detail)?mb.detail:null;
              var fg=det?det.filter(function(d){return /^fg/.test(d.key||'');}):[];
-             if(fg.length) return fg.map(function(d){ return mbRow('🧶 '+d.label, d.qty, 0, 'bags'); }).join('');
+             if(fg.length) return wlSkuRows(fg,'fg','🧶');
              return mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags');
            })()+
            (function(){
              var det=Array.isArray(mb.detail)?mb.detail:null;
              var mw=det?det.filter(function(d){return /^mw/.test(d.key||'');}):[];
-             return mw.length ? mw.map(function(d){ return mbRow('🪨 '+d.label, d.qty, 0, 'bags'); }).join('') : '';
+             return mw.length ? wlSkuRows(mw,'mw','🪨') : '';
            })()+
            (function(){
              var ibQ=mb.ignSqft||0; var ibU=ignU;
              if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
-             var diff=parseFloat((uBkt-qBkt).toFixed(1)); var pct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
+             var qBkt=Math.round(ibQ/800*100)/100; var uBkt=Math.round(ibU/800*100)/100;
+             var diff=Math.round((uBkt-qBkt)*100)/100; var pct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
              var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
              var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
              return '<tr><td>🔥 Ignition Barrier</td>'
