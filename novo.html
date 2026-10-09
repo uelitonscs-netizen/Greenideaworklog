@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO report fixes (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO estimated-vs-actual (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -467,6 +467,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-fbu-t tr.chg td:last-child{color:#9a5b05;}
 .wl-fbu-note{font-size:12px;color:var(--muted);margin:4px 0 10px;}
 .wl-fbu-go{width:100%;min-height:48px;border:none;border-radius:12px;background:var(--green);color:#fff;font-family:var(--font-d);font-weight:800;font-size:15px;cursor:pointer;margin-bottom:4px;}
+/* ── Estimated vs Actual ── */
+.wl-eva{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin:0 0 14px;}
+.wl-eva-empty{font-size:13px;color:var(--muted);}
+.wl-eva-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-d);font-weight:800;font-size:16px;margin-bottom:6px;}
+.wl-eva-type{min-height:34px;border:1px solid var(--border2);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;background:#fff;color:var(--text);max-width:52%;}
+.wl-eva-note{font-size:12px;color:var(--muted);margin:2px 0 8px;}
+.wl-eva-t{width:100%;border-collapse:collapse;font-size:13px;}
+.wl-eva-t th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;padding:4px 4px;}
+.wl-eva-t th:first-child{text-align:left;}
+.wl-eva-t td{padding:8px 4px;border-top:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.wl-eva-t td:first-child{text-align:left;white-space:normal;font-weight:600;}
+.wl-eva-sub{font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
+.wl-eva-t td.bad,.wl-eva-sq b.bad{color:var(--red);font-weight:800;}
+.wl-eva-t td.good,.wl-eva-sq b.good{color:var(--green);font-weight:800;}
+.wl-eva-t td span{font-size:11px;}
+.wl-eva-sq{display:flex;gap:8px;margin-top:10px;}
+.wl-eva-sq div{flex:1;background:#f1f3ee;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;}
+.wl-eva-sq b{font-family:var(--font-d);font-size:13px;}
+.wl-eva-sq span{font-size:10.5px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -2269,6 +2288,7 @@ function wlFbuPreview(id){
 function wlFbuApply(){
   var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.pick; if(!p||!sm) return;
   var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:new Date().toISOString()};
+  if(sm.estimate) upd.estimate=sm.estimate;
   if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
   if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
   wlFbuShow('<div class="wl-fbu-msg">Updating…</div>');
@@ -2278,6 +2298,55 @@ function wlFbuApply(){
 function wlFbuAct(a,id){
   if(a==='close') wlFbuClose(); else if(a==='pick') wlFbuPreview(id); else if(a==='all') wlFbuRenderList(true); else if(a==='list') wlFbuRenderList(false); else if(a==='apply') wlFbuApply();
 }
+
+// ── ESTIMATED vs ACTUAL (per job) ──────────────────────────────────
+// Estimated = FieldBid's Quote-tab numbers (p.estimate, via Send / Update from FieldBid).
+// Actual = the same figures the P&L above uses (labor with OT, expenses, overhead).
+var WL_JOB_TYPES=['Spray foam','Cellulose','Fiberglass','Mineral wool','Foam board','Other'];
+function wlEvaDays(pid){ var seen={}, n=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId!==pid||!e.startTime) continue; var d=new Date(e.startTime), k=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); if(!seen[k]){ seen[k]=1; n++; } } return n; }
+function wlEvaRow(label,est,act,sub,costLike,unitFmt){
+  var f=unitFmt||fmtC, d=act-est, pct=est?Math.round(d/est*100):0;
+  var bad=costLike?(d>0.005):(d<-0.005), good=costLike?(d<-0.005):(d>0.005);
+  var cls=Math.abs(pct)<5&&est?'':(bad?'bad':(good?'good':''));
+  var dtxt=(est||act)?((d>0?'+':(d<0?'−':''))+f(Math.abs(d))+(est?' <span>('+(pct>0?'+':'')+pct+'%)</span>':'')):'—';
+  return '<tr><td>'+label+(sub?'<div class="wl-eva-sub">'+sub+'</div>':'')+'</td><td>'+(est||est===0?f(est):'—')+'</td><td>'+f(act)+'</td><td class="'+cls+'">'+dtxt+'</td></tr>';
+}
+function wlEvaHtml(p,laborMin,laborCost,exps){
+  var e=p.estimate;
+  if(!e){ return (p.source==='fieldbid')?'<div class="wl-eva wl-eva-empty">Estimated vs Actual: use <b>⋯ → Update from FieldBid</b> to bring in the estimate (labor, materials, overhead).</div>':''; }
+  var mat=0, other=0;
+  for(var i=0;i<exps.length;i++){ var x=exps[i], a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else other+=a; }
+  var oh=Number(p.overhead)||0, days=wlEvaDays(p.id), hrs=Math.round(laborMin/60*10)/10;
+  var budget=Number(p.budget)||0, estBudget=Number(p.fieldbidTotal)||budget;
+  var estCost=(e.laborCost||0)+(e.materialCost||0)+(e.ohCost||0), actCost=laborCost+mat+other+oh;
+  var estProfit=estBudget-estCost, actProfit=budget-actCost;
+  var type=p.jobType||e.jobType||'';
+  var sel='<select class="wl-eva-type" onchange="wlSetJobType(\''+p.id+'\',this.value)"><option value="">Auto'+(e.jobType?' ('+wlEsc(e.jobType)+')':'')+'</option>';
+  for(var t=0;t<WL_JOB_TYPES.length;t++) sel+='<option'+(p.jobType===WL_JOB_TYPES[t]?' selected':'')+'>'+WL_JOB_TYPES[t]+'</option>';
+  sel+='</select>';
+  var h='<div class="wl-eva"><div class="wl-eva-hd"><span>Estimated vs Actual</span>'+sel+'</div>';
+  if((p.status||'active')!=='completed') h+='<div class="wl-eva-note">Job in progress — actual numbers are still growing.</div>';
+  h+='<table class="wl-eva-t"><tr><th></th><th>Est.</th><th>Actual</th><th>Diff</th></tr>';
+  h+=wlEvaRow('Labor',e.laborCost||0,laborCost,(e.manHours||0)+' h est · '+hrs+' h actual',true);
+  h+=wlEvaRow('Materials',e.materialCost||0,mat,'',true);
+  if(other>0) h+=wlEvaRow('Other expenses',0,other,'not in the estimate',true);
+  h+=wlEvaRow('Overhead',e.ohCost||0,oh,(e.ohDays||0)+' days est · '+days+' worked',true);
+  h+=wlEvaRow('<b>Profit</b>',estProfit,actProfit,'',false);
+  h+='</table>';
+  var sq=Number(e.totalSqft)||0;
+  if(sq>0){
+    var mEst=estBudget?Math.round(estProfit/estBudget*100):0, mAct=budget?Math.round(actProfit/budget*100):0;
+    h+='<div class="wl-eva-sq"><div><b>'+fmtC(budget/sq)+'</b><span>price / sq ft</span></div><div><b>'+fmtC(estCost/sq)+' → '+fmtC(actCost/sq)+'</b><span>cost / sq ft</span></div><div><b class="'+(mAct<mEst-2?'bad':(mAct>mEst+2?'good':''))+'">'+mEst+'% → '+mAct+'%</b><span>margin</span></div></div>';
+    h+='<div class="wl-eva-note">'+sq.toLocaleString()+' sq ft estimated'+(e.jobType?' · main work: '+wlEsc(e.jobType):'')+'</div>';
+  }
+  return h+'</div>';
+}
+window.wlEvaHtml=wlEvaHtml;
+function wlSetJobType(pid,val){
+  db.collection('projects').doc(pid).update({jobType:val||''}).then(function(){ showToast(val?('Job type: '+val):'Job type: automatic'); })
+    .catch(function(e){ showToast('Not saved: '+(e&&e.message||e)); });
+}
+window.wlSetJobType=wlSetJobType;
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
@@ -3170,6 +3239,7 @@ function renderProjects(filter){
       html += '</div>';
     }
 
+    if(window.wlEvaHtml) html+=wlEvaHtml(p,laborMin,laborCost,expenses);
     html+='</div>'+wlTabOpen(p.id,'mat');
     // Material Budget Section
     var mb=p.matBudget;
