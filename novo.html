@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO estimated-vs-actual (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO update-all-from-fieldbid (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -486,6 +486,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-eva-sq div{flex:1;background:#f1f3ee;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;}
 .wl-eva-sq b{font-family:var(--font-d);font-size:13px;}
 .wl-eva-sq span{font-size:10.5px;color:var(--muted);}
+/* ── Update all from FieldBid ── */
+.wl-fbu-all{min-height:36px;border:1px solid var(--border2);background:#fff;color:#185fa5;border-radius:10px;padding:0 12px;font-family:var(--font-d);font-weight:700;font-size:12.5px;cursor:pointer;}
+.wl-fbu-grp{font-size:11px;font-weight:800;letter-spacing:.06em;color:#9a5b05;text-transform:uppercase;margin:12px 2px 6px;}
+.wl-fbu-all-row{width:100%;display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}
+.wl-fbu-all-row.on{border-color:#1e633466;background:#f3f8f1;}
+.wl-fbu-ck{width:22px;height:22px;flex-shrink:0;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;margin-top:1px;}
+.wl-fbu-all-row.on .wl-fbu-ck{background:var(--green);border-color:var(--green);}
+.wl-fbu-all-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.wl-fbu-all-txt b{font-family:var(--font-d);font-size:14.5px;color:var(--text);}
+.wl-fbu-all-txt span{font-size:12px;color:var(--muted);}
+.wl-fbu-go[disabled]{opacity:.45;}
 </style>
 </head>
 <body>
@@ -879,6 +890,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div id="tab-projects" class="tab-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
         <div class="section-title" style="margin:0">Projects</div>
+        <button type="button" class="wl-fbu-all" onclick="wlFbuAllOpen()">⟳ Update all from FieldBid</button>
       </div>
       <div style="position:relative;margin-bottom:14px">
         <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
@@ -2297,6 +2309,8 @@ function wlFbuApply(){
 }
 function wlFbuAct(a,id){
   if(a==='close') wlFbuClose(); else if(a==='pick') wlFbuPreview(id); else if(a==='all') wlFbuRenderList(true); else if(a==='list') wlFbuRenderList(false); else if(a==='apply') wlFbuApply();
+  else if(a==='tog'){ var r=_wlFbuAll.rows[parseInt(id,10)]; if(r){ r.on=!r.on; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); } }
+  else if(a==='allapply') wlFbuAllApply();
 }
 
 // ── ESTIMATED vs ACTUAL (per job) ──────────────────────────────────
@@ -2347,6 +2361,74 @@ function wlSetJobType(pid,val){
     .catch(function(e){ showToast('Not saved: '+(e&&e.message||e)); });
 }
 window.wlSetJobType=wlSetJobType;
+
+// ── UPDATE ALL FROM FIELDBID ───────────────────────────────────────
+// Refreshes every project already linked to a FieldBid estimate in one go (with a
+// preview). Old projects not linked yet get a suggested estimate, unchecked.
+// Same fields as the per-project button; hours, expenses and photos untouched.
+var _wlFbuAll={rows:[]};
+function wlFbuEstKey(e){ if(!e) return ''; return [e.manHours,e.laborCost,e.ohDays,e.ohCost,e.materialCost,e.totalSqft,e.jobType].join('|'); }
+function wlFbuChanges(p,sm){
+  var ch=[];
+  if((Number(p.budget)||0)!==(Number(sm.budget)||0)) ch.push('Contract '+fmtC(p.budget||0)+' → '+fmtC(sm.budget||0));
+  var A=wlFbuMatLines(p.matBudget), B=wlFbuMatLines(sm.matBudget);
+  for(var i=0;i<A.length;i++){ if(A[i][1]!==B[i][1]) ch.push(A[i][0]+': '+A[i][1]+' → '+B[i][1]); }
+  if(sm.estimate){ if(!p.estimate) ch.push('Estimate added (labor, overhead, materials)'); else if(wlFbuEstKey(p.estimate)!==wlFbuEstKey(sm.estimate)) ch.push('Estimate updated'); }
+  return ch;
+}
+function wlFbuAllOpen(){
+  wlFbuShow('<div class="wl-fbu-msg">Loading estimates from FieldBid…</div>');
+  var col=db.collection('fieldbid'), q;
+  try{ var FP=firebase.firestore.FieldPath.documentId(); q=col.where(FP,'>=','wlsync__').where(FP,'<','wlsync_`').get(); }
+  catch(e){ q=Promise.reject(e); }
+  q.then(function(snap){
+    var byId={}, list=[], ds=snap.docs||[];
+    for(var k=0;k<ds.length;k++){ var sm=wlFbuParse(ds[k]); if(sm&&sm.matBudget){ byId[sm._id]=sm; list.push(sm); } }
+    var rows=[], upToDate=0, missing=0;
+    for(var i=0;i<projects.length;i++){ var p=projects[i];
+      if(p.fbProjectId){
+        var s=byId[p.fbProjectId]; if(!s){ missing++; continue; }
+        var ch=wlFbuChanges(p,s); if(!ch.length){ upToDate++; continue; }
+        rows.push({pid:p.id,sm:s,ch:ch,on:true,link:false});
+      } else if(p.source==='fieldbid'){
+        var best=null, bs=0; for(var j=0;j<list.length;j++){ var sc=wlFbuScore(p,list[j]); if(sc>bs){ bs=sc; best=list[j]; } }
+        if(best) rows.push({pid:p.id,sm:best,ch:['Link to estimate: '+(best.client||best.projName||'')+(best.address?' · '+best.address:'')].concat(wlFbuChanges(p,best)),on:false,link:true});
+      }
+    }
+    _wlFbuAll={rows:rows};
+    wlFbuAllRender(upToDate,missing);
+  }).catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Could not read FieldBid: '+wlEsc(e&&e.message||e)+'</div>'); });
+}
+window.wlFbuAllOpen=wlFbuAllOpen;
+function wlFbuAllRender(upToDate,missing){
+  var R=_wlFbuAll.rows, h='', n=0;
+  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'); return; }
+  h+='<div class="wl-fbu-sub">'+(upToDate?upToDate+' up to date · ':'')+'Check what to update. Hours, expenses and photos are not touched.</div>';
+  var linkHdr=false;
+  for(var i=0;i<R.length;i++){ var r=R[i], p=projects.filter(function(x){return x.id===r.pid;})[0]||{}; if(r.on) n++;
+    if(r.link&&!linkHdr){ linkHdr=true; h+='<div class="wl-fbu-grp">Not linked yet — check only if the suggestion is right</div>'; }
+    h+='<button type="button" class="wl-fbu-all-row'+(r.on?' on':'')+'" data-fbu="tog" data-id="'+i+'"><span class="wl-fbu-ck">'+(r.on?'✓':'')+'</span><span class="wl-fbu-all-txt"><b>'+wlEsc(p.name||'')+'</b>';
+    for(var c=0;c<r.ch.length&&c<4;c++) h+='<span>'+wlEsc(r.ch[c])+'</span>';
+    if(r.ch.length>4) h+='<span>+'+(r.ch.length-4)+' more change(s)</span>';
+    h+='</span></button>'; }
+  if(missing) h+='<div class="wl-fbu-note">'+missing+' linked estimate(s) not found — open them once in FieldBid.</div>';
+  h+='<button type="button" class="wl-fbu-go" data-fbu="allapply"'+(n?'':' disabled')+'>Update '+n+' project'+(n!==1?'s':'')+'</button>';
+  wlFbuShow(h);
+  _wlFbuAll.upToDate=upToDate; _wlFbuAll.missing=missing;
+}
+function wlFbuAllApply(){
+  var R=_wlFbuAll.rows, batch=db.batch(), n=0, now=new Date().toISOString();
+  for(var i=0;i<R.length;i++){ var r=R[i]; if(!r.on) continue; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) continue; var sm=r.sm;
+    var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:now};
+    if(sm.estimate) upd.estimate=sm.estimate;
+    if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
+    if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
+    batch.update(db.collection('projects').doc(p.id),upd); n++; }
+  if(!n) return;
+  wlFbuShow('<div class="wl-fbu-msg">Updating '+n+' project(s)…</div>');
+  batch.commit().then(function(){ wlFbuClose(); showToast(n+' project(s) updated from FieldBid ✅'); })
+    .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
+}
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
