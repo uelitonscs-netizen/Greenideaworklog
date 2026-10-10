@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea v20261003-data-restore -->
+<!-- WorkLog GreenIdea — redesign (promoted from novo.html, stage 7) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="WorkLog"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -218,6 +218,317 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .tp-ap button.on-am{background:var(--green);color:#fff;font-weight:800;}
 .tp-ap button.on-pm{background:#d97706;color:#fff;font-weight:800;}
 </style>
+<style id="novo-theme">
+/* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
+:root{
+  --bg:#f1f3ee;--surface:#fff;--border:#e1e6de;--border2:#cbd3c8;
+  --text:#14201a;--muted:#5c6862;--green:#1e6334;--green2:#2b8a46;
+  --red:#b93229;--blue:#2453b8;--amber:#b86e07;
+  --font-d:'Archivo','Inter',sans-serif;--font-m:'Inter',sans-serif;
+  --shadow-sm:0 1px 0 rgba(20,32,26,.05);
+  --shadow-md:0 1px 0 rgba(20,32,26,.05),0 6px 16px rgba(20,32,26,.07);
+  --shadow-lg:0 14px 34px rgba(20,32,26,.16);
+  --radius:16px;
+}
+body{font-size:15px;letter-spacing:0;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+::selection{background:#1e633426;}
+/* headers: solid field green instead of gradient */
+.admin-header,.helper-header{background:#17522a;}
+.admin-logo,.helper-name{letter-spacing:-.4px;}
+/* tabs */
+.admin-nav{background:rgba(241,243,238,.94);border-bottom:1px solid var(--border);}
+.nav-btn{font-size:13px;padding:10px 14px;border-radius:10px;min-height:40px;color:var(--muted);}
+.nav-btn.active{background:var(--green);}
+.htab{font-size:12px;padding:11px 4px;border-radius:10px;}
+/* buttons and fields: 44px touch targets */
+.btn{min-height:44px;border-radius:12px;font-size:14px;padding:11px 18px;letter-spacing:.1px;}
+.btn.sm{min-height:36px;font-size:13px;padding:7px 13px;border-radius:10px;}
+input,select,textarea{min-height:44px;font-size:15px;border-radius:12px;background:#fff;border-color:var(--border2);}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #1e63341f;}
+.fg label{font-size:12px;color:var(--muted);font-weight:600;}
+/* cards */
+.card,.hcard,.proj-card,.stat-card,.entry-row,.clock-card{border-color:var(--border);}
+.hcard{border-radius:18px;padding:18px 18px 16px;}
+.hcard.live{border-color:#1e633466;box-shadow:0 0 0 1px #1e633433,var(--shadow-md);}
+.proj-card{border-radius:18px;}
+.proj-stat{background:#f1f3ee;border-radius:12px;}
+.modal{border-radius:22px;}
+/* type: sturdy wide numerals for hours and money (the one bold move) */
+.section-title{font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--text);}
+.hcard-name,.sum-name,.modal-title{letter-spacing:-.2px;}
+.stat-val,.proj-stat-val,.sum-hrs,.entry-dur,.clock-time{font-stretch:112%;letter-spacing:-.3px;}
+.clock-time{font-size:54px;letter-spacing:-1.5px;}
+.stat-label,.clock-status{color:var(--muted);}
+/* pills and period buttons */
+.speriod-btn,.range-btn{background:#e7ebe4;color:var(--muted);min-height:34px;font-size:12px;border-radius:10px;}
+.speriod-btn.active,.range-btn.active{background:var(--green);color:#fff;}
+.sum-total{background:#eaf3e6;border-color:#1e633433;}
+.no-proj-alert{background:#fdf4e3;border-color:#b86e0755;}
+.toast{font-size:14px;padding:12px 24px;}
+/* ── Stage 2b: reach elements that carry inline styles (still CSS only) ── */
+/* bold emphasis and numbers use the display face everywhere */
+.admin-body strong,.admin-body b,.helper-body strong,.helper-body b,.modal strong,.modal b{font-family:var(--font-d);font-weight:800;}
+.admin-body [style*="font-weight:700"],.admin-body [style*="font-weight:800"],
+.helper-body [style*="font-weight:700"],.helper-body [style*="font-weight:800"],
+.modal [style*="font-weight:700"],.modal [style*="font-weight:800"]{font-family:var(--font-d);}
+[style*="font-family:var(--font-d)"]{font-stretch:112%;}
+/* dashboard helper cards */
+.hcard-name{font-size:17px;}
+.hcard-rate{font-size:13px;}
+.hcard>div[style*="line-height:1.8"]{font-size:14px!important;line-height:1.7!important;}
+.hcard>div[style*="line-height:1.8"] strong{font-size:17px;font-stretch:112%;}
+.hcard [style*="color:var(--green2)"]{font-size:21px!important;font-weight:800!important;font-stretch:112%;letter-spacing:-.3px;}
+.hcard [style*="color:var(--muted);font-size:11px"]{font-size:12px!important;}
+.hcard button[onclick^="openQuickHours"]{min-height:40px;padding:8px 16px!important;border-radius:10px!important;font-size:13px!important;}
+.hcard button[data-link]{min-height:40px;font-size:13px!important;}
+/* ── Stage 2c: compact helper cards (same big numbers, less empty space) ── */
+.helpers-grid{gap:10px;}
+.hcard{padding:13px 16px 12px;}
+.hcard-name{line-height:1.2;}
+.hcard-rate{margin-bottom:4px;line-height:1.3;}
+.hcard>div[style*="line-height:1.8"]{line-height:1.35!important;}
+.hcard>div[style*="line-height:1.8"] strong{display:inline-block;margin-bottom:2px;}
+.hcard>div[style*="justify-content:space-between"][style*="margin-top:10px"]{margin-top:6px!important;}
+.hcard button[onclick^="openQuickHours"]{min-height:38px;padding:7px 16px!important;}
+.hcard button[data-link]{min-height:38px;}
+
+/* ── Stage 3: bottom navigation (top tab row stays in the code, hidden) ── */
+.admin-nav{display:none!important;}
+.admin-nav-spacer{height:6px!important;}
+.admin-body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));}
+.wl-bnav{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(20,32,26,.06);}
+.wl-bnav button{flex:1;min-width:0;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;min-height:54px;border-radius:12px;color:var(--muted);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer;}
+.wl-bnav button svg{width:23px;height:23px;}
+.wl-bnav button.active{color:var(--green);}
+.wl-bnav button.active .wl-bi{background:#1e63341a;}
+.wl-bi{display:flex;align-items:center;justify-content:center;width:52px;height:30px;border-radius:99px;transition:background .15s;}
+.wl-more-bg{display:none;position:fixed;inset:0;z-index:950;background:rgba(10,14,20,.35);}
+.wl-more-bg.open{display:block;}
+.wl-more{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:951;background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg);padding:8px;display:none;}
+.wl-more.open{display:block;}
+.wl-more button{width:100%;display:flex;align-items:center;gap:14px;background:none;border:none;padding:14px 14px;min-height:52px;border-radius:12px;font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--text);cursor:pointer;text-align:left;}
+.wl-more button.active{background:#1e63341a;color:var(--green);}
+.wl-more button svg{width:22px;height:22px;flex-shrink:0;}
+.toast{bottom:calc(88px + env(safe-area-inset-bottom,0px));}
+#install-banner{bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;}
+@media print{.wl-bnav,.wl-more,.wl-more-bg{display:none!important;}}
+
+/* ── Stage 3b: recent activity ── */
+.wl-rc-day{font-family:var(--font-d);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:12px 0 4px;}
+.wl-rc-day:first-child{padding-top:0;}
+.wl-rc-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);}
+.wl-rc-av{width:36px;height:36px;border-radius:50%;background:#e4eee2;color:var(--green);font-family:var(--font-d);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wl-rc-mid{flex:1;min-width:0;}
+.wl-rc-name{font-family:var(--font-d);font-weight:800;font-size:15px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-rc-sub{font-size:13px;color:var(--muted);line-height:1.35;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-rc-dur{font-family:var(--font-d);font-weight:800;font-stretch:112%;font-size:16px;color:var(--green);white-space:nowrap;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.wl-rc-ot{font-size:10px;font-weight:800;color:#b86e07;background:#fdf4e3;border-radius:6px;padding:1px 6px;font-stretch:100%;}
+
+/* ── Stage 4: on the clock now + week bar ── */
+.wl-oc{background:#e6f0e2;border:1px solid #1e633426;border-radius:18px;padding:12px 14px;margin-bottom:12px;}
+.wl-oc-empty{background:var(--surface);border-color:var(--border);color:var(--muted);font-size:13px;padding:12px 16px;}
+.wl-oc-hd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-d);font-weight:800;font-size:14px;color:#173f22;margin-bottom:4px;}
+.wl-oc-hd span:last-child{font-size:12px;font-weight:700;color:var(--green);}
+.wl-oc-row{display:flex;align-items:center;gap:12px;padding:7px 0;}
+.wl-oc-row+.wl-oc-row{border-top:1px solid #1e63341a;}
+.wl-oc-av{width:36px;height:36px;border-radius:50%;background:#c6deba;color:#173f22;font-family:var(--font-d);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wl-oc-av.warn{background:#f6d9a8;color:#5c3700;}
+.wl-oc-mid{flex:1;min-width:0;}
+.wl-oc-name{font-family:var(--font-d);font-weight:800;font-size:15px;color:#173f22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-oc-sub{font-size:13px;color:#3f6b49;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-oc-sub.warn{color:#9a5b05;font-weight:700;}
+.wl-oc-time{font-family:var(--font-d);font-weight:800;font-stretch:112%;font-size:18px;color:#173f22;font-variant-numeric:tabular-nums;}
+.wl-wb{margin-top:6px;display:flex;align-items:center;gap:10px;}
+.wl-wb-bar{position:relative;flex:1;min-width:0;height:8px;border-radius:99px;background:#e9ece6;}
+.wl-wb-reg{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--green2);}
+.wl-wb-reg.near{background:#d98a12;}
+.wl-wb-reg.over{background:var(--green2);border-radius:99px 0 0 99px;}
+.wl-wb-ot{position:absolute;top:0;bottom:0;background:var(--red);border-radius:0 99px 99px 0;}
+.wl-wb-mk{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#14201a;opacity:.55;border-radius:2px;}
+.wl-wb-lab{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.wl-wb-lab.near{color:#9a5b05;}
+.wl-wb-lab.over{color:var(--red);}
+
+/* ── Stage 5a: job top ── */
+.wl-jt-acts{display:flex;gap:8px;margin:0 0 12px;}
+.wl-jt-act{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:1px solid var(--border2);border-radius:12px;background:#fff;color:var(--text);font-family:var(--font-d);font-weight:700;font-size:14px;text-decoration:none;}
+.wl-jt-act svg{width:18px;height:18px;color:var(--green);}
+.wl-jt-con{background:#f1f3ee;border-radius:14px;padding:12px 14px;margin-bottom:12px;}
+.wl-jt-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-jt-lbl{font-size:12px;color:var(--muted);font-weight:600;}
+.wl-jt-src{font-size:11px;font-weight:700;color:#185fa5;background:#e6f1fb;border-radius:6px;padding:2px 7px;}
+.wl-jt-amt{font-family:var(--font-d);font-weight:800;font-stretch:112%;font-size:24px;color:var(--text);margin-top:2px;}
+.wl-jt-pl{font-family:var(--font-d);font-weight:800;font-size:14px;white-space:nowrap;}
+.wl-jt-pl.pos{color:var(--green);}
+.wl-jt-pl.neg{color:var(--red);}
+.wl-jt-bar{display:flex;height:9px;border-radius:99px;background:#dfe4dc;overflow:hidden;margin-top:10px;}
+.wl-jt-bar i{display:block;height:100%;}
+.wl-jt-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--muted);}
+.wl-jt-leg b{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0;}
+.wl-jt-over{font-size:12px;font-weight:700;color:var(--red);margin-top:6px;}
+
+/* project actions: "⋯" menu next to the status select */
+.wl-pm-btn{position:absolute;top:14px;right:14px;width:34px;height:32px;border:1px solid var(--border2);border-radius:10px;background:#fff;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;}
+.wl-pm-btn svg{width:18px;height:18px;}
+.wl-pm{display:none;position:absolute;top:52px;right:14px;z-index:20;min-width:190px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);padding:6px;}
+.wl-pm.open{display:block;}
+.wl-pm-it{width:100%;display:flex;align-items:center;gap:12px;background:none;border:none;padding:12px;min-height:46px;border-radius:10px;font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);cursor:pointer;text-align:left;}
+.wl-pm-it svg{width:19px;height:19px;flex-shrink:0;}
+.wl-pm-it:active{background:#f1f3ee;}
+.wl-pm-del{color:var(--red);}
+.wl-pm-sep{height:1px;background:var(--border);margin:4px 8px;}
+
+.wl-jd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:6px;font-size:13px;color:var(--muted);}
+.wl-st{font-family:var(--font-d);font-weight:800;font-size:11px;letter-spacing:.3px;border-radius:6px;padding:3px 8px;}
+.wl-st-active{background:#e2efdc;color:#1e6334;}
+.wl-st-paused{background:#eceeea;color:#5c6862;}
+.wl-st-done{background:#e6f1fb;color:#185fa5;}
+
+/* status select: compact pill at the top-right of the project card */
+.proj-card{position:relative;}
+.proj-card select[onchange^="updateProjStatus"]{position:absolute;top:14px;right:54px;width:auto!important;min-height:32px!important;height:32px;padding:0 26px 0 10px!important;font-size:12px!important;border-radius:99px!important;border:1px solid var(--border2)!important;background-color:#fff!important;z-index:1;}
+.proj-card>div:first-child>div:first-child>div:first-child{padding-right:164px;min-height:34px;display:flex;align-items:center;}
+
+
+/* ── Stage 5b: quoted vs used + still to buy ── */
+.wl-mb{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;}
+.wl-mb-hd{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-d);font-weight:800;font-size:16px;margin-bottom:6px;}
+.wl-mr{padding:10px 0 8px;border-top:1px solid var(--border);}
+.wl-mb-hd+.wl-mr{border-top:none;}
+.wl-mr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-mr-lbl{font-family:var(--font-d);font-weight:800;font-size:15px;}
+.wl-mr-num{font-size:13px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums;}
+.wl-mr-bar{height:8px;border-radius:99px;background:#e9ece6;overflow:hidden;margin-top:6px;}
+.wl-mr-bar i{display:block;height:100%;border-radius:99px;}
+.wl-chip{font-family:var(--font-d);font-weight:800;font-size:12px;border-radius:7px;padding:3px 8px;white-space:nowrap;}
+.wl-chip.red{background:#fbe7e5;color:var(--red);}
+.wl-chip.green{background:#e2efdc;color:var(--green);}
+.wl-chip.amber{background:#fdf4e3;color:#9a5b05;}
+.wl-mb div[style*="font-size:10px;color:var(--muted)"]{font-size:12px!important;margin-top:2px!important;}
+.wl-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px;}
+.wl-ct-txt{font-size:12px;color:var(--muted);}
+.wl-ct-btn{flex-shrink:0;min-height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:10px;background:#fff;color:var(--blue);font-family:var(--font-d);font-weight:700;font-size:13px;cursor:pointer;}
+.wl-stb{border-top:1px solid var(--border);margin-top:6px;padding-top:12px;}
+.wl-stb-hd{font-family:var(--font-d);font-weight:800;font-size:15px;}
+.wl-stb-sub{font-size:12px;color:var(--muted);margin:2px 0 8px;}
+.wl-stb-item{font-size:14px;font-weight:600;color:var(--text);}
+
+/* ── Stage 5c: project tabs ── */
+.wl-tbar{display:flex;gap:4px;background:#e9ece6;border-radius:12px;padding:4px;margin:2px 0 14px;}
+.wl-tb{flex:1;min-height:40px;border:none;background:none;border-radius:9px;font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.wl-tb.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(20,32,26,.12);}
+.wl-tb-n{font-size:11px;font-weight:800;background:#dfe4dc;color:var(--muted);border-radius:99px;padding:1px 7px;}
+.wl-tb.on .wl-tb-n{background:#e2efdc;color:var(--green);}
+.wl-tp{display:none;}
+.wl-tp.on{display:block;}
+@media print{.wl-tp{display:block!important;}.wl-tbar{display:none!important;}}
+
+/* ── Stage 6: quick add (+) and new FieldBid job ── */
+.wl-fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:210;width:58px;height:58px;border-radius:50%;border:none;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(20,32,26,.28);cursor:pointer;}
+.wl-fab svg{width:28px;height:28px;}
+.wl-qa{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:951;background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);padding:10px;display:none;max-height:62vh;overflow:auto;}
+.wl-qa.open{display:block;}
+.wl-qa-hd{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;padding:6px 10px 4px;}
+.wl-qa-it{width:100%;display:flex;align-items:center;gap:14px;background:none;border:none;padding:14px 12px;min-height:54px;border-radius:12px;font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--text);cursor:pointer;text-align:left;}
+.wl-qa-it svg{width:24px;height:24px;flex-shrink:0;}
+.wl-qa-back{display:flex;align-items:center;gap:8px;background:none;border:none;padding:8px 6px 10px;font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--text);cursor:pointer;}
+.wl-qa-back svg{width:20px;height:20px;}
+.wl-qa-row{width:100%;display:flex;flex-direction:column;align-items:flex-start;background:none;border:none;border-top:1px solid var(--border);padding:12px;min-height:50px;font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);cursor:pointer;text-align:left;}
+.wl-qa-row span{font-family:var(--font-m);font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;}
+.wl-qa-empty{padding:14px;color:var(--muted);font-size:13px;}
+.proj-card.wl-flash{box-shadow:0 0 0 3px #1e633455,var(--shadow-md);transition:box-shadow .3s;}
+.wl-fbn{display:flex;align-items:center;gap:10px;background:#e6f1fb;border:1px solid #185fa526;border-radius:16px;padding:10px 10px 10px 14px;margin-bottom:10px;}
+.wl-fbn-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.wl-fbn-txt b{font-family:var(--font-d);font-size:12px;color:#185fa5;letter-spacing:.3px;}
+.wl-fbn-txt span{font-family:var(--font-d);font-weight:800;font-size:15px;color:#0c447c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-fbn-open{min-height:36px;padding:0 14px;border-radius:10px;border:none;background:#185fa5;color:#fff;font-family:var(--font-d);font-weight:700;font-size:13px;cursor:pointer;}
+.wl-fbn-x{width:32px;height:32px;border:none;background:none;color:#185fa5;font-size:16px;cursor:pointer;}
+@media print{.wl-fab,.wl-qa{display:none!important;}}
+.admin-body{padding-bottom:calc(164px + env(safe-area-inset-bottom,0px));}
+
+/* helper clock button: the most important button of the helper screen */
+.btn.clock-btn{min-height:64px;padding:16px;font-size:20px;font-weight:800;border-radius:16px;letter-spacing:.2px;}
+/* ── Update from FieldBid ── */
+.wl-fbu-bg{position:fixed;inset:0;z-index:960;background:rgba(10,14,20,.45);display:flex;align-items:flex-end;justify-content:center;}
+.wl-fbu{width:100%;max-width:560px;max-height:86vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow-lg);}
+.wl-fbu-hd{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-d);font-weight:800;font-size:18px;margin-bottom:8px;}
+.wl-fbu-x{border:none;background:#f1f3ee;width:34px;height:34px;border-radius:10px;font-size:15px;cursor:pointer;}
+.wl-fbu-sub{font-size:13px;color:var(--muted);margin-bottom:10px;}
+.wl-fbu-msg{padding:18px 4px;color:var(--muted);font-size:14px;}
+.wl-fbu-msg.bad{color:var(--red);}
+.wl-fbu-row{width:100%;text-align:left;display:flex;flex-direction:column;gap:2px;border:1px solid var(--border);background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}
+.wl-fbu-row b{font-family:var(--font-d);font-size:15px;color:var(--text);}
+.wl-fbu-row span{font-size:12px;color:var(--muted);}
+.wl-fbu-more{width:100%;min-height:42px;border:none;background:none;color:var(--blue);font-weight:700;font-size:14px;cursor:pointer;}
+.wl-fbu-t{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 8px;}
+.wl-fbu-t th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:4px 6px;}
+.wl-fbu-t td{padding:7px 6px;border-top:1px solid var(--border);}
+.wl-fbu-t tr.chg td{background:#fdf4e3;font-weight:700;}
+.wl-fbu-t tr.chg td:last-child{color:#9a5b05;}
+.wl-fbu-note{font-size:12px;color:var(--muted);margin:4px 0 10px;}
+.wl-fbu-go{width:100%;min-height:48px;border:none;border-radius:12px;background:var(--green);color:#fff;font-family:var(--font-d);font-weight:800;font-size:15px;cursor:pointer;margin-bottom:4px;}
+/* ── Estimated vs Actual ── */
+.wl-eva{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin:0 0 14px;}
+.wl-eva-empty{font-size:13px;color:var(--muted);}
+.wl-eva-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-d);font-weight:800;font-size:16px;margin-bottom:6px;}
+.wl-eva-type{min-height:34px;border:1px solid var(--border2);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;background:#fff;color:var(--text);max-width:52%;}
+.wl-eva-note{font-size:12px;color:var(--muted);margin:2px 0 8px;}
+.wl-eva-t{width:100%;border-collapse:collapse;font-size:13px;}
+.wl-eva-t th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;padding:4px 4px;}
+.wl-eva-t th:first-child{text-align:left;}
+.wl-eva-t td{padding:8px 4px;border-top:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.wl-eva-t td:first-child{text-align:left;white-space:normal;font-weight:600;}
+.wl-eva-sub{font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
+.wl-eva-t td.bad,.wl-eva-sq b.bad{color:var(--red);font-weight:800;}
+.wl-eva-t td.good,.wl-eva-sq b.good{color:var(--green);font-weight:800;}
+.wl-eva-t td span{font-size:11px;}
+.wl-eva-sq{display:flex;gap:8px;margin-top:10px;}
+.wl-eva-sq div{flex:1;background:#f1f3ee;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;}
+.wl-eva-sq b{font-family:var(--font-d);font-size:13px;}
+.wl-eva-sq span{font-size:10.5px;color:var(--muted);}
+/* ── Update all from FieldBid ── */
+.wl-fbu-all{min-height:36px;border:1px solid var(--border2);background:#fff;color:#185fa5;border-radius:10px;padding:0 12px;font-family:var(--font-d);font-weight:700;font-size:12.5px;cursor:pointer;}
+.wl-fbu-grp{font-size:11px;font-weight:800;letter-spacing:.06em;color:#9a5b05;text-transform:uppercase;margin:12px 2px 6px;}
+.wl-fbu-all-row{width:100%;display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-family:inherit;}
+.wl-fbu-all-row.on{border-color:#1e633466;background:#f3f8f1;}
+.wl-fbu-ck{width:22px;height:22px;flex-shrink:0;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;margin-top:1px;}
+.wl-fbu-all-row.on .wl-fbu-ck{background:var(--green);border-color:var(--green);}
+.wl-fbu-all-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.wl-fbu-all-txt b{font-family:var(--font-d);font-size:14.5px;color:var(--text);}
+.wl-fbu-all-txt span{font-size:12px;color:var(--muted);}
+.wl-fbu-go[disabled]{opacity:.45;}
+/* ── Reports → Accuracy ── */
+.wl-acc-filters{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 12px;font-size:12.5px;color:var(--muted);}
+.wl-acc-filters select{min-height:36px;border:1px solid var(--border2);border-radius:10px;padding:0 10px;background:#fff;font-weight:700;font-size:13px;}
+.wl-acc-filters label{display:flex;align-items:center;gap:6px;}
+.wl-acc-filters input[type=checkbox]{width:18px!important;height:18px!important;min-height:0!important;margin:0;padding:0;flex:none;accent-color:var(--green);}
+.wl-acc-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;}
+.wl-acc-card.all{border-color:#1e633455;background:#f6faf4;}
+.wl-acc-hd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-d);font-weight:800;font-size:17px;margin-bottom:10px;}
+.wl-acc-n{font-size:12px;color:var(--muted);font-weight:700;}
+.wl-acc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.wl-acc-grid div{background:#f1f3ee;border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:2px;text-align:center;}
+.wl-acc-card.all .wl-acc-grid div{background:#fff;}
+.wl-acc-grid b{font-family:var(--font-d);font-size:15px;}
+.wl-acc-grid div>span{font-size:10.5px;color:var(--muted);}
+.wl-acc-grid b span{font-size:inherit;}
+.wl-acc-line{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);margin-top:8px;}
+.wl-acc-conc{font-size:13px;margin-top:8px;line-height:1.45;}
+.wl-acc-warn{font-size:12.5px;margin-top:8px;color:#9a5b05;font-weight:600;}
+.bad{color:var(--red);} .good{color:var(--green);} .na{color:#b4b2a9;} .warn{color:#9a5b05;}
+.wl-acc-sec{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 2px 8px;}
+.wl-acc-job{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
+.wl-acc-job.ex{opacity:.55;}
+.wl-acc-job-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-acc-name{border:none;background:none;padding:0;font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--text);text-align:left;cursor:pointer;}
+.wl-acc-ex{min-height:30px;border:1px solid var(--border2);background:#fff;border-radius:8px;padding:0 10px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;}
+.wl-acc-job-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.wl-acc-job-nums{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;margin-top:6px;}
+.wl-acc-job-nums span{font-weight:600;}
+.wl-acc-note{font-size:12px;color:var(--muted);margin:8px 2px;}
+.wl-acc-empty{background:var(--surface);border:1px dashed var(--border2);border-radius:14px;padding:18px;font-size:13.5px;color:var(--muted);line-height:1.5;}
+.wl-eva-t td.na,.wl-eva-t td .na{color:#b4b2a9;}
+</style>
 </head>
 <body>
 
@@ -278,6 +589,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
     <button class="nav-btn" onclick="aTab('settings',this)">⚙️ Settings</button>
   </div>
   <div class="admin-nav-spacer"></div>
+  <!-- Bottom navigation (stage 3) -->
+  <nav class="wl-bnav" id="wl-bnav" aria-label="Main"><button type="button" data-tab="dashboard" class="active"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Dashboard</button><button type="button" data-tab="helpers"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.6 3.5 5.2"/></svg></span>Helpers</button><button type="button" data-tab="projects"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2h9A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg></span>Projects</button><button type="button" data-tab="reports"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>Reports</button><button type="button" data-tab="more"><span class="wl-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>More</button></nav>
+  <div class="wl-more-bg" id="wl-more-bg"></div>
+  <div class="wl-more" id="wl-more" role="menu"><button type="button" data-tab="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</button><button type="button" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button></div>
+  <button type="button" class="wl-fab" id="wl-fab" aria-label="Quick add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <div class="wl-more-bg" id="wl-qa-bg"></div>
+  <div class="wl-qa" id="wl-qa" role="dialog" aria-label="Quick add"></div>
   <div class="admin-body">
 
     <!-- DASHBOARD -->
@@ -286,6 +604,8 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
         <div class="section-title" style="margin:0" id="dash-week-lbl">Dashboard</div>
         <button onclick="showDepotQR()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">📷 Depot QR</button>
       </div>
+      <div id="wl-fbnew"></div>
+      <div id="wl-onclock"></div>
       <div id="no-proj-alert"></div>
       <div id="dash-grid" class="helpers-grid"></div>
       <div class="card">
@@ -337,7 +657,10 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
         <button id="rep-toggle-advances" onclick="switchReport('advances',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Advances</button>
+        <button id="rep-toggle-accuracy" onclick="switchReport('accuracy',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted);white-space:nowrap">🎯 Accuracy</button>
       </div>
+
+      <div id="rep-accuracy" style="display:none"></div>
 
       <!-- Entries panel -->
       <div id="rep-entries">
@@ -601,6 +924,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
     <div id="tab-projects" class="tab-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
         <div class="section-title" style="margin:0">Projects</div>
+        <button type="button" class="wl-fbu-all" onclick="wlFbuAllOpen()">⟳ Update all from FieldBid</button>
       </div>
       <div style="position:relative;margin-bottom:14px">
         <input id="proj-search" placeholder="🔍 Search by name or description..." oninput="filterProjects()" style="width:100%;background:#fff;border:1px solid #ccc;border-radius:10px;color:#1a1a1a;padding:10px 14px;font-size:13px;outline:none"/>
@@ -1369,8 +1693,41 @@ function aTab(name,btn){
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
   renderAdminTab(name);
+  if(window.wlBnSync) wlBnSync();
 }
 window.aTab=aTab;
+
+// ── BOTTOM NAVIGATION (stage 3) ────────────────────────────────
+// Uses the existing aTab() with the matching (hidden) top button, so every
+// screen opens exactly as before. wlBnSync() mirrors the active tab.
+function wlBnClose(){ var m=document.getElementById('wl-more'),b=document.getElementById('wl-more-bg'); if(m) m.classList.remove('open'); if(b) b.classList.remove('open'); }
+function wlBnGo(name){
+  var top=document.querySelector('.admin-nav .nav-btn[onclick*="\''+name+'\'"]');
+  wlBnClose();
+  if(top) aTab(name,top);
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+function wlBnSync(){
+  // mirror the (hidden) top row: whatever it marks active is what the user sees
+  var a=document.querySelector('.admin-nav .nav-btn.active'), m=a?/aTab\('([a-z]+)'/.exec(a.getAttribute('onclick')||''):null;
+  var t=m?m[1]:(window.currentAdminTab||'dashboard'), inMore=(t==='analytics'||t==='settings');
+  var bs=document.querySelectorAll('#wl-bnav button');
+  for(var i=0;i<bs.length;i++){ var k=bs[i].getAttribute('data-tab'); bs[i].classList.toggle('active', k===t || (k==='more'&&inMore)); }
+  var ms=document.querySelectorAll('#wl-more button');
+  for(var j=0;j<ms.length;j++){ ms[j].classList.toggle('active', ms[j].getAttribute('data-tab')===t); }
+}
+window.wlBnSync=wlBnSync;
+(function(){
+  var bs=document.querySelectorAll('#wl-bnav button, #wl-more button');
+  for(var i=0;i<bs.length;i++){
+    bs[i].addEventListener('click',function(){
+      var k=this.getAttribute('data-tab');
+      if(k==='more'){ var m=document.getElementById('wl-more'),bg=document.getElementById('wl-more-bg'); var open=!m.classList.contains('open'); m.classList.toggle('open',open); bg.classList.toggle('open',open); return; }
+      wlBnGo(k);
+    });
+  }
+  var bg=document.getElementById('wl-more-bg'); if(bg) bg.addEventListener('click',wlBnClose);
+})();
 
 function renderAdminTab(n){
   if(n==='dashboard') renderDashboard();
@@ -1668,6 +2025,10 @@ function renderDashboard(){
   var lbl=document.getElementById('dash-week-lbl');
   if(lbl) lbl.innerHTML='Dashboard <span style="font-size:11px;color:var(--muted);font-family:var(--font-m);font-weight:400;margin-left:6px">📅 '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>';
 
+  // On the clock now (stage 4)
+  if(window.wlRenderOnClock) wlRenderOnClock();
+  if(window.wlRenderFbNew) wlRenderFbNew();
+
   // No-project alert
   var alert=document.getElementById('no-proj-alert');
   var noProj=entries.filter(function(e){return !e.endTime&&!e.projectId;});
@@ -1687,7 +2048,7 @@ function renderDashboard(){
       (cl?'<span class="live-badge">● LIVE</span>':'')+
       '<div class="hcard-name">'+h.name+'</div>'+
       '<div class="hcard-rate">$'+h.rate+'/hr</div>'+
-      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+
+      '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+(window.wlWeekBarHtml?wlWeekBarHtml(wm):'')+
       '<!-- Advance balance badge -->'+ (function(){ var advBal=getAdvanceBalance(h.id); return advBal>0?'<div style="background:#fff5f5;border:1px solid var(--red);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--red);margin-top:8px">💳 Advance owed: $'+advBal.toFixed(2)+'</div>':''; })() +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
       '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
@@ -1698,8 +2059,524 @@ function renderDashboard(){
   var recent=document.getElementById('dash-recent');
   var rec=entries.filter(function(e){return e.endTime;}).slice(0,8);
   recent.innerHTML=!rec.length?'<div style="color:var(--muted);font-size:13px">No activity yet.</div>':
-    rec.map(function(e){var h=hById(e.helperId); return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span><strong>'+(h?h.name:'?')+'</strong> · '+new Date(e.startTime).toLocaleDateString()+' '+new Date(e.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'–'+new Date(e.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span><span style="color:var(--green);font-family:var(--font-d);font-weight:700">'+fmtD(gMin(e))+'</span></div>';}).join('');
+    wlRecentHtml(rec);
 }
+
+// ── RECENT ACTIVITY (stage 3b) — grouped by day, two-line rows ─────
+function wlRecentHtml(rec){
+  var out='', lastDay='', now=new Date();
+  var today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(), DAY=86400000;
+  function t(d){ return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+  for(var i=0;i<rec.length;i++){
+    var e=rec[i], s0=new Date(e.startTime), s1=new Date(e.endTime);
+    var d0=new Date(s0.getFullYear(),s0.getMonth(),s0.getDate()).getTime();
+    var label=d0===today?'Today':(d0===today-DAY?'Yesterday':s0.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+    if(label!==lastDay){ out+='<div class="wl-rc-day">'+label+'</div>'; lastDay=label; }
+    var h=hById(e.helperId), name=h?h.name:'?';
+    var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
+    var p=e.projectId?projects.filter(function(x){return x.id===e.projectId;})[0]:null;
+    var ot=(typeof wlEntryLabor==='function')?wlEntryLabor(e).otMins:0;
+    out+='<div class="wl-rc-row"><div class="wl-rc-av">'+wlEsc(ini)+'</div>'+
+      '<div class="wl-rc-mid"><div class="wl-rc-name">'+wlEsc(name)+'</div>'+
+      '<div class="wl-rc-sub">'+t(s0)+' – '+t(s1)+(p?' · '+wlEsc(p.name):'')+'</div></div>'+
+      '<div class="wl-rc-dur">'+fmtD(gMin(e))+(ot>0?'<span class="wl-rc-ot">OT '+fmtD(ot)+'</span>':'')+'</div></div>';
+  }
+  return out;
+}
+
+// ── TODAY (stage 4): on the clock now + week bar to the OT threshold ─────
+function wlHm(mins){ mins=Math.max(0,Math.round(mins)); return Math.floor(mins/60)+':'+(mins%60<10?'0':'')+(mins%60); }
+function wlRenderOnClock(){
+  var box=document.getElementById('wl-onclock'); if(!box) return;
+  var open=entries.filter(function(e){return !e.endTime;});
+  if(!open.length){ box.innerHTML='<div class="wl-oc wl-oc-empty">Nobody on the clock right now</div>'; return; }
+  var h='<div class="wl-oc"><div class="wl-oc-hd"><span>On the clock now</span><span>'+open.length+' of '+helpers.length+' crew</span></div>';
+  for(var i=0;i<open.length;i++){
+    var e=open[i], hp=hById(e.helperId), name=hp?hp.name:'?';
+    var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
+    var p=e.projectId?projects.filter(function(x){return x.id===e.projectId;})[0]:null;
+    h+='<div class="wl-oc-row"><div class="wl-oc-av'+(p?'':' warn')+'">'+wlEsc(ini)+'</div><div class="wl-oc-mid"><div class="wl-oc-name">'+wlEsc(name)+'</div>'+
+       '<div class="wl-oc-sub'+(p?'':' warn')+'">'+(p?wlEsc(p.name):'No job picked')+'</div></div>'+
+       '<div class="wl-oc-time" data-start="'+wlEsc(e.startTime)+'">'+wlHm((Date.now()-new Date(e.startTime))/60000)+'</div></div>';
+  }
+  box.innerHTML=h+'</div>';
+}
+function wlWeekBarHtml(wm){
+  var th=OT_THRESHOLD_MINS||2400, scale=Math.max(th*1.25,wm), pct=function(x){return (100*x/scale).toFixed(2)+'%';};
+  var reg=Math.min(wm,th), ot=Math.max(0,wm-th), left=th-wm;
+  var cls=ot>0?'over':(left<=240?'near':'ok');
+  var lab=ot>0?'+'+fmtD(ot)+' OT':(left<=240?fmtD(left)+' to OT':fmtD(left)+' to '+Math.round(th/60)+'h');
+  return '<div class="wl-wb"><div class="wl-wb-bar"><div class="wl-wb-reg '+cls+'" style="width:'+pct(reg)+'"></div>'+(ot>0?'<div class="wl-wb-ot" style="left:'+pct(th)+';width:'+pct(ot)+'"></div>':'')+
+         '<div class="wl-wb-mk" style="left:'+pct(th)+'"></div></div><div class="wl-wb-lab '+cls+'">'+lab+'</div></div>';
+}
+window.wlRenderOnClock=wlRenderOnClock; window.wlWeekBarHtml=wlWeekBarHtml;
+// ── QUICK ADD (+) and NEW FIELDBID JOB banner (stage 6) ─────────────
+// Every action opens an EXISTING form (+ Hours modal, project expense form,
+// project photo controls). Nothing here writes data by itself.
+var WL_QA_IC={hours:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',exp:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',pho:'<path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',back:'<path d="M15 6l-6 6 6 6"/>'};
+function wlQaSvg(k,c){return '<svg viewBox="0 0 24 24" fill="none" stroke="'+(c||'currentColor')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+WL_QA_IC[k]+'</svg>';}
+function wlQaClose(){ var q=document.getElementById('wl-qa'),b=document.getElementById('wl-qa-bg'); if(q) q.classList.remove('open'); if(b) b.classList.remove('open'); }
+function wlQaShow(html){ var q=document.getElementById('wl-qa'),b=document.getElementById('wl-qa-bg'); if(!q) return; q.innerHTML=html; q.classList.add('open'); if(b) b.classList.add('open'); }
+function wlQaMain(){
+  wlQaShow('<div class="wl-qa-hd">Quick add</div>'+
+    '<button type="button" class="wl-qa-it" data-qa="hours">'+wlQaSvg('hours','#1e6334')+'Add hours</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="exp">'+wlQaSvg('exp','#2453b8')+'Add expense</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>');
+}
+function wlQaPick(kind){
+  var h='<button type="button" class="wl-qa-back" data-qa="main">'+wlQaSvg('back')+(kind==='hours'?'Add hours for…':(kind==='exp'?'Add expense to…':'Add photo to…'))+'</button><div class="wl-qa-list">';
+  if(kind==='hours'){
+    var hs=helpers.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    for(var i=0;i<hs.length;i++) h+='<button type="button" class="wl-qa-row" data-qa="h" data-id="'+wlEsc(hs[i].id)+'">'+wlEsc(hs[i].name)+'</button>';
+    if(!hs.length) h+='<div class="wl-qa-empty">No helpers yet.</div>';
+  } else {
+    var ps=projects.filter(function(p){return (p.status||'active')==='active';}).sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    for(var j=0;j<ps.length;j++) h+='<button type="button" class="wl-qa-row" data-qa="'+kind+'-go" data-id="'+wlEsc(ps[j].id)+'">'+wlEsc(ps[j].name)+(ps[j].desc?'<span>'+wlEsc(ps[j].desc)+'</span>':'')+'</button>';
+    if(!ps.length) h+='<div class="wl-qa-empty">No active projects.</div>';
+  }
+  wlQaShow(h+'</div>');
+}
+function wlGoProject(pid,tab,action){
+  wlQaClose();
+  if(window.wlBnGo) wlBnGo('projects');
+  var p=projects.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  var st=p.status||'active';
+  if(_projStatusFilter!=='all'&&_projStatusFilter!==st) setProjFilter(st,null);
+  var q=document.getElementById('proj-search'); if(q&&q.value){ q.value=''; }
+  _wlPT[pid]=tab; renderProjects();
+  setTimeout(function(){
+    var a=document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
+    if(action==='exp'){ if(a.style.display==='none') toggleExpForm(pid); }
+    try{ a.scrollIntoView({block:'center'}); }catch(e){}
+    var card=a.closest('.proj-card'); if(card){ card.classList.add('wl-flash'); setTimeout(function(){card.classList.remove('wl-flash');},1600); }
+    if(action==='exp'){ var d=document.getElementById('exd-'+pid); if(d) d.focus(); }
+  },60);
+}
+window.wlGoProject=wlGoProject;
+document.addEventListener('click',function(ev){
+  var t=ev.target;
+  if(t.closest&&t.closest('#wl-fab')){ wlQaMain(); return; }
+  if(t.id==='wl-qa-bg'){ wlQaClose(); return; }
+  var b=t.closest?t.closest('#wl-qa [data-qa]'):null; if(!b) return;
+  var k=b.getAttribute('data-qa'), id=b.getAttribute('data-id');
+  if(k==='main') wlQaMain();
+  else if(k==='hours'||k==='exp'||k==='pho') wlQaPick(k);
+  else if(k==='h'){ var hp=hById(id); wlQaClose(); if(hp) openQuickHours(hp.id,hp.name); }
+  else if(k==='exp-go') wlGoProject(id,'mat','exp');
+  else if(k==='pho-go') wlGoProject(id,'pho','pho');
+});
+// New job from FieldBid: shown until opened or dismissed (remembered on this phone).
+function wlFbSeen(){ try{ return JSON.parse(localStorage.getItem('wl_fb_seen')||'null'); }catch(e){ return null; } }
+function wlFbSave(a){ try{ localStorage.setItem('wl_fb_seen',JSON.stringify(a)); }catch(e){} }
+function wlRenderFbNew(){
+  var box=document.getElementById('wl-fbnew'); if(!box) return;
+  var fb=projects.filter(function(p){return p.source==='fieldbid';});
+  var seen=wlFbSeen();
+  if(seen===null){ if(projects.length){ wlFbSave(fb.map(function(p){return p.id;})); } box.innerHTML=''; return; }
+  var news=fb.filter(function(p){return seen.indexOf(p.id)<0;});
+  var h='';
+  for(var i=0;i<news.length;i++){
+    h+='<div class="wl-fbn"><div class="wl-fbn-txt"><b>New job from FieldBid</b><span>'+wlEsc(news[i].name)+'</span></div>'+
+       '<button type="button" class="wl-fbn-open" data-fbn="open" data-id="'+wlEsc(news[i].id)+'">Open</button>'+
+       '<button type="button" class="wl-fbn-x" data-fbn="x" data-id="'+wlEsc(news[i].id)+'" aria-label="Dismiss">✕</button></div>';
+  }
+  box.innerHTML=h;
+}
+window.wlRenderFbNew=wlRenderFbNew;
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest?ev.target.closest('[data-fbn]'):null; if(!b) return;
+  var id=b.getAttribute('data-id'), seen=wlFbSeen()||[]; if(seen.indexOf(id)<0){ seen.push(id); wlFbSave(seen); }
+  if(b.getAttribute('data-fbn')==='open') wlGoProject(id,'sum',''); else wlRenderFbNew();
+});
+setInterval(function(){
+  var ts=document.querySelectorAll('#wl-onclock .wl-oc-time');
+  for(var i=0;i<ts.length;i++){ var st=ts[i].getAttribute('data-start'); if(st) ts[i].textContent=wlHm((Date.now()-new Date(st))/60000); }
+},30000);
+
+// Start date + status line (stage 5a). The status <select> below still changes it.
+function wlJobDatesHtml(p){
+  var st=p.status||'active';
+  if(!p.start) return '';
+  var s0=parseLocalDate(p.start), f=function(d,y){return d.toLocaleDateString('en-US',y?{month:'short',day:'numeric',year:'numeric'}:{month:'short',day:'numeric'});};
+  // days worked = distinct local calendar days with time logged on this project (open entries included)
+  var seen={}, n=0;
+  for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId!==p.id||!e.startTime) continue; var d=new Date(e.startTime), k=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); if(!seen[k]){ seen[k]=1; n++; } }
+  var worked=n?(n+' day'+(n!==1?'s':'')+' worked'):'no days worked yet';
+  var txt;
+  if(p.end){ var e0=parseLocalDate(p.end); txt=f(s0,s0.getFullYear()!==e0.getFullYear())+' → '+f(e0,true)+' · '+worked; }
+  else { txt='Started '+f(s0,true)+' → '+(st==='paused'?'paused':'ongoing')+' · '+worked; }
+  return '<div class="wl-jd"><span>📅 '+txt+'</span></div>';
+}
+window.wlJobDatesHtml=wlJobDatesHtml;
+// ── PROJECT TABS (stage 5c): Summary · Materials · Photos ───────────
+// Panels are plain divs shown/hidden by class; the chosen tab is remembered per
+// project so a live re-render (new data arriving) keeps it.
+var _wlPT={};
+function wlTabOpen(pid,t){ var cur=_wlPT[pid]||'sum'; return '<div class="wl-tp'+(cur===t?' on':'')+'" data-pid="'+pid+'" data-t="'+t+'">'; }
+function wlTabsBar(pid,nExp,nPh){
+  var cur=_wlPT[pid]||'sum';
+  function b(t,label,n){ return '<button type="button" class="wl-tb'+(cur===t?' on':'')+'" data-pid="'+pid+'" data-t="'+t+'">'+label+(n?'<span class="wl-tb-n">'+n+'</span>':'')+'</button>'; }
+  return '<div class="wl-tbar" role="tablist">'+b('sum','Summary',0)+b('mat','Materials',nExp)+b('pho','Photos',nPh)+'</div>';
+}
+window.wlTabsBar=wlTabsBar; window.wlTabOpen=wlTabOpen;
+document.addEventListener('click',function(ev){
+  var t=ev.target, b=t.closest?t.closest('.wl-tb'):null; if(!b) return;
+  var pid=b.getAttribute('data-pid'), tab=b.getAttribute('data-t'); _wlPT[pid]=tab;
+  var card=b.closest('.proj-card'); if(!card) return;
+  var bs=card.querySelectorAll('.wl-tb'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on',bs[i].getAttribute('data-t')===tab);
+  var ps=card.querySelectorAll('.wl-tp'); for(var j=0;j<ps.length;j++) ps[j].classList.toggle('on',ps[j].getAttribute('data-t')===tab);
+});
+// "⋯" project menu (stage 5a): one delegated listener, survives re-renders
+document.addEventListener('click',function(ev){
+  var t=ev.target, btn=t.closest?t.closest('.wl-pm-btn'):null, item=t.closest?t.closest('.wl-pm-it'):null;
+  var open=document.querySelectorAll('.wl-pm.open');
+  if(btn){ var m=btn.nextElementSibling, was=m&&m.classList.contains('open');
+    for(var i=0;i<open.length;i++) open[i].classList.remove('open');
+    if(m&&!was) m.classList.add('open'); return; }
+  if(item||!(t.closest&&t.closest('.wl-pm'))){ for(var j=0;j<open.length;j++) open[j].classList.remove('open'); }
+},true);
+
+// ── JOB TOP (stage 5a): contact actions + contract composition (read-only) ──
+function wlJobTopHtml(p,laborCost,extraCost){
+  var h='', acts='';
+  var ph=p.clientPhone?String(p.clientPhone).trim():'', em=p.clientEmail?String(p.clientEmail).trim():'', ad=p.desc?String(p.desc).trim():'';
+  var ic={call:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+          mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+          map:'<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'};
+  function a(href,k,label,ext){ return '<a class="wl-jt-act" href="'+wlEsc(href)+'"'+(ext?' target="_blank" rel="noopener"':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[k]+'</svg>'+label+'</a>'; }
+  if(ph) acts+=a('tel:'+ph.replace(/[^0-9+]/g,''),'call','Call');
+  if(em) acts+=a('mailto:'+em,'mail','Email');
+  if(ad) acts+=a('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(ad),'map','Map',true);
+  if(acts) h+='<div class="wl-jt-acts">'+acts+'</div>';
+  var budget=p.budget||0;
+  if(budget>0){
+    var oh=p.overhead||0, profit=budget-laborCost-extraCost-oh, cost=laborCost+extraCost+oh, scale=Math.max(budget,cost);
+    var pc=function(x){return (100*Math.max(0,x)/scale).toFixed(2)+'%';};
+    h+='<div class="wl-jt-con"><div class="wl-jt-row"><span class="wl-jt-lbl">Contract</span>'+(p.source==='fieldbid'?'<span class="wl-jt-src">FieldBid estimate</span>':'')+'</div>'+
+       '<div class="wl-jt-row"><span class="wl-jt-amt">'+fmtC(budget)+'</span><span class="wl-jt-pl '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'−')+fmtC(Math.abs(profit))+(profit>=0?' profit':' loss')+'</span></div>'+
+       '<div class="wl-jt-bar"><i style="width:'+pc(laborCost)+';background:#2b8a46"></i><i style="width:'+pc(extraCost)+';background:#97c459"></i><i style="width:'+pc(oh)+';background:#b4b2a9"></i></div>'+
+       '<div class="wl-jt-leg"><span><b style="background:#2b8a46"></b>Labor '+fmtC(laborCost)+'</span><span><b style="background:#97c459"></b>Materials '+fmtC(extraCost)+'</span>'+(oh>0?'<span><b style="background:#b4b2a9"></b>Overhead '+fmtC(oh)+'</span>':'')+'</div>'+
+       (cost>budget?'<div class="wl-jt-over">Costs are '+fmtC(cost-budget)+' over the contract</div>':'')+'</div>';
+  }
+  return h;
+}
+window.wlJobTopHtml=wlJobTopHtml;
+
+// ── UPDATE FROM FIELDBID (WorkLog novo) ────────────────────────────
+// FieldBid keeps fieldbid/wlsync__<estimateId> = what "Send to WorkLog" would send.
+// This refreshes an EXISTING project's contract + material budget from it.
+// Hours, expenses, photos, history and status are not touched.
+var _wlFbu={pid:null,list:[],pick:null};
+function wlFbuNorm(s){ s=String(s||'').toLowerCase(); try{ s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){} return s.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function wlFbuScore(p,sm){
+  var a=wlFbuNorm((p.name||'')+' '+(p.client||'')+' '+(p.desc||'')).split(' '), b=wlFbuNorm((sm.client||'')+' '+(sm.projName||'')+' '+(sm.address||'')), sc=0;
+  for(var i=0;i<a.length;i++){ if(a[i].length>=3&&b.indexOf(a[i])>=0) sc+=a[i].length; }
+  return sc;
+}
+function wlFbuClose(){ var o=document.getElementById('wl-fbu'); if(o) o.parentNode.removeChild(o); }
+function wlFbuShow(inner){
+  var o=document.getElementById('wl-fbu');
+  if(!o){ o=document.createElement('div'); o.id='wl-fbu'; o.className='wl-fbu-bg'; document.body.appendChild(o);
+    o.addEventListener('click',function(e){ if(e.target===o){ wlFbuClose(); return; } var b=e.target.closest?e.target.closest('[data-fbu]'):null; if(b) wlFbuAct(b.getAttribute('data-fbu'),b.getAttribute('data-id')); }); }
+  o.innerHTML='<div class="wl-fbu"><div class="wl-fbu-hd"><span>Update from FieldBid</span><button type="button" class="wl-fbu-x" data-fbu="close" aria-label="Close">✕</button></div>'+inner+'</div>';
+}
+function wlFbuParse(doc){ try{ var d=doc.data()||{}; var sm=JSON.parse(d.data||'{}'); sm._id=String(doc.id).replace('wlsync__',''); sm._at=d.savedAt||''; return sm; }catch(e){ return null; } }
+function wlFbUpdateOpen(pid){
+  var p=projects.filter(function(x){return x.id===pid;})[0]; if(!p) return;
+  _wlFbu={pid:pid,list:[],pick:null};
+  wlFbuShow('<div class="wl-fbu-msg">Loading estimates from FieldBid…</div>');
+  var col=db.collection('fieldbid'), q;
+  try{ var FP=firebase.firestore.FieldPath.documentId(); q=col.where(FP,'>=','wlsync__').where(FP,'<','wlsync_`').get(); }
+  catch(e){ q=Promise.reject(e); }
+  q.then(function(snap){
+    var list=[], ds=snap.docs||[];
+    for(var k=0;k<ds.length;k++){ var sm=wlFbuParse(ds[k]); if(sm&&sm.matBudget) list.push(sm); }
+    for(var i=0;i<list.length;i++) list[i]._score=(p.fbProjectId&&list[i]._id===p.fbProjectId)?100000:wlFbuScore(p,list[i]);
+    list.sort(function(a,b){ return (b._score-a._score)||String(b._at).localeCompare(String(a._at)); });
+    _wlFbu.list=list;
+    if(!list.length){ wlFbuShow('<div class="wl-fbu-msg">No FieldBid estimates found yet. Open the estimate in FieldBid once (it saves a summary automatically), then try again.</div>'); return; }
+    if(p.fbProjectId&&list[0]._id===p.fbProjectId){ wlFbuPreview(list[0]._id); return; }
+    wlFbuRenderList(false);
+  }).catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Could not read FieldBid: '+wlEsc(e&&e.message||e)+'</div>'); });
+}
+window.wlFbUpdateOpen=wlFbUpdateOpen;
+function wlFbuRenderList(all){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0]||{};
+  var L=_wlFbu.list, n=all?L.length:Math.min(5,L.length);
+  var h='<div class="wl-fbu-sub">Which FieldBid estimate is <b>'+wlEsc(p.name||'')+'</b>?</div>';
+  for(var i=0;i<n;i++){ var sm=L[i];
+    h+='<button type="button" class="wl-fbu-row" data-fbu="pick" data-id="'+wlEsc(sm._id)+'"><b>'+wlEsc(sm.client||sm.projName||'(no name)')+'</b><span>'+wlEsc(sm.address||'')+' · '+fmtC(sm.budget||0)+(i===0&&sm._score>0?' · best match':'')+'</span></button>'; }
+  if(!all&&L.length>n) h+='<button type="button" class="wl-fbu-more" data-fbu="all">Show all '+L.length+' estimates</button>';
+  wlFbuShow(h);
+}
+function wlFbuMatLines(mb){
+  mb=mb||{}; var cc=mb.cc||{}, oc=mb.oc||{}, det=mb.detail||[], tot=0;
+  for(var i=0;i<det.length;i++) tot+=Number(det[i]&&det[i].cost)||0;
+  return [['Closed cell',(cc.sqft||0)+' sq ft'+(cc.inch?' · '+cc.inch+'"':'')],['Open cell',(oc.sqft||0)+' sq ft'+(oc.inch?' · '+oc.inch+'"':'')],
+          ['Cellulose',(mb.celBags||0)+' bags'],['Roxul',(mb.roxBags||0)+' bags'],['Fiberglass',(mb.fbgBags||0)+' bags'],
+          ['Ignition barrier',(mb.ignBuckets||0)+' bkt'],['Fire blocking',(mb.fbSqft||0)+' sq ft'],
+          ['Planned materials',det.length+' items · '+fmtC(tot)]];
+}
+function wlFbuPreview(id){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.list.filter(function(x){return x._id===id;})[0]; if(!p||!sm) return;
+  _wlFbu.pick=sm;
+  var A=wlFbuMatLines(p.matBudget), B=wlFbuMatLines(sm.matBudget);
+  var h='<div class="wl-fbu-sub">From FieldBid: <b>'+wlEsc(sm.client||sm.projName||'')+'</b>'+(sm._at?' · saved '+wlEsc(new Date(sm._at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):'')+'</div>';
+  h+='<table class="wl-fbu-t"><tr><th></th><th>Now</th><th>After</th></tr>';
+  var ch=(Number(p.budget)||0)!==(Number(sm.budget)||0);
+  h+='<tr class="'+(ch?'chg':'')+'"><td>Contract</td><td>'+fmtC(p.budget||0)+'</td><td>'+fmtC(sm.budget||0)+'</td></tr>';
+  for(var i=0;i<A.length;i++){ var c=A[i][1]!==B[i][1]; h+='<tr class="'+(c?'chg':'')+'"><td>'+A[i][0]+'</td><td>'+A[i][1]+'</td><td>'+B[i][1]+'</td></tr>'; }
+  h+='</table><div class="wl-fbu-note">Hours, expenses, photos and status stay as they are.</div>';
+  h+='<button type="button" class="wl-fbu-go" data-fbu="apply">Update this project</button>';
+  if(_wlFbu.list.length>1) h+='<button type="button" class="wl-fbu-more" data-fbu="list">Choose a different estimate</button>';
+  wlFbuShow(h);
+}
+function wlFbuApply(){
+  var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.pick; if(!p||!sm) return;
+  var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:new Date().toISOString()};
+  if(sm.estimate) upd.estimate=sm.estimate;
+  if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
+  if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
+  wlFbuShow('<div class="wl-fbu-msg">Updating…</div>');
+  db.collection('projects').doc(p.id).update(upd).then(function(){ wlFbuClose(); showToast('Updated from FieldBid ✅'); })
+    .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
+}
+function wlFbuAct(a,id){
+  if(a==='close') wlFbuClose(); else if(a==='pick') wlFbuPreview(id); else if(a==='all') wlFbuRenderList(true); else if(a==='list') wlFbuRenderList(false); else if(a==='apply') wlFbuApply();
+  else if(a==='tog'){ var r=_wlFbuAll.rows[parseInt(id,10)]; if(r){ r.on=!r.on; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); } }
+  else if(a==='allapply') wlFbuAllApply();
+}
+
+// ── ESTIMATED vs ACTUAL (per job) ──────────────────────────────────
+// Estimated = FieldBid's Quote-tab numbers (p.estimate, via Send / Update from FieldBid).
+// Actual = the same figures the P&L above uses (labor with OT, expenses, overhead).
+var WL_JOB_TYPES=['Spray foam','Cellulose','Fiberglass','Mineral wool','Foam board','Other'];
+function wlEvaDays(pid){ var seen={}, n=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId!==pid||!e.startTime) continue; var d=new Date(e.startTime), k=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); if(!seen[k]){ seen[k]=1; n++; } } return n; }
+function wlEvaRow(label,est,act,sub,costLike,unitFmt){
+  var f=unitFmt||fmtC;
+  if(est===null){ return '<tr><td>'+label+(sub?'<div class="wl-eva-sub">'+sub+'</div>':'')+'</td><td class="na">not est.</td><td>'+f(act)+'</td><td class="na">—</td></tr>'; }
+  var d=act-est, pct=est?Math.round(d/est*100):0;
+  var bad=costLike?(d>0.005):(d<-0.005), good=costLike?(d<-0.005):(d>0.005);
+  var cls=Math.abs(pct)<5&&est?'':(bad?'bad':(good?'good':''));
+  var dtxt=(est||act)?((d>0?'+':(d<0?'−':''))+f(Math.abs(d))+(est?' <span>('+(pct>0?'+':'')+pct+'%)</span>':'')):'—';
+  return '<tr><td>'+label+(sub?'<div class="wl-eva-sub">'+sub+'</div>':'')+'</td><td>'+(est||est===0?f(est):'—')+'</td><td>'+f(act)+'</td><td class="'+cls+'">'+dtxt+'</td></tr>';
+}
+function wlEvaHtml(p,laborMin,laborCost,exps){
+  var e=p.estimate;
+  if(!e){ return (p.source==='fieldbid')?'<div class="wl-eva wl-eva-empty">Estimated vs Actual: use <b>⋯ → Update from FieldBid</b> to bring in the estimate (labor, materials, overhead).</div>':''; }
+  var mat=0, other=0;
+  for(var i=0;i<exps.length;i++){ var x=exps[i], a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else other+=a; }
+  var oh=Number(p.overhead)||0, days=wlEvaDays(p.id), hrs=Math.round(laborMin/60*10)/10;
+  var budget=Number(p.budget)||0, estBudget=Number(p.fieldbidTotal)||budget;
+  var estCost=(e.laborCost||0)+(e.materialCost||0)+(e.ohCost||0), actCost=laborCost+mat+other+oh;
+  var estProfit=estBudget-estCost, actProfit=budget-actCost;
+  var type=p.jobType||e.jobType||'';
+  var sel='<select class="wl-eva-type" onchange="wlSetJobType(\''+p.id+'\',this.value)"><option value="">Auto'+(e.jobType?' ('+wlEsc(e.jobType)+')':'')+'</option>';
+  for(var t=0;t<WL_JOB_TYPES.length;t++) sel+='<option'+(p.jobType===WL_JOB_TYPES[t]?' selected':'')+'>'+WL_JOB_TYPES[t]+'</option>';
+  sel+='</select>';
+  var h='<div class="wl-eva"><div class="wl-eva-hd"><span>Estimated vs Actual</span>'+sel+'</div>';
+  if((p.status||'active')!=='completed') h+='<div class="wl-eva-note">Job in progress — actual numbers are still growing.</div>';
+  h+='<table class="wl-eva-t"><tr><th></th><th>Est.</th><th>Actual</th><th>Diff</th></tr>';
+  var hasL=(e.laborCost||0)>0, hasO=(e.ohCost||0)>0, hasM=(e.materialCost||0)>0, full=hasL&&hasO&&hasM;
+  h+=wlEvaRow('Labor',hasL?e.laborCost:null,laborCost,(hasL?(e.manHours||0)+' h est · ':'')+hrs+' h actual',true);
+  h+=wlEvaRow('Materials',hasM?e.materialCost:null,mat,'',true);
+  if(other>0) h+=wlEvaRow('Other expenses',0,other,'not in the estimate',true);
+  h+=wlEvaRow('Overhead',hasO?e.ohCost:null,oh,(hasO?(e.ohDays||0)+' days est · ':'')+days+' worked',true);
+  h+=wlEvaRow('<b>Profit</b>',full?estProfit:null,actProfit,full?'':'estimate incomplete',false);
+  h+='</table>';
+  if(!full) h+='<div class="wl-eva-note">'+(!hasL?'Labor':'')+(!hasL&&!hasO?' and overhead':(!hasO?'Overhead':''))+(!hasM?((!hasL||!hasO)?' and materials':'Materials'):'')+' not in the estimate — fill them in FieldBid (Quote tab), then ⋯ → Update from FieldBid.</div>';
+  var sq=Number(e.totalSqft)||0;
+  if(sq>0){
+    var mEst=(full&&estBudget)?Math.round(estProfit/estBudget*100):null, mAct=budget?Math.round(actProfit/budget*100):0;
+    h+='<div class="wl-eva-sq"><div><b>'+fmtC(budget/sq)+'</b><span>price / sq ft</span></div><div><b>'+fmtC(estCost/sq)+' → '+fmtC(actCost/sq)+'</b><span>cost / sq ft</span></div><div><b class="'+(mEst===null?'':(mAct<mEst-2?'bad':(mAct>mEst+2?'good':'')))+'">'+(mEst===null?'— → ':mEst+'% → ')+mAct+'%</b><span>margin</span></div></div>';
+    h+='<div class="wl-eva-note">'+sq.toLocaleString()+' sq ft estimated'+(e.jobType?' · main work: '+wlEsc(e.jobType):'')+'</div>';
+  }
+  return h+'</div>';
+}
+window.wlEvaHtml=wlEvaHtml;
+function wlSetJobType(pid,val){
+  db.collection('projects').doc(pid).update({jobType:val||''}).then(function(){ showToast(val?('Job type: '+val):'Job type: automatic'); })
+    .catch(function(e){ showToast('Not saved: '+(e&&e.message||e)); });
+}
+window.wlSetJobType=wlSetJobType;
+
+// ── UPDATE ALL FROM FIELDBID ───────────────────────────────────────
+// Refreshes every project already linked to a FieldBid estimate in one go (with a
+// preview). Old projects not linked yet get a suggested estimate, unchecked.
+// Same fields as the per-project button; hours, expenses and photos untouched.
+var _wlFbuAll={rows:[]};
+function wlFbuEstKey(e){ if(!e) return ''; return [e.manHours,e.laborCost,e.ohDays,e.ohCost,e.materialCost,e.totalSqft,e.jobType].join('|'); }
+function wlFbuChanges(p,sm){
+  var ch=[];
+  if((Number(p.budget)||0)!==(Number(sm.budget)||0)) ch.push('Contract '+fmtC(p.budget||0)+' → '+fmtC(sm.budget||0));
+  var A=wlFbuMatLines(p.matBudget), B=wlFbuMatLines(sm.matBudget);
+  for(var i=0;i<A.length;i++){ if(A[i][1]!==B[i][1]) ch.push(A[i][0]+': '+A[i][1]+' → '+B[i][1]); }
+  if(sm.estimate){ if(!p.estimate) ch.push('Estimate added (labor, overhead, materials)'); else if(wlFbuEstKey(p.estimate)!==wlFbuEstKey(sm.estimate)) ch.push('Estimate updated'); }
+  return ch;
+}
+function wlFbuAllOpen(){
+  wlFbuShow('<div class="wl-fbu-msg">Loading estimates from FieldBid…</div>');
+  var col=db.collection('fieldbid'), q;
+  try{ var FP=firebase.firestore.FieldPath.documentId(); q=col.where(FP,'>=','wlsync__').where(FP,'<','wlsync_`').get(); }
+  catch(e){ q=Promise.reject(e); }
+  q.then(function(snap){
+    var byId={}, list=[], ds=snap.docs||[];
+    for(var k=0;k<ds.length;k++){ var sm=wlFbuParse(ds[k]); if(sm&&sm.matBudget){ byId[sm._id]=sm; list.push(sm); } }
+    var rows=[], upToDate=0, missing=0;
+    for(var i=0;i<projects.length;i++){ var p=projects[i];
+      if(p.fbProjectId){
+        var s=byId[p.fbProjectId]; if(!s){ missing++; continue; }
+        var ch=wlFbuChanges(p,s); if(!ch.length){ upToDate++; continue; }
+        rows.push({pid:p.id,sm:s,ch:ch,on:true,link:false});
+      } else if(p.source==='fieldbid'){
+        var best=null, bs=0; for(var j=0;j<list.length;j++){ var sc=wlFbuScore(p,list[j]); if(sc>bs){ bs=sc; best=list[j]; } }
+        if(best) rows.push({pid:p.id,sm:best,ch:['Link to estimate: '+(best.client||best.projName||'')+(best.address?' · '+best.address:'')].concat(wlFbuChanges(p,best)),on:false,link:true});
+      }
+    }
+    _wlFbuAll={rows:rows};
+    wlFbuAllRender(upToDate,missing);
+  }).catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Could not read FieldBid: '+wlEsc(e&&e.message||e)+'</div>'); });
+}
+window.wlFbuAllOpen=wlFbuAllOpen;
+function wlFbuAllRender(upToDate,missing){
+  var R=_wlFbuAll.rows, h='', n=0;
+  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'); return; }
+  h+='<div class="wl-fbu-sub">'+(upToDate?upToDate+' up to date · ':'')+'Check what to update. Hours, expenses and photos are not touched.</div>';
+  var linkHdr=false;
+  for(var i=0;i<R.length;i++){ var r=R[i], p=projects.filter(function(x){return x.id===r.pid;})[0]||{}; if(r.on) n++;
+    if(r.link&&!linkHdr){ linkHdr=true; h+='<div class="wl-fbu-grp">Not linked yet — check only if the suggestion is right</div>'; }
+    h+='<button type="button" class="wl-fbu-all-row'+(r.on?' on':'')+'" data-fbu="tog" data-id="'+i+'"><span class="wl-fbu-ck">'+(r.on?'✓':'')+'</span><span class="wl-fbu-all-txt"><b>'+wlEsc(p.name||'')+'</b>';
+    for(var c=0;c<r.ch.length&&c<4;c++) h+='<span>'+wlEsc(r.ch[c])+'</span>';
+    if(r.ch.length>4) h+='<span>+'+(r.ch.length-4)+' more change(s)</span>';
+    h+='</span></button>'; }
+  if(missing) h+='<div class="wl-fbu-note">'+missing+' linked estimate(s) not found — open them once in FieldBid.</div>';
+  h+='<button type="button" class="wl-fbu-go" data-fbu="allapply"'+(n?'':' disabled')+'>Update '+n+' project'+(n!==1?'s':'')+'</button>';
+  wlFbuShow(h);
+  _wlFbuAll.upToDate=upToDate; _wlFbuAll.missing=missing;
+}
+function wlFbuAllApply(){
+  var R=_wlFbuAll.rows, batch=db.batch(), n=0, now=new Date().toISOString();
+  for(var i=0;i<R.length;i++){ var r=R[i]; if(!r.on) continue; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) continue; var sm=r.sm;
+    var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:now};
+    if(sm.estimate) upd.estimate=sm.estimate;
+    if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
+    if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
+    batch.update(db.collection('projects').doc(p.id),upd); n++; }
+  if(!n) return;
+  wlFbuShow('<div class="wl-fbu-msg">Updating '+n+' project(s)…</div>');
+  batch.commit().then(function(){ wlFbuClose(); showToast(n+' project(s) updated from FieldBid ✅'); })
+    .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
+}
+
+// ── ESTIMATE ACCURACY (Reports → Accuracy) ─────────────────────────
+// Groups jobs by type of work and compares FieldBid's estimate with what WorkLog
+// recorded. Averages are value-weighted (sum actual ÷ sum estimated); a job only
+// counts for a line when that line was estimated. Margin uses complete estimates.
+var _wlAcc={months:0,inProg:false};
+function wlAccLastDate(p){
+  var t=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId===p.id&&e.startTime){ var x=new Date(e.endTime||e.startTime).getTime(); if(x>t) t=x; } }
+  if(!t&&p.end) t=new Date(p.end).getTime(); if(!t&&p.createdAt) t=new Date(p.createdAt).getTime(); return t;
+}
+function wlAccJob(p){
+  var e=p.estimate; if(!e) return null;
+  var lm=0, lc=0, mat=0, oth=0;
+  for(var i=0;i<entries.length;i++){ var en=entries[i]; if(en.projectId===p.id&&en.endTime){ var L=wlEntryLabor(en); lm+=L.mins; lc+=L.cost; } }
+  for(var j=0;j<projectExpenses.length;j++){ var x=projectExpenses[j]; if(x.projectId!==p.id) continue; var a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else oth+=a; }
+  var oh=Number(p.overhead)||0, budget=Number(p.budget)||0, estBudget=Number(p.fieldbidTotal)||budget;
+  var eL=Number(e.laborCost)||0, eM=Number(e.materialCost)||0, eO=Number(e.ohCost)||0;
+  return {p:p, type:p.jobType||e.jobType||'Other', sqft:Number(e.totalSqft)||0, budget:budget, estBudget:estBudget,
+    lc:lc, lh:lm/60, eL:eL, eH:Number(e.manHours)||0, hasL:eL>0, mat:mat, eM:eM, hasM:eM>0, oh:oh, eO:eO, hasO:eO>0, oth:oth,
+    actCost:lc+mat+oth+oh, estCost:eL+eM+eO, complete:eL>0&&eM>0&&eO>0, date:wlAccLastDate(p)};
+}
+function wlAccPct(a,e){ return e>0?Math.round((a/e-1)*100):null; }
+function wlAccPctTxt(v,costLike){ if(v===null) return '<span class="na">—</span>'; var bad=costLike?v>=5:v<=-5, good=costLike?v<=-5:v>=5; return '<span class="'+(bad?'bad':(good?'good':''))+'">'+(v>0?'+':'')+v+'%</span>'; }
+function wlAccAgg(js){
+  var g={n:js.length,aL:0,eL:0,nL:0,aM:0,eM:0,nM:0,aO:0,eO:0,nO:0,aH:0,eH:0,sqH:0,sqE:0,aP:0,eP:0,bA:0,bE:0,nC:0,cost:0,sq:0,bud:0};
+  for(var i=0;i<js.length;i++){ var j=js[i];
+    if(j.hasL){ g.aL+=j.lc; g.eL+=j.eL; g.nL++; if(j.sqft>0){ g.eH+=j.eH; g.sqE+=j.sqft; } }
+    if(j.hasM){ g.aM+=j.mat; g.eM+=j.eM; g.nM++; }
+    if(j.hasO){ g.aO+=j.oh; g.eO+=j.eO; g.nO++; }
+    if(j.sqft>0){ g.aH+=j.lh; g.sqH+=j.sqft; g.cost+=j.actCost; g.sq+=j.sqft; g.bud+=j.budget; }
+    if(j.complete){ g.aP+=j.budget-j.actCost; g.bA+=j.budget; g.eP+=j.estBudget-j.estCost; g.bE+=j.estBudget; g.nC++; }
+  }
+  g.labPct=wlAccPct(g.aL,g.eL); g.matPct=wlAccPct(g.aM,g.eM); g.ohPct=wlAccPct(g.aO,g.eO);
+  g.mE=g.bE?Math.round(g.eP/g.bE*100):null; g.mA=g.bA?Math.round(g.aP/g.bA*100):null;
+  g.hA=g.sqH?g.aH/g.sqH*1000:null; g.hE=g.sqE?g.eH/g.sqE*1000:null;
+  return g;
+}
+function wlAccConclusion(g){
+  if(g.nL<3) return '<div class="wl-acc-warn">Only '+g.nL+' job'+(g.nL!==1?'s':'')+' with a labor estimate — not reliable yet.</div>';
+  var t=[];
+  if(g.labPct!==null){
+    if(g.labPct>=10) t.push('Labor runs <b>'+g.labPct+'% over</b> the estimate — plan about '+g.labPct+'% more hours'+(g.hA?' (≈'+g.hA.toFixed(1)+' h per 1,000 sq ft)':'')+' or raise the price.');
+    else if(g.labPct<=-10) t.push('Labor comes in <b>'+(-g.labPct)+'% under</b> the estimate — there may be room to sharpen the price.');
+    else t.push('Labor estimates are on target ('+(g.labPct>0?'+':'')+g.labPct+'%).');
+  }
+  if(g.matPct!==null&&g.nM>=3){ if(g.matPct>=10) t.push('Materials run <b>'+g.matPct+'% over</b> — check coverage and waste.'); else if(g.matPct<=-10) t.push('Materials come in '+(-g.matPct)+'% under the estimate.'); }
+  return '<div class="wl-acc-conc">'+t.join(' ')+'</div>';
+}
+function wlAccCard(title,g,cls){
+  var h='<div class="wl-acc-card'+(cls?' '+cls:'')+'"><div class="wl-acc-hd"><span>'+wlEsc(title)+'</span><span class="wl-acc-n">'+g.n+' job'+(g.n!==1?'s':'')+'</span></div>';
+  h+='<div class="wl-acc-grid">'+
+     '<div><b>'+wlAccPctTxt(g.labPct,true)+'</b><span>labor</span></div>'+
+     '<div><b>'+wlAccPctTxt(g.matPct,true)+'</b><span>materials</span></div>'+
+     '<div><b>'+wlAccPctTxt(g.ohPct,true)+'</b><span>overhead</span></div>'+
+     '<div><b>'+(g.mE!==null?g.mE+'% → <span class="'+(g.mA<g.mE-2?'bad':(g.mA>g.mE+2?'good':''))+'">'+g.mA+'%</span>':'<span class="na">—</span>')+'</b><span>margin</span></div>'+
+     '</div>';
+  h+='<div class="wl-acc-line">'+(g.hA!==null?'<span>'+(g.hE!==null?g.hE.toFixed(1)+' → ':'')+g.hA.toFixed(1)+' h / 1,000 sq ft</span>':'')+(g.sq?'<span>cost '+fmtC(g.cost/g.sq)+' · price '+fmtC(g.bud/g.sq)+' / sq ft</span>':'')+'</div>';
+  return h+wlAccConclusion(g)+'</div>';
+}
+function wlAccRender(){
+  var box=document.getElementById('rep-accuracy'); if(!box) return;
+  var cut=_wlAcc.months?Date.now()-_wlAcc.months*30.44*864e5:0, all=[], excluded=0, noEst=0;
+  for(var i=0;i<projects.length;i++){ var p=projects[i], st=p.status||'active';
+    if(!_wlAcc.inProg&&st!=='completed') continue;
+    if(!p.estimate){ if(st==='completed') noEst++; continue; }
+    var j=wlAccJob(p); if(!j) continue; if(cut&&j.date&&j.date<cut) continue;
+    if(p.evaExclude){ excluded++; j.excluded=true; }
+    all.push(j); }
+  var h='<div class="wl-acc-filters"><select onchange="_wlAcc.months=+this.value;wlAccRender()">'+
+    [[0,'All time'],[3,'Last 3 months'],[6,'Last 6 months'],[12,'Last 12 months']].map(function(o){return '<option value="'+o[0]+'"'+(_wlAcc.months===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>'+
+    '<label><input type="checkbox"'+(_wlAcc.inProg?' checked':'')+' onchange="_wlAcc.inProg=this.checked;wlAccRender()"> include jobs in progress</label></div>';
+  var used=all.filter(function(j){return !j.excluded;});
+  if(!used.length){
+    box.innerHTML=h+'<div class="wl-acc-empty">No '+(_wlAcc.inProg?'':'finished ')+'jobs with a FieldBid estimate yet.'+(noEst?' '+noEst+' finished job(s) have no estimate — use <b>Projects → ⟳ Update all from FieldBid</b>.':'')+'<br>Mark jobs as <b>Done</b> when they finish; each one makes this report more accurate.</div>';
+    return; }
+  h+=wlAccCard('All types',wlAccAgg(used),'all');
+  var types={}; for(var k=0;k<used.length;k++){ (types[used[k].type]=types[used[k].type]||[]).push(used[k]); }
+  var tn=Object.keys(types).sort(function(a,b){return types[b].length-types[a].length;});
+  for(var t=0;t<tn.length;t++) h+=wlAccCard(tn[t],wlAccAgg(types[tn[t]]),'');
+  h+='<div class="wl-acc-sec">Jobs</div>';
+  all.sort(function(a,b){return b.date-a.date;});
+  for(var r=0;r<all.length;r++){ var j2=all[r], lp=j2.hasL?wlAccPct(j2.lc,j2.eL):null, mp=j2.hasM?wlAccPct(j2.mat,j2.eM):null;
+    var mE=j2.complete&&j2.estBudget?Math.round((j2.estBudget-j2.estCost)/j2.estBudget*100):null, mA=j2.budget?Math.round((j2.budget-j2.actCost)/j2.budget*100):null;
+    h+='<div class="wl-acc-job'+(j2.excluded?' ex':'')+'"><div class="wl-acc-job-top"><button type="button" class="wl-acc-name" onclick="wlGoProject(\''+j2.p.id+'\',\'sum\',\'\')">'+wlEsc(j2.p.name||'')+'</button>'+
+       '<button type="button" class="wl-acc-ex" onclick="wlAccExclude(\''+j2.p.id+'\','+(j2.excluded?'false':'true')+')">'+(j2.excluded?'Include':'Exclude')+'</button></div>'+
+       '<div class="wl-acc-job-sub">'+wlEsc(j2.type)+((j2.p.status||'active')!=='completed'?' · in progress':'')+(j2.complete?'':' · <span class="warn">estimate incomplete</span>')+'</div>'+
+       '<div class="wl-acc-job-nums"><span>labor '+wlAccPctTxt(lp,true)+'</span><span>materials '+wlAccPctTxt(mp,true)+'</span><span>margin '+(mE!==null?mE+'% → ':'')+(mA!==null?mA+'%':'—')+'</span></div></div>'; }
+  if(excluded) h+='<div class="wl-acc-note">'+excluded+' job(s) excluded from the averages.</div>';
+  if(noEst) h+='<div class="wl-acc-note">'+noEst+' finished job(s) without an estimate — use Projects → ⟳ Update all from FieldBid.</div>';
+  box.innerHTML=h;
+}
+window.wlAccRender=wlAccRender;
+function wlAccExclude(pid,ex){
+  db.collection('projects').doc(pid).update({evaExclude:!!ex}).then(function(){ showToast(ex?'Excluded from the averages':'Back in the averages'); setTimeout(wlAccRender,700); })
+    .catch(function(e){ showToast('Not saved: '+(e&&e.message||e)); });
+}
+window.wlAccExclude=wlAccExclude;
+// Reports toggle: add the Accuracy panel without touching the original switcher.
+(function(){
+  var _orig=switchReport;
+  switchReport=function(panel,btn){
+    _orig(panel==='accuracy'?'__none__':panel,btn);
+    var acc=document.getElementById('rep-accuracy'), bt=document.getElementById('rep-toggle-accuracy');
+    if(acc) acc.style.display=panel==='accuracy'?'block':'none';
+    if(bt){ bt.style.background=panel==='accuracy'?'var(--green)':'transparent'; bt.style.color=panel==='accuracy'?'#fff':'var(--muted)'; }
+    if(panel==='accuracy'){ currentReport='accuracy'; wlAccRender(); }
+  };
+  window.switchReport=switchReport;
+})();
+
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
@@ -2269,7 +3146,8 @@ function exportProjectReport(pid){
     var ocBFu=mb.oc.galPerSet>0?Math.round(ocGal/mb.oc.galPerSet*mb.oc.bfPerSet):0;
     function mbRow(label,quoted,used,unit){
       if(!quoted&&!used) return '';
-      var diff=used-quoted;
+      quoted=Math.round((Number(quoted)||0)*100)/100; used=Math.round((Number(used)||0)*100)/100;
+      var diff=Math.round((used-quoted)*100)/100;
       var pct=quoted>0?Math.min(100,Math.round(used/quoted*100)):0;
       var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
       var filled=Math.round(Math.min(pct,100)/10); var empty=10-filled;
@@ -2277,6 +3155,33 @@ function exportProjectReport(pid){
       var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
       return '<tr><td>'+label+'</td><td>'+quoted+' '+unit+'</td><td>'+used+' '+unit+'</td><td style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff+' '+unit+'</td>'+
         '<td><span class="bar-screen">'+cssBar+'</span><span class="bar-print" style="font-family:monospace;font-size:11px;color:'+color+'">'+bar+' '+pct+'%</span></td></tr>';
+    }
+    // Bags used per R-value, from this project's expense descriptions.
+    // Same R -> that row. If only ONE R was quoted for the material, expenses with another
+    // R (or none) are counted there too and flagged; otherwise they get their own row.
+    function wlSkuRows(skus,kind,icon){
+      var kw=kind==='mw'?['roxul','mineral wool','mineralwool','rockwool','rock wool','stone wool','comfortbatt']:['fiberglass','fiber glass','fibre glass','fibreglass','batt'];
+      var byR={}, other=0, otherRs={};
+      var ex=projectExpenses.filter(function(e){return e.projectId===pid;});
+      for(var i=0;i<ex.length;i++){
+        var d=String(ex[i].desc||'').toLowerCase(); var hit=false;
+        for(var k=0;k<kw.length;k++){ if(d.indexOf(kw[k])>=0){ hit=true; break; } }
+        if(!hit) continue;
+        if(kind==='fg'&&(d.indexOf('roxul')>=0||d.indexOf('mineral')>=0||d.indexOf('rockwool')>=0)) continue;
+        var q=parseFloat((d.match(/^[\d.]+/)||[0])[0])||0; if(!q) continue;
+        var rm=d.match(/\br[\s-]?(\d{2})\b/); var r=rm?parseInt(rm[1],10):0;
+        var matched=false;
+        for(var s2=0;s2<skus.length;s2++){ var sr=parseInt(String(skus[s2].key||'').replace(/\D/g,''),10); if(r&&sr===r){ byR[sr]=(byR[sr]||0)+q; matched=true; break; } }
+        if(!matched){ other+=q; if(r) otherRs['R-'+r]=1; }
+      }
+      var out='';
+      for(var j=0;j<skus.length;j++){
+        var sk=skus[j], srr=parseInt(String(sk.key||'').replace(/\D/g,''),10), used=byR[srr]||0, lbl=icon+' '+sk.label;
+        if(skus.length===1&&other>0){ used+=other; var rs=Object.keys(otherRs); lbl+=rs.length?' <span style="color:#b45309;font-size:11px">⚠ comprado: '+rs.join(', ')+'</span>':''; }
+        out+=mbRow(lbl, sk.qty, used, 'bags');
+      }
+      if(skus.length>1&&other>0) out+=mbRow(icon+' '+(kind==='mw'?'Roxul':'Fiberglass')+' (outro R / sem R)'+(Object.keys(otherRs).length?' <span style="color:#b45309;font-size:11px">'+Object.keys(otherRs).join(', ')+'</span>':''),0,other,'bags');
+      return out;
     }
     mbRows=mbRow('🫧 Closed Cell',Math.round(ccBFq),ccBFu,'BF')+
            (function(){
@@ -2290,33 +3195,24 @@ function exportProjectReport(pid){
                '🔧 Usado: '+ccSetsU+' sets · '+ccGal+' gal</td></tr>';
            })()+
            mbRow('🫧 Open Cell',Math.round(ocBFq),ocBFu,'BF')+
-           mbRow('🔥 Ignition Barrier',parseFloat(((mb.ignSqft||0)/800).toFixed(1)),parseFloat((ignU/800).toFixed(1)),'bkt')+
-           (function(){
-             var ibQ=mb.ignSqft||0; var ibU=ignU;
-             if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
-             return '<tr><td colspan="5" style="padding-left:16px;font-size:11px;color:#666">'+
-               '📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft &nbsp;|&nbsp; '+
-               '🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft</td></tr>';
-           })()+
            mbRow('📦 Cellulose',mb.celBags||0,celU,'bags')+
            ((Array.isArray(mb.detail)&&mb.detail.some(function(d){return /^mw/.test(d.key||'');}))?'':mbRow('🪨 Roxul',mb.roxBags||0,roxU,'bags'))+
            (function(){
              var det=Array.isArray(mb.detail)?mb.detail:null;
              var fg=det?det.filter(function(d){return /^fg/.test(d.key||'');}):[];
-             if(fg.length) return fg.map(function(d){ return mbRow('🧶 '+d.label, d.qty, 0, 'bags'); }).join('');
+             if(fg.length) return wlSkuRows(fg,'fg','🧶');
              return mbRow('🧶 Fiberglass',mb.fbgBags||0,fbgU,'bags');
            })()+
            (function(){
              var det=Array.isArray(mb.detail)?mb.detail:null;
              var mw=det?det.filter(function(d){return /^mw/.test(d.key||'');}):[];
-             return mw.length ? mw.map(function(d){ return mbRow('🪨 '+d.label, d.qty, 0, 'bags'); }).join('') : '';
+             return mw.length ? wlSkuRows(mw,'mw','🪨') : '';
            })()+
            (function(){
              var ibQ=mb.ignSqft||0; var ibU=ignU;
              if(!ibQ&&!ibU) return '';
-             var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
-             var diff=parseFloat((uBkt-qBkt).toFixed(1)); var pct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
+             var qBkt=Math.round(ibQ/800*100)/100; var uBkt=Math.round(ibU/800*100)/100;
+             var diff=Math.round((uBkt-qBkt)*100)/100; var pct=qBkt>0?Math.min(100,Math.round(uBkt/qBkt*100)):0;
              var color=diff>0?'#dc2626':diff<0?'#16a34a':'#111';
              var cssBar='<div style="background:#eee;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle"><div style="background:'+(diff>0?'#dc2626':'#16a34a')+';height:8px;border-radius:4px;width:'+pct+'%"></div></div>';
              return '<tr><td>🔥 Ignition Barrier</td>'
@@ -2494,13 +3390,14 @@ function renderProjects(filter){
     var html='<div class="proj-card">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div></div>';
+    html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+(window.wlJobDatesHtml?wlJobDatesHtml(p):'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div>')+'</div>';
     html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html+='<select data-pid="'+p.id+'" onchange="updateProjStatus(this.dataset.pid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:'+stCol+';padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:700"><option value="active"'+(p.status==='active'?' selected':'')+'>🟢 Active</option><option value="paused"'+(p.status==='paused'?' selected':'')+'>⏸ Paused</option><option value="completed"'+(p.status==='completed'?' selected':'')+'>✅ Done</option></select>';
-    html+='<button data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✏️</button>';
-    html+='<button data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)" style="background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📄</button>';
-    html+='<button data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕</button>';
+    html+='<button type="button" class="wl-pm-btn" aria-label="Project actions" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button><div class="wl-pm" role="menu"><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="openEditProj(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#1e6334" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/></svg>Edit project</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="exportProjectReport(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#2453b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Report</button><button type="button" class="wl-pm-it" data-pid="'+p.id+'" onclick="wlFbUpdateOpen(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#185fa5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-4M4 4v4h4M4 13a8 8 0 0 0 14.9 4M20 20v-4h-4"/></svg>Update from FieldBid</button><div class="wl-pm-sep"></div><button type="button" class="wl-pm-it wl-pm-del" data-pid="'+p.id+'" onclick="delProject(this.dataset.pid)"><svg viewBox="0 0 24 24" fill="none" stroke="#b93229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete project</button></div>';
     html+='</div></div>';
+    if(window.wlJobTopHtml) html+=wlJobTopHtml(p,laborCost,extraCost);
+    if(window.wlTabsBar) html+=wlTabsBar(p.id,expenses.length,photos.length);
+    html+=wlTabOpen(p.id,'sum');
     // Stats 2x2
     html+='<div class="proj-stats">';
     html+='<div class="proj-stat"><div class="proj-stat-val" style="color:var(--green)">'+fmtD(laborMin)+'</div><div class="proj-stat-lbl">HOURS</div></div>';
@@ -2572,6 +3469,8 @@ function renderProjects(filter){
       html += '</div>';
     }
 
+    if(window.wlEvaHtml) html+=wlEvaHtml(p,laborMin,laborCost,expenses);
+    html+='</div>'+wlTabOpen(p.id,'mat');
     // Material Budget Section
     var mb=p.matBudget;
     if(mb){
@@ -2603,8 +3502,8 @@ function renderProjects(filter){
 
       var hasMat = ccBF>0||ocBF>0||(mb.cc&&mb.cc.sqft>0)||(mb.oc&&mb.oc.sqft>0)||mb.celBags>0||mb.roxBags>0||mb.fbgBags>0||mb.ignSqft>0||mb.fbSqft>0||(Array.isArray(mb.detail)&&mb.detail.length>0);
       if(hasMat){
-        html+='<div style="background:#f8faff;border:1px solid #dbeafe;border-radius:12px;padding:14px;margin-bottom:14px">';
-        html+='<div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:10px;letter-spacing:.5px">🧱 MATERIAL BUDGET</div>';
+        html+='<div class="wl-mb">';
+        html+='<div class="wl-mb-hd"><span>Quoted vs used</span>'+(p.source==='fieldbid'?'<span class="wl-jt-src">FieldBid</span>':'')+'</div>';
 
         function matRow(label, quoted, used, unit){
           if(quoted===0&&used===0) return '';
@@ -2612,15 +3511,13 @@ function renderProjects(filter){
           var pct=quoted>0?Math.min(200,Math.round(used/quoted*100)):0;
           var over=diff>0;
           var barColor=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
-          var html2='<div style="margin-bottom:8px">';
-          html2+='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">';
-          html2+='<span>'+label+'</span>';
+          var html2='<div class="wl-mr">';
           var diffR=parseFloat(diff.toFixed(1)); var absDiffR=parseFloat(Math.abs(diff).toFixed(1));
-          html2+='<span style="color:'+(over?'var(--red)':used>0?'var(--green)':'var(--muted)')+'">'+used+' / '+quoted+' '+unit+(over?' <span style="background:#fee2e2;color:var(--red);border-radius:4px;padding:1px 5px;font-size:10px">+'+diffR+' over</span>':diff<0?' <span style="background:#dcfce7;color:var(--green2);border-radius:4px;padding:1px 5px;font-size:10px">'+absDiffR+' left</span>':'')+'</span>';
-          html2+='</div>';
+          var chip=over?'<span class="wl-chip red">+'+diffR+' '+unit+' over</span>':(diff<0?'<span class="wl-chip '+(pct>=80?'amber':'green')+'">'+absDiffR+' '+unit+' left</span>':(used>0?'<span class="wl-chip green">on target</span>':''));
+          html2+='<div class="wl-mr-top"><span class="wl-mr-lbl">'+label+'</span>'+chip+'</div>';
+          html2+='<div class="wl-mr-num">'+used+' / '+quoted+' '+unit+'</div>';
           if(quoted>0){
-            html2+='<div style="background:#e0e0e0;border-radius:99px;height:5px;overflow:hidden">';
-            html2+='<div style="height:5px;border-radius:99px;width:'+Math.min(100,pct)+'%;background:'+barColor+'"></div></div>';
+            html2+='<div class="wl-mr-bar"><i style="width:'+Math.min(100,pct)+'%;background:'+barColor+'"></i></div>';
           }
           html2+='</div>';
           return html2;
@@ -2635,8 +3532,8 @@ function renderProjects(filter){
           var ccSetsQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*100)/100:0;
           var ccSetsUsed=ccGalUsed>0?Math.round(ccGalUsed/ccGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ccGalQuoted>0) html+='📋 Cotado: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
-          if(ccGalUsed>0) html+='🔧 Usado: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
+          if(ccGalQuoted>0) html+='📋 Quoted: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
+          if(ccGalUsed>0) html+='🔧 Used: '+ccSetsUsed+' sets · '+ccGalUsed+' gal';
           html+='</div>';
           if(mb.cc.inch===0&&ccBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
         }
@@ -2649,8 +3546,8 @@ function renderProjects(filter){
           var ocSetsQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*100)/100:0;
           var ocSetsUsed=ocGalUsed>0?Math.round(ocGalUsed/ocGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ocGalQuoted>0) html+='📋 Cotado: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
-          if(ocGalUsed>0) html+='🔧 Usado: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
+          if(ocGalQuoted>0) html+='📋 Quoted: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
+          if(ocGalUsed>0) html+='🔧 Used: '+ocSetsUsed+' sets · '+ocGalUsed+' gal';
           html+='</div>';
           if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
         }
@@ -2667,12 +3564,12 @@ function renderProjects(filter){
         // automatically, so the P&L only reflects money actually spent.
         function costTag(d, pid){
           if(!d || !(d.cost>0)) return '';
-          return '<div style="display:flex;align-items:center;justify-content:space-between;margin:-4px 0 8px;padding-left:2px">'+
-                 '<span style="font-size:10.5px;color:var(--muted)">💵 Previsto: $'+d.cost.toFixed(2)+
-                 ' <span style="opacity:.7">($'+ (d.unitCost||0).toFixed(2) +'/'+(d.unit||'un')+' c/ tax)</span></span>'+
-                 '<button data-pid="'+pid+'" data-desc="'+String(d.qty+' '+(d.unit||'')+' '+d.label).replace(/"/g,'')+'" data-amt="'+d.cost+'" '+
-                 'onclick="addMatExpense(this.dataset.pid,this.dataset.desc,this.dataset.amt)" '+
-                 'style="background:transparent;border:1px solid var(--border2);color:var(--blue);border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer">+ despesa</button>'+
+          var desc=String(d.qty+' '+(d.unit||'')+' '+d.label).replace(/"/g,'');
+          // already logged from this button? (same project, same description, created by this button)
+          var logged=projectExpenses.some(function(x){ return x.projectId===pid && x.source==='fieldbid-budget' && String(x.desc||'')===desc; });
+          return '<div class="wl-ct"><span class="wl-ct-txt">Planned $'+d.cost.toFixed(2)+' · $'+(d.unitCost||0).toFixed(2)+'/'+(d.unit||'un')+' with tax</span>'+
+                 (logged?'<span class="wl-chip green">✓ Logged</span>':
+                 '<button type="button" class="wl-ct-btn" data-pid="'+pid+'" data-desc="'+desc+'" data-amt="'+d.cost+'" onclick="addMatExpense(this.dataset.pid,this.dataset.desc,this.dataset.amt)">Log expense</button>')+
                  '</div>';
         }
         if(_detFg.length){
@@ -2683,28 +3580,29 @@ function renderProjects(filter){
         if(_detMw.length){
           _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
         }
-        // Everything else FieldBid priced (spray foam sets, cellulose, board, caulk…)
-        if(_det){
-          var _shown={};
-          _detFg.concat(_detMw).forEach(function(d){ _shown[d.key]=1; });
-          var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0; });
-          if(_rest.length){
-            html+='<div style="font-size:10.5px;color:var(--muted);font-weight:700;margin:10px 0 4px">OUTROS MATERIAIS (previsto)</div>';
-            _rest.forEach(function(d){
-              html+='<div style="font-size:12px;color:var(--text);margin-bottom:2px">'+d.label+' — '+d.qty+' '+(d.unit||'')+'</div>'+costTag(d,p.id);
-            });
-          }
-        }
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
           var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
           html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
-          if(ibQ>0) html+='📋 Cotado: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
-          if(ibU>0) html+='🔧 Usado: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft';
+          if(ibQ>0) html+='📋 Quoted: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
+          if(ibU>0) html+='🔧 Used: '+uBkt+' bkt · '+ibU.toLocaleString()+' sq ft';
           html+='</div>';
         }
         if(mb.fbSqft>0||fbkUsed>0) html+=matRow('🧱 Fire Blocking',mb.fbSqft,fbkUsed,'sq ft');
+        // Everything else FieldBid priced (spray foam sets, cellulose, board, caulk…)
+        if(_det){
+          var _shown={};
+          _detFg.concat(_detMw).forEach(function(d){ _shown[d.key]=1; });
+          // Spray foam is logged in gallons via Add Expense (auto-price per gallon); a 'set' expense would be read as gallons
+          var _rest=_det.filter(function(d){ return !_shown[d.key] && d.cost>0 && d.key!=='ccSet' && d.key!=='ocSet'; });
+          if(_rest.length){
+            html+='<div class="wl-stb"><div class="wl-stb-hd">Still to buy</div><div class="wl-stb-sub">Planned in the estimate. Log each one when you buy it.</div></div>';
+            _rest.forEach(function(d){
+              html+='<div class="wl-stb-item">'+d.label+', '+d.qty+' '+(d.unit||'')+'</div>'+costTag(d,p.id);
+            });
+          }
+        }
         html+='<button onclick="document.getElementById(\'kwModal\').style.display=\'flex\'" style="background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:99px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px">? Keywords</button>';
         html+='</div>';
       }
@@ -2729,6 +3627,7 @@ function renderProjects(filter){
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label><select id="ext-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"><option>🧱 Materials</option><option>📦 General</option><option>🔧 Other</option></select></div>';
     html+='<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label><input id="exdt-'+p.id+'" type="date" value="'+today+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:7px 10px;font-size:12px;width:100%;outline:none"/></div>';
     html+='</div><button data-pid="'+p.id+'" onclick="saveExpense(this.dataset.pid)" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">Save Expense</button></div>';
+    html+='</div>'+wlTabOpen(p.id,'pho');
     // Assigned helpers
     // Photos
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
@@ -2739,11 +3638,13 @@ function renderProjects(filter){
     if(photos.length) html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+photos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" data-photoid="'+ph.id+'" onclick="openPhoto(this.dataset.photoid)"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'<br>'+ph.uploadedBy+'</div><button data-pid="'+ph.id+'" onclick="event.stopPropagation();delPhoto(this.dataset.pid)" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#f87171;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button></div>';}).join('')+'</div>';
     else html+='<div style="color:var(--muted);font-size:12px">No photos yet.</div>';
     html+='</div>';
+    html+='</div>'+wlTabOpen(p.id,'sum');
     // History
     if(hist.length){
       html+='<div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;cursor:pointer" onclick="toggleHist(\''+p.id+'\')">📋 ASSIGNMENT HISTORY <span id="ha-'+p.id+'">▼</span></div>';
       html+='<div id="hist-'+p.id+'" style="display:none">'+hist.map(function(h){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div>'+h.helperName+' <span style="padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;background:'+(h.action==='assigned'?'#dcfce7':'#fee2e2')+';color:'+(h.action==='assigned'?'var(--green2)':'var(--red)')+'">'+( h.action==='assigned'?'➕ Assigned':'➖ Removed')+'</span></div><span style="color:var(--muted)">'+parseLocalDate(h.date).toLocaleDateString()+'</span></div>';}).join('')+'</div></div>';
     }
+    html+='</div>';   // close last tab panel
     html+='</div>';
     return html;
   }).join('');
@@ -3155,7 +4056,7 @@ window.saveQuickHours=saveQuickHours;
 
 // ── CSV EXPORT ─────────────────────────────────────────
 function showDepotQR(){
-  var url=location.origin+location.pathname+'?action=clockin';
+  var url=location.origin+'/Greenideaworklog/?action=clockin';   // official app path (novo.html must not change the depot QR)
   document.getElementById('qr-title').textContent='📷 Depot Clock In QR Code';
   document.getElementById('qr-link').textContent=url;
   var container=document.getElementById('qr-container');
@@ -3224,7 +4125,7 @@ function renderQR(){
   var urlDiv = document.getElementById('depot-qr-url');
   if(!qrDiv) return;
   // Use depot URL - the app root which shows helper selection
-  var depotUrl = location.origin + location.pathname;
+  var depotUrl = location.origin + '/Greenideaworklog/';   // official app path (novo.html must not change the depot QR)
   if(urlDiv) urlDiv.textContent = depotUrl;
   qrDiv.innerHTML = '';
   try{
