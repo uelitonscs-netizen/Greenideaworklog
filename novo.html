@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkLog GreenIdea NOVO update-all-from-fieldbid (on v20261003-data-restore) -->
+<!-- WorkLog GreenIdea NOVO estimate-accuracy (on v20261003-data-restore) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -497,6 +497,37 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-fbu-all-txt b{font-family:var(--font-d);font-size:14.5px;color:var(--text);}
 .wl-fbu-all-txt span{font-size:12px;color:var(--muted);}
 .wl-fbu-go[disabled]{opacity:.45;}
+/* ── Reports → Accuracy ── */
+.wl-acc-filters{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 12px;font-size:12.5px;color:var(--muted);}
+.wl-acc-filters select{min-height:36px;border:1px solid var(--border2);border-radius:10px;padding:0 10px;background:#fff;font-weight:700;font-size:13px;}
+.wl-acc-filters label{display:flex;align-items:center;gap:6px;}
+.wl-acc-filters input[type=checkbox]{width:18px!important;height:18px!important;min-height:0!important;margin:0;padding:0;flex:none;accent-color:var(--green);}
+.wl-acc-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;}
+.wl-acc-card.all{border-color:#1e633455;background:#f6faf4;}
+.wl-acc-hd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-d);font-weight:800;font-size:17px;margin-bottom:10px;}
+.wl-acc-n{font-size:12px;color:var(--muted);font-weight:700;}
+.wl-acc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.wl-acc-grid div{background:#f1f3ee;border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:2px;text-align:center;}
+.wl-acc-card.all .wl-acc-grid div{background:#fff;}
+.wl-acc-grid b{font-family:var(--font-d);font-size:15px;}
+.wl-acc-grid div>span{font-size:10.5px;color:var(--muted);}
+.wl-acc-grid b span{font-size:inherit;}
+.wl-acc-line{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);margin-top:8px;}
+.wl-acc-conc{font-size:13px;margin-top:8px;line-height:1.45;}
+.wl-acc-warn{font-size:12.5px;margin-top:8px;color:#9a5b05;font-weight:600;}
+.bad{color:var(--red);} .good{color:var(--green);} .na{color:#b4b2a9;} .warn{color:#9a5b05;}
+.wl-acc-sec{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 2px 8px;}
+.wl-acc-job{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
+.wl-acc-job.ex{opacity:.55;}
+.wl-acc-job-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.wl-acc-name{border:none;background:none;padding:0;font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--text);text-align:left;cursor:pointer;}
+.wl-acc-ex{min-height:30px;border:1px solid var(--border2);background:#fff;border-radius:8px;padding:0 10px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;}
+.wl-acc-job-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.wl-acc-job-nums{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;margin-top:6px;}
+.wl-acc-job-nums span{font-weight:600;}
+.wl-acc-note{font-size:12px;color:var(--muted);margin:8px 2px;}
+.wl-acc-empty{background:var(--surface);border:1px dashed var(--border2);border-radius:14px;padding:18px;font-size:13.5px;color:var(--muted);line-height:1.5;}
+.wl-eva-t td.na,.wl-eva-t td .na{color:#b4b2a9;}
 </style>
 </head>
 <body>
@@ -626,7 +657,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
         <button id="rep-toggle-advances" onclick="switchReport('advances',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Advances</button>
+        <button id="rep-toggle-accuracy" onclick="switchReport('accuracy',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted);white-space:nowrap">🎯 Accuracy</button>
       </div>
+
+      <div id="rep-accuracy" style="display:none"></div>
 
       <!-- Entries panel -->
       <div id="rep-entries">
@@ -2319,7 +2353,9 @@ function wlFbuAct(a,id){
 var WL_JOB_TYPES=['Spray foam','Cellulose','Fiberglass','Mineral wool','Foam board','Other'];
 function wlEvaDays(pid){ var seen={}, n=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId!==pid||!e.startTime) continue; var d=new Date(e.startTime), k=d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); if(!seen[k]){ seen[k]=1; n++; } } return n; }
 function wlEvaRow(label,est,act,sub,costLike,unitFmt){
-  var f=unitFmt||fmtC, d=act-est, pct=est?Math.round(d/est*100):0;
+  var f=unitFmt||fmtC;
+  if(est===null){ return '<tr><td>'+label+(sub?'<div class="wl-eva-sub">'+sub+'</div>':'')+'</td><td class="na">not est.</td><td>'+f(act)+'</td><td class="na">—</td></tr>'; }
+  var d=act-est, pct=est?Math.round(d/est*100):0;
   var bad=costLike?(d>0.005):(d<-0.005), good=costLike?(d<-0.005):(d>0.005);
   var cls=Math.abs(pct)<5&&est?'':(bad?'bad':(good?'good':''));
   var dtxt=(est||act)?((d>0?'+':(d<0?'−':''))+f(Math.abs(d))+(est?' <span>('+(pct>0?'+':'')+pct+'%)</span>':'')):'—';
@@ -2341,16 +2377,18 @@ function wlEvaHtml(p,laborMin,laborCost,exps){
   var h='<div class="wl-eva"><div class="wl-eva-hd"><span>Estimated vs Actual</span>'+sel+'</div>';
   if((p.status||'active')!=='completed') h+='<div class="wl-eva-note">Job in progress — actual numbers are still growing.</div>';
   h+='<table class="wl-eva-t"><tr><th></th><th>Est.</th><th>Actual</th><th>Diff</th></tr>';
-  h+=wlEvaRow('Labor',e.laborCost||0,laborCost,(e.manHours||0)+' h est · '+hrs+' h actual',true);
-  h+=wlEvaRow('Materials',e.materialCost||0,mat,'',true);
+  var hasL=(e.laborCost||0)>0, hasO=(e.ohCost||0)>0, hasM=(e.materialCost||0)>0, full=hasL&&hasO&&hasM;
+  h+=wlEvaRow('Labor',hasL?e.laborCost:null,laborCost,(hasL?(e.manHours||0)+' h est · ':'')+hrs+' h actual',true);
+  h+=wlEvaRow('Materials',hasM?e.materialCost:null,mat,'',true);
   if(other>0) h+=wlEvaRow('Other expenses',0,other,'not in the estimate',true);
-  h+=wlEvaRow('Overhead',e.ohCost||0,oh,(e.ohDays||0)+' days est · '+days+' worked',true);
-  h+=wlEvaRow('<b>Profit</b>',estProfit,actProfit,'',false);
+  h+=wlEvaRow('Overhead',hasO?e.ohCost:null,oh,(hasO?(e.ohDays||0)+' days est · ':'')+days+' worked',true);
+  h+=wlEvaRow('<b>Profit</b>',full?estProfit:null,actProfit,full?'':'estimate incomplete',false);
   h+='</table>';
+  if(!full) h+='<div class="wl-eva-note">'+(!hasL?'Labor':'')+(!hasL&&!hasO?' and overhead':(!hasO?'Overhead':''))+(!hasM?((!hasL||!hasO)?' and materials':'Materials'):'')+' not in the estimate — fill them in FieldBid (Quote tab), then ⋯ → Update from FieldBid.</div>';
   var sq=Number(e.totalSqft)||0;
   if(sq>0){
-    var mEst=estBudget?Math.round(estProfit/estBudget*100):0, mAct=budget?Math.round(actProfit/budget*100):0;
-    h+='<div class="wl-eva-sq"><div><b>'+fmtC(budget/sq)+'</b><span>price / sq ft</span></div><div><b>'+fmtC(estCost/sq)+' → '+fmtC(actCost/sq)+'</b><span>cost / sq ft</span></div><div><b class="'+(mAct<mEst-2?'bad':(mAct>mEst+2?'good':''))+'">'+mEst+'% → '+mAct+'%</b><span>margin</span></div></div>';
+    var mEst=(full&&estBudget)?Math.round(estProfit/estBudget*100):null, mAct=budget?Math.round(actProfit/budget*100):0;
+    h+='<div class="wl-eva-sq"><div><b>'+fmtC(budget/sq)+'</b><span>price / sq ft</span></div><div><b>'+fmtC(estCost/sq)+' → '+fmtC(actCost/sq)+'</b><span>cost / sq ft</span></div><div><b class="'+(mEst===null?'':(mAct<mEst-2?'bad':(mAct>mEst+2?'good':'')))+'">'+(mEst===null?'— → ':mEst+'% → ')+mAct+'%</b><span>margin</span></div></div>';
     h+='<div class="wl-eva-note">'+sq.toLocaleString()+' sq ft estimated'+(e.jobType?' · main work: '+wlEsc(e.jobType):'')+'</div>';
   }
   return h+'</div>';
@@ -2429,6 +2467,116 @@ function wlFbuAllApply(){
   batch.commit().then(function(){ wlFbuClose(); showToast(n+' project(s) updated from FieldBid ✅'); })
     .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
 }
+
+// ── ESTIMATE ACCURACY (Reports → Accuracy) ─────────────────────────
+// Groups jobs by type of work and compares FieldBid's estimate with what WorkLog
+// recorded. Averages are value-weighted (sum actual ÷ sum estimated); a job only
+// counts for a line when that line was estimated. Margin uses complete estimates.
+var _wlAcc={months:0,inProg:false};
+function wlAccLastDate(p){
+  var t=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId===p.id&&e.startTime){ var x=new Date(e.endTime||e.startTime).getTime(); if(x>t) t=x; } }
+  if(!t&&p.end) t=new Date(p.end).getTime(); if(!t&&p.createdAt) t=new Date(p.createdAt).getTime(); return t;
+}
+function wlAccJob(p){
+  var e=p.estimate; if(!e) return null;
+  var lm=0, lc=0, mat=0, oth=0;
+  for(var i=0;i<entries.length;i++){ var en=entries[i]; if(en.projectId===p.id&&en.endTime){ var L=wlEntryLabor(en); lm+=L.mins; lc+=L.cost; } }
+  for(var j=0;j<projectExpenses.length;j++){ var x=projectExpenses[j]; if(x.projectId!==p.id) continue; var a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else oth+=a; }
+  var oh=Number(p.overhead)||0, budget=Number(p.budget)||0, estBudget=Number(p.fieldbidTotal)||budget;
+  var eL=Number(e.laborCost)||0, eM=Number(e.materialCost)||0, eO=Number(e.ohCost)||0;
+  return {p:p, type:p.jobType||e.jobType||'Other', sqft:Number(e.totalSqft)||0, budget:budget, estBudget:estBudget,
+    lc:lc, lh:lm/60, eL:eL, eH:Number(e.manHours)||0, hasL:eL>0, mat:mat, eM:eM, hasM:eM>0, oh:oh, eO:eO, hasO:eO>0, oth:oth,
+    actCost:lc+mat+oth+oh, estCost:eL+eM+eO, complete:eL>0&&eM>0&&eO>0, date:wlAccLastDate(p)};
+}
+function wlAccPct(a,e){ return e>0?Math.round((a/e-1)*100):null; }
+function wlAccPctTxt(v,costLike){ if(v===null) return '<span class="na">—</span>'; var bad=costLike?v>=5:v<=-5, good=costLike?v<=-5:v>=5; return '<span class="'+(bad?'bad':(good?'good':''))+'">'+(v>0?'+':'')+v+'%</span>'; }
+function wlAccAgg(js){
+  var g={n:js.length,aL:0,eL:0,nL:0,aM:0,eM:0,nM:0,aO:0,eO:0,nO:0,aH:0,eH:0,sqH:0,sqE:0,aP:0,eP:0,bA:0,bE:0,nC:0,cost:0,sq:0,bud:0};
+  for(var i=0;i<js.length;i++){ var j=js[i];
+    if(j.hasL){ g.aL+=j.lc; g.eL+=j.eL; g.nL++; if(j.sqft>0){ g.eH+=j.eH; g.sqE+=j.sqft; } }
+    if(j.hasM){ g.aM+=j.mat; g.eM+=j.eM; g.nM++; }
+    if(j.hasO){ g.aO+=j.oh; g.eO+=j.eO; g.nO++; }
+    if(j.sqft>0){ g.aH+=j.lh; g.sqH+=j.sqft; g.cost+=j.actCost; g.sq+=j.sqft; g.bud+=j.budget; }
+    if(j.complete){ g.aP+=j.budget-j.actCost; g.bA+=j.budget; g.eP+=j.estBudget-j.estCost; g.bE+=j.estBudget; g.nC++; }
+  }
+  g.labPct=wlAccPct(g.aL,g.eL); g.matPct=wlAccPct(g.aM,g.eM); g.ohPct=wlAccPct(g.aO,g.eO);
+  g.mE=g.bE?Math.round(g.eP/g.bE*100):null; g.mA=g.bA?Math.round(g.aP/g.bA*100):null;
+  g.hA=g.sqH?g.aH/g.sqH*1000:null; g.hE=g.sqE?g.eH/g.sqE*1000:null;
+  return g;
+}
+function wlAccConclusion(g){
+  if(g.nL<3) return '<div class="wl-acc-warn">Only '+g.nL+' job'+(g.nL!==1?'s':'')+' with a labor estimate — not reliable yet.</div>';
+  var t=[];
+  if(g.labPct!==null){
+    if(g.labPct>=10) t.push('Labor runs <b>'+g.labPct+'% over</b> the estimate — plan about '+g.labPct+'% more hours'+(g.hA?' (≈'+g.hA.toFixed(1)+' h per 1,000 sq ft)':'')+' or raise the price.');
+    else if(g.labPct<=-10) t.push('Labor comes in <b>'+(-g.labPct)+'% under</b> the estimate — there may be room to sharpen the price.');
+    else t.push('Labor estimates are on target ('+(g.labPct>0?'+':'')+g.labPct+'%).');
+  }
+  if(g.matPct!==null&&g.nM>=3){ if(g.matPct>=10) t.push('Materials run <b>'+g.matPct+'% over</b> — check coverage and waste.'); else if(g.matPct<=-10) t.push('Materials come in '+(-g.matPct)+'% under the estimate.'); }
+  return '<div class="wl-acc-conc">'+t.join(' ')+'</div>';
+}
+function wlAccCard(title,g,cls){
+  var h='<div class="wl-acc-card'+(cls?' '+cls:'')+'"><div class="wl-acc-hd"><span>'+wlEsc(title)+'</span><span class="wl-acc-n">'+g.n+' job'+(g.n!==1?'s':'')+'</span></div>';
+  h+='<div class="wl-acc-grid">'+
+     '<div><b>'+wlAccPctTxt(g.labPct,true)+'</b><span>labor</span></div>'+
+     '<div><b>'+wlAccPctTxt(g.matPct,true)+'</b><span>materials</span></div>'+
+     '<div><b>'+wlAccPctTxt(g.ohPct,true)+'</b><span>overhead</span></div>'+
+     '<div><b>'+(g.mE!==null?g.mE+'% → <span class="'+(g.mA<g.mE-2?'bad':(g.mA>g.mE+2?'good':''))+'">'+g.mA+'%</span>':'<span class="na">—</span>')+'</b><span>margin</span></div>'+
+     '</div>';
+  h+='<div class="wl-acc-line">'+(g.hA!==null?'<span>'+(g.hE!==null?g.hE.toFixed(1)+' → ':'')+g.hA.toFixed(1)+' h / 1,000 sq ft</span>':'')+(g.sq?'<span>cost '+fmtC(g.cost/g.sq)+' · price '+fmtC(g.bud/g.sq)+' / sq ft</span>':'')+'</div>';
+  return h+wlAccConclusion(g)+'</div>';
+}
+function wlAccRender(){
+  var box=document.getElementById('rep-accuracy'); if(!box) return;
+  var cut=_wlAcc.months?Date.now()-_wlAcc.months*30.44*864e5:0, all=[], excluded=0, noEst=0;
+  for(var i=0;i<projects.length;i++){ var p=projects[i], st=p.status||'active';
+    if(!_wlAcc.inProg&&st!=='completed') continue;
+    if(!p.estimate){ if(st==='completed') noEst++; continue; }
+    var j=wlAccJob(p); if(!j) continue; if(cut&&j.date&&j.date<cut) continue;
+    if(p.evaExclude){ excluded++; j.excluded=true; }
+    all.push(j); }
+  var h='<div class="wl-acc-filters"><select onchange="_wlAcc.months=+this.value;wlAccRender()">'+
+    [[0,'All time'],[3,'Last 3 months'],[6,'Last 6 months'],[12,'Last 12 months']].map(function(o){return '<option value="'+o[0]+'"'+(_wlAcc.months===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>'+
+    '<label><input type="checkbox"'+(_wlAcc.inProg?' checked':'')+' onchange="_wlAcc.inProg=this.checked;wlAccRender()"> include jobs in progress</label></div>';
+  var used=all.filter(function(j){return !j.excluded;});
+  if(!used.length){
+    box.innerHTML=h+'<div class="wl-acc-empty">No '+(_wlAcc.inProg?'':'finished ')+'jobs with a FieldBid estimate yet.'+(noEst?' '+noEst+' finished job(s) have no estimate — use <b>Projects → ⟳ Update all from FieldBid</b>.':'')+'<br>Mark jobs as <b>Done</b> when they finish; each one makes this report more accurate.</div>';
+    return; }
+  h+=wlAccCard('All types',wlAccAgg(used),'all');
+  var types={}; for(var k=0;k<used.length;k++){ (types[used[k].type]=types[used[k].type]||[]).push(used[k]); }
+  var tn=Object.keys(types).sort(function(a,b){return types[b].length-types[a].length;});
+  for(var t=0;t<tn.length;t++) h+=wlAccCard(tn[t],wlAccAgg(types[tn[t]]),'');
+  h+='<div class="wl-acc-sec">Jobs</div>';
+  all.sort(function(a,b){return b.date-a.date;});
+  for(var r=0;r<all.length;r++){ var j2=all[r], lp=j2.hasL?wlAccPct(j2.lc,j2.eL):null, mp=j2.hasM?wlAccPct(j2.mat,j2.eM):null;
+    var mE=j2.complete&&j2.estBudget?Math.round((j2.estBudget-j2.estCost)/j2.estBudget*100):null, mA=j2.budget?Math.round((j2.budget-j2.actCost)/j2.budget*100):null;
+    h+='<div class="wl-acc-job'+(j2.excluded?' ex':'')+'"><div class="wl-acc-job-top"><button type="button" class="wl-acc-name" onclick="wlGoProject(\''+j2.p.id+'\',\'sum\',\'\')">'+wlEsc(j2.p.name||'')+'</button>'+
+       '<button type="button" class="wl-acc-ex" onclick="wlAccExclude(\''+j2.p.id+'\','+(j2.excluded?'false':'true')+')">'+(j2.excluded?'Include':'Exclude')+'</button></div>'+
+       '<div class="wl-acc-job-sub">'+wlEsc(j2.type)+((j2.p.status||'active')!=='completed'?' · in progress':'')+(j2.complete?'':' · <span class="warn">estimate incomplete</span>')+'</div>'+
+       '<div class="wl-acc-job-nums"><span>labor '+wlAccPctTxt(lp,true)+'</span><span>materials '+wlAccPctTxt(mp,true)+'</span><span>margin '+(mE!==null?mE+'% → ':'')+(mA!==null?mA+'%':'—')+'</span></div></div>'; }
+  if(excluded) h+='<div class="wl-acc-note">'+excluded+' job(s) excluded from the averages.</div>';
+  if(noEst) h+='<div class="wl-acc-note">'+noEst+' finished job(s) without an estimate — use Projects → ⟳ Update all from FieldBid.</div>';
+  box.innerHTML=h;
+}
+window.wlAccRender=wlAccRender;
+function wlAccExclude(pid,ex){
+  db.collection('projects').doc(pid).update({evaExclude:!!ex}).then(function(){ showToast(ex?'Excluded from the averages':'Back in the averages'); setTimeout(wlAccRender,700); })
+    .catch(function(e){ showToast('Not saved: '+(e&&e.message||e)); });
+}
+window.wlAccExclude=wlAccExclude;
+// Reports toggle: add the Accuracy panel without touching the original switcher.
+(function(){
+  var _orig=switchReport;
+  switchReport=function(panel,btn){
+    _orig(panel==='accuracy'?'__none__':panel,btn);
+    var acc=document.getElementById('rep-accuracy'), bt=document.getElementById('rep-toggle-accuracy');
+    if(acc) acc.style.display=panel==='accuracy'?'block':'none';
+    if(bt){ bt.style.background=panel==='accuracy'?'var(--green)':'transparent'; bt.style.color=panel==='accuracy'?'#fff':'var(--muted)'; }
+    if(panel==='accuracy'){ currentReport='accuracy'; wlAccRender(); }
+  };
+  window.switchReport=switchReport;
+})();
+
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
