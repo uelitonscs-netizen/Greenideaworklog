@@ -542,6 +542,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-oh-day-hd .bad{color:var(--red);font-weight:700;font-size:12.5px;}
 .wl-oh-day-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding:2px 0;}
 .wl-oh-split{width:100%;min-height:38px;margin-top:8px;border:1px solid #1e633455;background:#f3f8f1;color:var(--green);border-radius:10px;font-weight:800;font-family:var(--font-d);font-size:13px;cursor:pointer;}
+
+.wl-oh-day-row{align-items:center;}
+.wl-oh-link{border:none;background:none;padding:6px 0;margin:0;font:inherit;font-size:13.5px;font-weight:600;color:#185fa5;text-align:left;cursor:pointer;}
+.wl-oh-chev{color:#9aa39d;font-weight:400;}
+.wl-oh-amt{display:flex;align-items:center;gap:6px;}
+.wl-oh-edit{border:1px solid var(--border2);background:#fff;border-radius:8px;width:32px;height:30px;font-size:13px;cursor:pointer;padding:0;}
 </style>
 </head>
 <body>
@@ -2163,8 +2169,8 @@ function wlGoProject(pid,tab,action){
   setTimeout(function(){
     var a=document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
     if(action==='exp'){ if(a.style.display==='none') toggleExpForm(pid); }
-    try{ a.scrollIntoView({block:'center'}); }catch(e){}
-    var card=a.closest('.proj-card'); if(card){ card.classList.add('wl-flash'); setTimeout(function(){card.classList.remove('wl-flash');},1600); }
+    var card=a.closest('.proj-card');
+    try{ if(action==='exp'||action==='pho') a.scrollIntoView({block:'center'}); else if(card){ card.scrollIntoView({block:'start'}); window.scrollBy(0,-70); } }catch(e){} if(card){ card.classList.add('wl-flash'); setTimeout(function(){card.classList.remove('wl-flash');},1600); }
     if(action==='exp'){ var d=document.getElementById('exd-'+pid); if(d) d.focus(); }
   },60);
 }
@@ -2362,6 +2368,8 @@ function wlFbuAct(a,id){
   else if(a==='tog'){ var r=_wlFbuAll.rows[parseInt(id,10)]; if(r){ r.on=!r.on; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); } }
   else if(a==='allapply') wlFbuAllApply();
   else if(a==='ohsplit') wlOhSplit([id]);
+  else if(a==='ohgo'){ wlFbuClose(); wlGoProject(id,'sum',''); }
+  else if(a==='ohedit'){ wlFbuClose(); wlGoProject(id,'sum',''); setTimeout(function(){ openEditProj(id); setTimeout(function(){ var l=document.getElementById('ep-days-list'), m=l&&l.closest('.modal'); if(m) m.scrollTop=Math.max(0,l.offsetTop-120); },120); },350); }
   else if(a==='ohsplitall'){ var _o=wlOhOverDays(), _d=[]; for(var _i=0;_i<_o.length;_i++) _d.push(_o[_i].date); wlOhSplit(_d); }
 }
 
@@ -2667,7 +2675,7 @@ function wlOhReview(){
   var h='<div class="wl-fbu-sub">Your company day is '+fmtC(cap)+' ('+NUM_TEAMS+' teams × '+fmtC(DAILY_OVERHEAD)+'). These days were charged more than that across jobs. <b>Split evenly</b> divides the day between the teams charged.</div>';
   for(var i=0;i<o.length;i++){ var g=o[i];
     h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span class="bad">'+g.units+' teams · '+fmtC(g.amount)+'</span></div>';
-    for(var r=0;r<g.rows.length;r++) h+='<div class="wl-oh-day-row"><span>'+wlEsc(g.rows[r].name)+(g.rows[r].teams>1?' ×'+g.rows[r].teams:'')+'</span><span>'+fmtC(g.rows[r].amount)+'</span></div>';
+    for(var r=0;r<g.rows.length;r++) h+='<div class="wl-oh-day-row"><button type="button" class="wl-oh-link" data-fbu="ohgo" data-id="'+wlEsc(g.rows[r].pid)+'">'+wlEsc(g.rows[r].name)+(g.rows[r].teams>1?' ×'+g.rows[r].teams:'')+' <span class="wl-oh-chev">›</span></button><span class="wl-oh-amt">'+fmtC(g.rows[r].amount)+'<button type="button" class="wl-oh-edit" data-fbu="ohedit" data-id="'+wlEsc(g.rows[r].pid)+'" aria-label="Edit overhead days">✏️</button></span></div>';
     h+='<button type="button" class="wl-oh-split" data-fbu="ohsplit" data-id="'+g.date+'">Split evenly → '+fmtC(cap/g.units)+'/team</button></div>'; }
   if(o.length>1) h+='<button type="button" class="wl-fbu-go" data-fbu="ohsplitall">Split all '+o.length+' days</button>';
   wlFbuShow(h,'Overhead review');
