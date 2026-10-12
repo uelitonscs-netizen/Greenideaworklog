@@ -548,6 +548,26 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-oh-chev{color:#9aa39d;font-weight:400;}
 .wl-oh-amt{display:flex;align-items:center;gap:6px;}
 .wl-oh-edit{border:1px solid var(--border2);background:#fff;border-radius:8px;width:32px;height:30px;font-size:13px;cursor:pointer;padding:0;}
+/* ── Project cards: status stripe, clearer separation, collapsed summary ── */
+.proj-card[data-pid]{border-left:6px solid var(--green);margin-bottom:18px;box-shadow:0 2px 10px rgba(30,40,30,.08);}
+.proj-card.st-paused{border-left-color:#d9a23b;}
+.proj-card.st-completed{border-left-color:#a7aea8;}
+.proj-card[data-pid]:not(.wl-closed){box-shadow:0 6px 22px rgba(30,40,30,.16);border-color:#1e633466;border-left-width:8px;}
+.proj-card.wl-closed{padding:14px 16px;cursor:pointer;}
+.proj-card.wl-closed > :not(.wl-sum){display:none!important;}
+.proj-card:not(.wl-closed) > .wl-sum{display:none;}
+.wl-sum-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.wl-sum-name{font-family:var(--font-d);font-weight:800;font-size:17px;color:var(--text);}
+.wl-sum-st{flex:none;font-size:12px;font-weight:700;color:var(--muted);}
+.wl-sum-sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+.wl-sum-money{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:13px;color:var(--muted);}
+.wl-sum-money b{font-family:var(--font-d);color:var(--text);font-size:15px;}
+.wl-sum-money .good b{color:var(--green);} .wl-sum-money .bad b{color:var(--red);}
+.wl-sum-bar{height:6px;border-radius:99px;background:#eceee8;margin-top:6px;overflow:hidden;}
+.wl-sum-bar i{display:block;height:100%;border-radius:99px;}
+.wl-sum-pct{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px;}
+.wl-sum-pct span{font-size:18px;line-height:12px;color:#9aa39d;}
+.wl-close{display:block;width:100%;margin:14px 0 -4px;border:none;border-top:1px solid var(--border);background:transparent;color:var(--muted);padding:12px 0 2px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;}
 </style>
 </head>
 <body>
@@ -2165,7 +2185,7 @@ function wlGoProject(pid,tab,action){
   var st=p.status||'active';
   if(_projStatusFilter!=='all'&&_projStatusFilter!==st) setProjFilter(st,null);
   var q=document.getElementById('proj-search'); if(q&&q.value){ q.value=''; }
-  _wlPT[pid]=tab; renderProjects();
+  _wlPT[pid]=tab; window._wlOpenPid=pid; renderProjects();
   setTimeout(function(){
     var a=document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
     if(action==='exp'){ if(a.style.display==='none') toggleExpForm(pid); }
@@ -2692,6 +2712,49 @@ function wlOhSplit(dates){
   batch.commit().then(function(){ showToast('Overhead split on '+Object.keys(sel).length+' day(s) ✅'); setTimeout(wlOhReview,800); })
     .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not saved: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>','Overhead review'); });
 }
+
+// ── Project cards: one open at a time, the rest as a compact summary ──
+window._wlOpenPid=window._wlOpenPid||null;
+function wlCardSummary(p){
+  var lab=0, exp=0;
+  for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId===p.id&&e.endTime){ lab+=wlEntryLabor(e).cost; } }
+  for(var j=0;j<projectExpenses.length;j++){ var x=projectExpenses[j]; if(x.projectId===p.id) exp+=Number(x.amount)||0; }
+  var budget=Number(p.budget)||0, oh=Number(p.overhead)||0, cost=lab+exp+oh, profit=budget-cost;
+  var pct=budget>0?Math.min(100,Math.round(cost/budget*100)):0, days=(window.wlEvaDays?wlEvaDays(p.id):0);
+  var st=p.status||'active', SL={active:'🟢 Active',paused:'⏸ Paused',completed:'✓ Done'};
+  var sub=[]; var where=String(p.desc||'').trim(); if(where) sub.push(wlEsc(where));
+  sub.push(days?days+' day'+(days>1?'s':'')+' worked':'no days worked yet');
+  return '<div class="wl-sum-top"><span class="wl-sum-name">'+wlEsc(p.name||'')+'</span><span class="wl-sum-st">'+(SL[st]||st)+'</span></div>'+
+    '<div class="wl-sum-sub">'+sub.join(' · ')+'</div>'+
+    (budget>0?'<div class="wl-sum-money"><span><b>'+fmtC(budget)+'</b> contract</span><span class="'+(profit>=0?'good':'bad')+'"><b>'+(profit>=0?'+':'−')+fmtC(Math.abs(profit))+'</b> '+(profit>=0?'profit':'loss')+'</span></div>'+
+    '<div class="wl-sum-bar"><i style="width:'+pct+'%;background:'+(pct>100?'var(--red)':(pct>85?'#d9a23b':'var(--green)'))+'"></i></div><div class="wl-sum-pct">costs '+pct+'% of contract<span>›</span></div>':'<div class="wl-sum-pct">no contract value yet<span>›</span></div>');
+}
+function wlCollapseCards(){
+  var list=document.getElementById('projects-list'); if(!list) return;
+  var cards=list.querySelectorAll('.proj-card[data-pid]');
+  var only=cards.length===1?cards[0].getAttribute('data-pid'):null;
+  for(var i=0;i<cards.length;i++){
+    var c=cards[i], pid=c.getAttribute('data-pid'), p=projects.filter(function(x){return x.id===pid;})[0]; if(!p) continue;
+    if(!c.querySelector(':scope > .wl-sum')){
+      var sm=document.createElement('div'); sm.className='wl-sum'; sm.setAttribute('data-open',pid); sm.innerHTML=wlCardSummary(p); c.insertBefore(sm,c.firstChild);
+      var cl=document.createElement('button'); cl.type='button'; cl.className='wl-close'; cl.setAttribute('data-close',pid); cl.textContent='▲ Close project'; c.appendChild(cl);
+    }
+    var open=(pid===window._wlOpenPid)||(pid===only);
+    c.classList.toggle('wl-closed',!open);
+  }
+}
+window.wlCollapseCards=wlCollapseCards;
+function wlOpenCard(pid){
+  window._wlOpenPid=pid; wlCollapseCards();
+  var c=document.querySelector('#projects-list .proj-card[data-pid="'+pid+'"]');
+  if(c){ try{ c.scrollIntoView({block:'start'}); window.scrollBy(0,-70); }catch(e){} }
+}
+document.addEventListener('click',function(ev){
+  var t=ev.target; if(!t||!t.closest) return;
+  var o=t.closest('.proj-card.wl-closed'); if(o&&o.getAttribute('data-pid')){ ev.preventDefault(); wlOpenCard(o.getAttribute('data-pid')); return; }
+  var x=t.closest('.wl-close'); if(x){ var pid=x.getAttribute('data-close'); window._wlOpenPid=null; wlCollapseCards(); var c=document.querySelector('#projects-list .proj-card[data-pid="'+pid+'"]'); if(c){ try{ c.scrollIntoView({block:'center'}); }catch(e){} } }
+},true);
+(function(){ var _rp=renderProjects; renderProjects=function(){ var r=_rp.apply(this,arguments); try{ wlCollapseCards(); }catch(e){} return r; }; window.renderProjects=renderProjects; })();
 
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
@@ -3505,7 +3568,7 @@ function renderProjects(filter){
     var hist=projectHistory.filter(function(h){return h.projId===p.id;});
     var today=localDateStr();
 
-    var html='<div class="proj-card">';
+    var html='<div class="proj-card st-'+(p.status||'active')+'" data-pid="'+p.id+'">';
     // Header
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
     html+='<div><div style="font-family:var(--font-d);font-weight:800;font-size:16px">'+p.name+'</div>'+(p.client?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-top:2px">🏢 '+p.client+'</div>':'')+wlContactLine(p)+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+(window.wlJobDatesHtml?wlJobDatesHtml(p):'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():' → ongoing')+'</div>')+'</div>';
