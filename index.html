@@ -2756,6 +2756,25 @@ document.addEventListener('click',function(ev){
 },true);
 (function(){ var _rp=renderProjects; renderProjects=function(){ var r=_rp.apply(this,arguments); try{ wlCollapseCards(); }catch(e){} return r; }; window.renderProjects=renderProjects; })();
 
+// Bags used per R-value for the per-SKU rows (fiberglass / Roxul), from this project's
+// expense descriptions. Same rule as the project report.
+function wlSkuUsage(pid,skus,kind){
+  var kw=kind==='mw'?['roxul','mineral wool','mineralwool','rockwool','rock wool','stone wool','comfortbatt']:['fiberglass','fiber glass','fibre glass','fibreglass','batt'];
+  var byR={}, other=0, otherRs={};
+  for(var i=0;i<projectExpenses.length;i++){ var x=projectExpenses[i]; if(x.projectId!==pid) continue;
+    var d=String(x.desc||'').toLowerCase(), hit=false;
+    for(var k=0;k<kw.length;k++){ if(d.indexOf(kw[k])>=0){ hit=true; break; } }
+    if(!hit) continue;
+    if(kind!=='mw'&&(d.indexOf('roxul')>=0||d.indexOf('mineral')>=0||d.indexOf('rockwool')>=0)) continue;
+    var q=parseFloat((d.match(/^\s*([\d.]+)/)||[0,0])[1])||0; if(!q) continue;
+    var rm=d.match(/\br[\s-]?(\d{2})\b/), r=rm?parseInt(rm[1],10):0, matched=false;
+    for(var s=0;s<skus.length;s++){ var sr=parseInt(String(skus[s].key||'').replace(/\D/g,''),10); if(r&&sr===r){ byR[sr]=(byR[sr]||0)+q; matched=true; break; } }
+    if(!matched){ other+=q; if(r) otherRs['R-'+r]=1; }
+  }
+  return {byR:byR, other:other, otherRs:Object.keys(otherRs)};
+}
+window.wlSkuUsage=wlSkuUsage;
+
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 
@@ -3754,12 +3773,20 @@ function renderProjects(filter){
                  '</div>';
         }
         if(_detFg.length){
-          _detFg.forEach(function(d){ html+=matRow('🧶 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
+          var _ufg=wlSkuUsage(p.id,_detFg,'fg');
+          for(var _fi=0;_fi<_detFg.length;_fi++){ var _d=_detFg[_fi], _sr=parseInt(String(_d.key||'').replace(/\D/g,''),10), _u=_ufg.byR[_sr]||0, _lb='🧶 '+_d.label;
+            if(_detFg.length===1&&_ufg.other>0){ _u+=_ufg.other; if(_ufg.otherRs.length) _lb+=' <span style="color:#b45309;font-size:11px">⚠ bought: '+_ufg.otherRs.join(', ')+'</span>'; }
+            html+=matRow(_lb, _d.qty, _u, 'bags')+costTag(_d,p.id); }
+          if(_detFg.length>1&&_ufg.other>0) html+=matRow('🧶 Fiberglass (other R / no R)'+(_ufg.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_ufg.otherRs.join(', ')+'</span>':''),0,_ufg.other,'bags');
         } else if(mb.fbgBags>0||fbgUsed>0){
           html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
         }
         if(_detMw.length){
-          _detMw.forEach(function(d){ html+=matRow('🪨 '+d.label, d.qty, 0, 'bags')+costTag(d,p.id); });
+          var _umw=wlSkuUsage(p.id,_detMw,'mw');
+          for(var _mi=0;_mi<_detMw.length;_mi++){ var _dm=_detMw[_mi], _smr=parseInt(String(_dm.key||'').replace(/\D/g,''),10), _um=_umw.byR[_smr]||0, _lbm='🪨 '+_dm.label;
+            if(_detMw.length===1&&_umw.other>0){ _um+=_umw.other; if(_umw.otherRs.length) _lbm+=' <span style="color:#b45309;font-size:11px">⚠ bought: '+_umw.otherRs.join(', ')+'</span>'; }
+            html+=matRow(_lbm, _dm.qty, _um, 'bags')+costTag(_dm,p.id); }
+          if(_detMw.length>1&&_umw.other>0) html+=matRow('🪨 Roxul (other R / no R)'+(_umw.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_umw.otherRs.join(', ')+'</span>':''),0,_umw.other,'bags');
         }
         if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
