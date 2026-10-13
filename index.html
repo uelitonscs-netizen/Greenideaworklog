@@ -1518,7 +1518,8 @@ var PB_DEFS={
   fb1:{label:'Foam Board 1"',unit:'sheet'}, fb2:{label:'Foam Board 2"',unit:'sheet'}, ignBucket:{label:'Ignition Barrier',unit:'bucket'},
   caulkTube:{label:'Caulking tube',unit:'tube'}, wdCan:{label:'Window & door can',unit:'can'}, thermDome:{label:'Thermal dome',unit:'un'},
   baffle:{label:'Ventilation baffle',unit:'un'}, exhWrap:{label:'Exhaust / pipe wrap',unit:'un'}, dumpster:{label:'Disposal / dumpster',unit:'un'},
-  plywood:{label:'Plywood sheet',unit:'sheet'}
+  plywood:{label:'Plywood sheet',unit:'sheet'},
+  plastic4:{label:'Plastic 4 mil',unit:'roll'}, plastic15:{label:'Plastic 1.5 mil',unit:'roll'}, smartMemb:{label:'Smart membrane',unit:'roll'}
 };
 function pbNorm(s){
   s=String(s||'').toLowerCase();
@@ -1565,6 +1566,7 @@ function pbUnitInText(s){
   if(/\b(cans?|latas?)\b/.test(s)) return 'can';
   if(/\b(sheets?|chapas?|boards?|placas?)\b/.test(s)) return 'sheet';
   if(/\b(tubes?|tubos?)\b/.test(s)) return 'tube';
+  if(/\b(rolls?|rolos?)\b/.test(s)) return 'roll';
   return null;
 }
 function pbMatch(text,pid){
@@ -1574,7 +1576,7 @@ function pbMatch(text,pid){
   m=s.match(/^\s*(\d+(?:[.,]\d+)?)\s*(?:x\b)?/);
   if(m){ qty=parseFloat(m[1].replace(',','.')); }
   else {
-    m=s.match(/(\d+(?:[.,]\d+)?)\s*(?:bags?|cans?|latas?|sheets?|chapas?|tubes?|tubos?|buckets?|baldes?|sets?|un)\b/);
+    m=s.match(/(\d+(?:[.,]\d+)?)\s*(?:bags?|cans?|latas?|sheets?|chapas?|tubes?|tubos?|buckets?|baldes?|sets?|rolls?|rolos?|un)\b/);
     if(m) qty=parseFloat(m[1].replace(',','.'));
   }
   if(!(qty>0)) qty=1;
@@ -1584,6 +1586,10 @@ function pbMatch(text,pid){
     if(r && PB_DEFS['fgR'+r]) key='fgR'+r; else if(r) need='Fiberglass R-'+r+' não está no banco de preços do FieldBid'; else need='Fiberglass: inclua o R (ex: R15, R19)';
   } else if(/roxul|rockwool|mineral wool|la mineral|la de rocha/.test(s)){
     if(r && PB_DEFS['mwR'+r]) key='mwR'+r; else if(r) need='Roxul R-'+r+' não está no banco de preços do FieldBid'; else need='Roxul: inclua o R (ex: R15, R21)';
+  } else if(/smart\s*-?\s*membrane|membrain|smart\s*vapor/.test(s)) key='smartMemb';
+  else if(/plastic|plastico|\bpoly\b|polyethylene|visqueen|vapor\s*barrier/.test(s)){
+    var _mil=s.match(/(\d+(?:[.,]\d+)?)\s*-?\s*mil\b/), _mv=_mil?parseFloat(_mil[1].replace(',','.')):4;
+    if(_mv===4) key='plastic4'; else if(_mv===1.5) key='plastic15'; else need='Plastic '+_mv+' mil não está no banco de preços do FieldBid';
   } else if(/cellulose|celulose/.test(s)) key='celBag';
   else if(/closed ?cell|close cell|\bcc\b|c\.c\./.test(s)) key='ccSet';
   else if(/open ?cell|\boc\b|o\.c\./.test(s)) key='ocSet';
@@ -5243,6 +5249,7 @@ function showInstallBanner(){
       <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🪨 Roxul / Mineral Wool</strong><br>"roxul", "roxull", "mineral wool", "mineralwool", "rockwool", "rock wool", "stone wool"</div>
       <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🧶 Fiberglass</strong><br>"fiberglass", "fiber glass", "fibreglass", "fg", "batt", "batts", "kraft", "unfaced", "r-13" thru "r-49"</div>
       <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🔥 Ignition Barrier</strong><br>"ignition barrier", "ignition bar", "intumescent", "ignition paint", "fire paint", "ign barrier"</div>
+      <div style="margin-bottom:10px"><strong style="color:#1a6b2a">🧻 Plastic / Smart membrane</strong><br>"plastic 4 mil", "poly", "visqueen", "vapor barrier" · "plastic 1.5 mil" · "smart membrane", "membrain" — use "roll" (ex: 1 roll plastic 4 mil)</div>
       <div><strong style="color:#1a6b2a">🧱 Fire Blocking</strong><br>"fire blocking", "fireblocking", "fire-blocking", "fire block", "fireblock"</div>
     </div>
     <div style="margin-top:16px;font-size:11px;color:#888">💡 Use these words in your expense descriptions to automatically track material usage against your budget.</div>
