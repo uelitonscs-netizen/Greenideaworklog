@@ -1671,7 +1671,85 @@ function pbOnInput(ev){
 }
 document.addEventListener('input', pbOnInput, false);
 
+// ══════ S1 — helpers load only their own data ══════
+// Admin (signed in with email): everything, as before (startFullListeners).
+// Anyone else: only the public list of helper names; a helper (link, QR or name
+// picked) first registers this device as theirs (helperSessions/{uid}) and then
+// loads only their own record, hours, payments, assigned projects and those photos.
+var _wlHUnsubs=[], _wlHelperId=null;
+function _wlHStop(){ for(var i=0;i<_wlHUnsubs.length;i++){ try{ _wlHUnsubs[i](); }catch(e){} } _wlHUnsubs=[]; }
+function _wlWhenAuth(cb){
+  var u=auth.currentUser; if(u){ cb(u); return; }
+  var done=false, un=auth.onAuthStateChanged(function(x){ if(x&&!done){ done=true; try{ un(); }catch(e){} cb(x); } });
+  auth.signInAnonymously().catch(function(){});
+}
+function wlNamesListen(){
+  if(window._wlNamesOn) return; window._wlNamesOn=true;
+  _wlWhenAuth(function(){
+    db.collection('wl_public').doc('helpers').onSnapshot(function(d){
+      var list=(d&&d.exists&&d.data().list)||[], own=_wlHelperId?hById(_wlHelperId):null, out=[];
+      for(var i=0;i<list.length;i++){ if(own&&own.id===list[i].id&&own.rate!==undefined) out.push(own); else out.push({id:list[i].id,name:list[i].name}); }
+      if(own&&own.rate!==undefined&&!out.some(function(h){return h.id===own.id;})) out.push(own);
+      helpers=out; setSyncStatus(true); populateHelperSelectDD(); refreshView();
+      if(window._pendingQR){ window._pendingQR=false; showQRHelperModal(); }
+    },function(){ setSyncStatus(false); });
+  });
+}
+function wlHelperListen(hid){
+  if(!hid||_wlHelperId===hid) return;
+  _wlHStop(); _wlHelperId=hid; window._wlHelperReady=null;
+  _wlWhenAuth(function(u){
+    db.collection('helperSessions').doc(u.uid).set({helperId:hid,at:new Date().toISOString()}).catch(function(){}).then(function(){
+      var gotEntries=false;
+      _wlHUnsubs.push(db.collection('helpers').doc(hid).onSnapshot(function(d){
+        if(!d||!d.exists) return; var me=Object.assign({id:d.id},d.data()), found=false;
+        for(var i=0;i<helpers.length;i++){ if(helpers[i].id===hid){ helpers[i]=me; found=true; } } if(!found) helpers.push(me);
+        if(currentHelper&&currentHelper.id===hid) currentHelper=me;
+        setSyncStatus(true); refreshView();
+        if(window._pendingHelperSession===hid){ window._pendingHelperSession=null; openHelperView(hid); }
+      },function(){}));
+      _wlHUnsubs.push(db.collection('entries').where('helperId','==',hid).onSnapshot(function(s){
+        entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.startTime||'')<String(a.startTime||'')?-1:1;});
+        gotEntries=true; window._wlHelperReady=hid; refreshView();
+      },function(){}));
+      _wlHUnsubs.push(db.collection('payments').where('helperId','==',hid).onSnapshot(function(s){
+        payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.date||'')<String(a.date||'')?-1:1;}); refreshView();
+      },function(){}));
+      var photoUnsubs=[];
+      _wlHUnsubs.push(db.collection('projects').where('helpers','array-contains',hid).onSnapshot(function(s){
+        projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.createdAt||'')<String(a.createdAt||'')?-1:1;});
+        refreshView();
+        for(var k=0;k<photoUnsubs.length;k++){ try{ photoUnsubs[k](); }catch(e){} } photoUnsubs=[];
+        var ids=projects.map(function(p){return p.id;}), chunks={};
+        if(!ids.length){ projectPhotos=[]; refreshView(); return; }
+        for(var c=0;c<ids.length;c+=10){ (function(part,key){
+          photoUnsubs.push(db.collection('projectPhotos').where('projectId','in',part).onSnapshot(function(ps){
+            chunks[key]=ps.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+            var all=[]; for(var q in chunks){ all=all.concat(chunks[q]); } all.sort(function(a,b){return String(b.createdAt||'')<String(a.createdAt||'')?-1:1;});
+            projectPhotos=all; refreshView(); },function(){}));
+        })(ids.slice(c,c+10),'c'+c); }
+      },function(){}));
+      _wlHUnsubs.push(function(){ for(var k=0;k<photoUnsubs.length;k++){ try{ photoUnsubs[k](); }catch(e){} } });
+    });
+  });
+}
+window.wlHelperListen=wlHelperListen;
+// Admin keeps the public list of names (id + name only) up to date.
+function wlPublishHelperNames(){
+  try{ var list=helpers.map(function(h){return {id:h.id,name:h.name||''};}).sort(function(a,b){return a.name<b.name?-1:1;}), js=JSON.stringify(list);
+    if(js===window._wlPubNames) return; window._wlPubNames=js;
+    db.collection('wl_public').doc('helpers').set({list:list,at:new Date().toISOString()}).catch(function(){});
+  }catch(e){}
+}
 function startListeners(){
+  var sess=localStorage.getItem('wl_session')||'', u=auth.currentUser;
+  if(sess==='admin'&&u&&!u.isAnonymous){ return startFullListeners(); }
+  wlNamesListen();
+  var hid=window._wlLinkHid||(sess.indexOf('helper:')===0?sess.replace('helper:',''):null);
+  if(hid) wlHelperListen(hid);
+}
+
+function startFullListeners(){
   if(window._listenersStarted) return;
   window._listenersStarted = true;
   // Show connecting state immediately
@@ -1686,6 +1764,7 @@ function startListeners(){
   }
   db.collection('helpers').onSnapshot(function(s){
     helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    wlPublishHelperNames();
     setSyncStatus(true);
     refreshView();
     populateHelperSelectDD();
@@ -1852,6 +1931,7 @@ window.closeModal=closeModal;
 // ── HELPER VIEW ────────────────────────────────────────
 function openHelperView(hid){
   localStorage.setItem('wl_session','helper:'+hid);
+  if(!window._listenersStarted) wlHelperListen(hid);
   // Sign in anonymously so Firestore rules can identify the session
   if(!firebase.auth().currentUser){
     firebase.auth().signInAnonymously().catch(function(){});
@@ -4568,6 +4648,7 @@ function checkRoute(){
   }
   // Direct helper link
   if(hid){
+    window._wlLinkHid=hid;
     startListeners();
     auth.signInAnonymously().catch(function(){});
     var done=false;
@@ -4596,8 +4677,10 @@ function showQRHelperModal(){
       if(!id) return showToast('Select your name','err');
       closeModal('modal-helper-select');
       openHelperView(id);
-      // Clock in after view loads
-      setTimeout(function(){
+      // Clock in after this helper's hours have loaded (avoids a double clock-in)
+      var _qrTries=0;
+      (function _qrWait(){ if(window._listenersStarted||window._wlHelperReady===id||_qrTries>=16){ _qrGo(); } else { _qrTries++; setTimeout(_qrWait,500); } })();
+      function _qrGo(){
         var open=getOpen(id);
         var today=new Date().toDateString();
         var clockedOutToday=entries.some(function(e){return e.helperId===id&&e.endTime&&new Date(e.endTime).toDateString()===today;});
@@ -4611,7 +4694,7 @@ function showQRHelperModal(){
             showToast('📷 Clocked in! ✅');
           });
         }
-      },1000);
+      }
     };
   }
   document.getElementById('modal-helper-select').classList.add('open');
@@ -5151,6 +5234,7 @@ function doLogin(){
       currentAdminProfile = profile;
       localStorage.setItem('wl_session','admin');
       localStorage.setItem('wl_admin_profile', JSON.stringify(profile));
+      if(!window._listenersStarted){ location.reload(); return; }
       showScreen('admin');
       currentAdminTab='dashboard';
       renderAdminProfileBadge();
@@ -5187,7 +5271,7 @@ function adminLogout(){
   auth.signOut().then(function(){
     localStorage.removeItem('wl_session');
     window._listenersStarted = false;
-    showScreen('login');
+    location.reload();
   });
 }
 window.adminLogout=adminLogout;
