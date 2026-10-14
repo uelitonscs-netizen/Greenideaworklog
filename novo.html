@@ -1680,13 +1680,18 @@ var _wlHUnsubs=[], _wlHelperId=null;
 function _wlHStop(){ for(var i=0;i<_wlHUnsubs.length;i++){ try{ _wlHUnsubs[i](); }catch(e){} } _wlHUnsubs=[]; }
 function _wlWhenAuth(cb){
   var u=auth.currentUser; if(u){ cb(u); return; }
-  var done=false, un=auth.onAuthStateChanged(function(x){ if(x&&!done){ done=true; try{ un(); }catch(e){} cb(x); } });
-  auth.signInAnonymously().catch(function(){});
+  // Wait until Firebase has restored the saved sign-in; sign in anonymously only if nobody is
+  // signed in (never replace your account — WorkLog, FieldBid and GI share this sign-in).
+  var done=false, un=auth.onAuthStateChanged(function(x){
+    if(done) return;
+    if(x){ done=true; try{ un(); }catch(e){} cb(x); }
+    else if(!window._wlAnonAsked){ window._wlAnonAsked=true; auth.signInAnonymously().catch(function(){}); }
+  });
 }
 function wlNamesListen(){
   if(window._wlNamesOn) return; window._wlNamesOn=true;
   _wlWhenAuth(function(){
-    db.collection('wl_public').doc('helpers').onSnapshot(function(d){
+    window._wlNamesUnsub=db.collection('wl_public').doc('helpers').onSnapshot(function(d){
       var list=(d&&d.exists&&d.data().list)||[], own=_wlHelperId?hById(_wlHelperId):null, out=[];
       for(var i=0;i<list.length;i++){ if(own&&own.id===list[i].id&&own.rate!==undefined) out.push(own); else out.push({id:list[i].id,name:list[i].name}); }
       if(own&&own.rate!==undefined&&!out.some(function(h){return h.id===own.id;})) out.push(own);
@@ -1932,10 +1937,6 @@ window.closeModal=closeModal;
 function openHelperView(hid){
   localStorage.setItem('wl_session','helper:'+hid);
   if(!window._listenersStarted) wlHelperListen(hid);
-  // Sign in anonymously so Firestore rules can identify the session
-  if(!firebase.auth().currentUser){
-    firebase.auth().signInAnonymously().catch(function(){});
-  }
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
   document.getElementById('helper-name-display').textContent=h.name;
@@ -4637,7 +4638,6 @@ function checkRoute(){
   // QR Code scan - no helper yet, show modal to select name then clock in
   if(action==='clockin'&&!hid){
     startListeners();
-    auth.signInAnonymously().catch(function(){});
     showScreen('landing');
     if(helpers.length>0){ showQRHelperModal(); }
     else {
@@ -4647,10 +4647,20 @@ function checkRoute(){
     return true;
   }
   // Direct helper link
+  if(hid&&localStorage.getItem('wl_session')==='admin'){
+    var _un=auth.onAuthStateChanged(function(u){
+      try{ _un(); }catch(e){}
+      if(u&&!u.isAnonymous){
+        startFullListeners();
+        var _d=false, _w=setInterval(function(){ if(helpers.length>0&&!_d){ _d=true; clearInterval(_w); if(hById(hid)) openHelperViewAdmin(hid); else { showScreen('admin'); renderDashboard(); } } },300);
+        setTimeout(function(){ clearInterval(_w); if(!_d){ _d=true; showScreen('admin'); } },10000);
+      } else { localStorage.removeItem('wl_session'); location.href=location.pathname+'?helper='+encodeURIComponent(hid); }
+    });
+    return true;
+  }
   if(hid){
     window._wlLinkHid=hid;
     startListeners();
-    auth.signInAnonymously().catch(function(){});
     var done=false;
     var wait=setInterval(function(){
       if(helpers.length>0){
@@ -5234,7 +5244,12 @@ function doLogin(){
       currentAdminProfile = profile;
       localStorage.setItem('wl_session','admin');
       localStorage.setItem('wl_admin_profile', JSON.stringify(profile));
-      if(!window._listenersStarted){ location.reload(); return; }
+      if(!window._listenersStarted){
+        _wlHStop(); _wlHelperId=null; window._wlLinkHid=null;
+        try{ if(window._wlNamesUnsub) window._wlNamesUnsub(); }catch(_e){} window._wlNamesOn=false; window._wlNamesUnsub=null;
+        helpers=[]; entries=[]; payments=[]; projects=[]; projectPhotos=[];
+        startFullListeners();
+      }
       showScreen('admin');
       currentAdminTab='dashboard';
       renderAdminProfileBadge();
@@ -5271,7 +5286,10 @@ function adminLogout(){
   auth.signOut().then(function(){
     localStorage.removeItem('wl_session');
     window._listenersStarted = false;
-    location.reload();
+    try{ helpers=[]; entries=[]; payments=[]; advances=[]; absences=[]; projects=[]; projectExpenses=[]; projectPhotos=[]; }catch(_e){}
+    try{ projectHistory=[]; }catch(_e){}
+    showScreen('login');
+    wlNamesListen();
   });
 }
 window.adminLogout=adminLogout;
@@ -5282,7 +5300,7 @@ if(!checkRoute()){
   if(_session==='admin'){
     // Verify still authenticated
     auth.onAuthStateChanged(function(user){
-      if(user){
+      if(user&&!user.isAnonymous){
         currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
         startListeners();
         showScreen('admin');
@@ -5297,9 +5315,8 @@ if(!checkRoute()){
     });
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
-    // Start listeners immediately, sign in anonymously in background
+    // Helper session: startListeners signs in anonymously only if nobody is signed in
     startListeners();
-    auth.signInAnonymously().catch(function(){});
     if(helpers.length>0){
       var _h=hById(_hid);
       if(_h) openHelperView(_hid);
@@ -5312,13 +5329,12 @@ if(!checkRoute()){
           window._pendingHelperSession=null;
           localStorage.removeItem('wl_session');
         }
-      },5000);
+      },15000);
     }
   } else {
     showScreen('landing');
-    // Start listeners immediately for fast helper load, then sign in anonymously
+    // Names only; anonymous sign-in happens only if nobody is signed in
     startListeners();
-    auth.signInAnonymously().catch(function(){});
   }
 }
 </script>
