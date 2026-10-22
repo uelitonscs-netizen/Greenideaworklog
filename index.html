@@ -1205,7 +1205,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="modal">
     <div class="modal-title">✏️ Edit Expense</div>
     <div class="fg"><label>Description</label><input id="ee-desc"/></div>
-    <div class="fg"><label>Amount ($)</label><input id="ee-amount" type="number" min="0" step="0.01"/></div>
+    <div class="fg"><label>Amount ($)</label><input id="ee-amount" type="number" min="0" step="0.01"/><div id="ee-hint" style="display:none;margin-top:6px;font-size:12px;font-weight:700;padding:7px 10px;border-radius:8px;background:#f0f7f1;cursor:pointer"></div></div>
     <div class="fg"><label>Type</label>
       <select id="ee-type" style="background:#f9f9f9;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:14px;font-family:var(--font-d);width:100%">
         <option>🧱 Materials</option>
@@ -1557,7 +1557,8 @@ function pbStart(){
   }catch(e){}
 }
 function pbRefreshFocused(){
-  try{ var el=document.activeElement; if(el&&el.id&&el.id.indexOf('exd-')===0) pbOnInput({target:el}); }catch(e){}
+  try{ var el=document.activeElement; if(el&&el.id&&(el.id.indexOf('exd-')===0||el.id==='ee-desc')) pbOnInput({target:el}); }catch(e){}
+  try{ var ee=document.getElementById('modal-edit-expense'); if(ee&&ee.classList.contains('open')) pbOnInput({target:document.getElementById('ee-desc')}); }catch(e){}
 }
 // Returns null (nothing recognised) or {key,label,unit,qty,price,total,msg}
 function pbProjGalPerSet(pid,kind){
@@ -1640,11 +1641,12 @@ function pbReset(pid){
 window.pbReset=pbReset;
 function pbOnInput(ev){
   var t=ev&&ev.target; if(!t||!t.id) return;
-  if(t.id.indexOf('exa-')===0){ t.setAttribute('data-auto',''); return; }   // typed by hand: never overwrite
-  if(t.id.indexOf('exd-')!==0) return;
+  if(t.id.indexOf('exa-')===0||t.id==='ee-amount'){ t.setAttribute('data-auto',''); return; }   // typed by hand: never overwrite
+  if(t.id.indexOf('exd-')!==0&&t.id!=='ee-desc') return;
   pbStart();
-  var pid=t.id.substring(4);
-  var amt=document.getElementById('exa-'+pid), hint=document.getElementById('exh-'+pid);
+  var pid=(t.id==='ee-desc')?(window._eePid||''):t.id.substring(4);
+  var amt=(t.id==='ee-desc')?document.getElementById('ee-amount'):document.getElementById('exa-'+pid), hint=(t.id==='ee-desc')?document.getElementById('ee-hint'):document.getElementById('exh-'+pid);
+  if(hint&&hint.id==='ee-hint') hint._pbTotal=null;
   var auto=amt&&amt.getAttribute('data-auto')==='1';
   var m=pbMatch(t.value,pid);
   if(!m||!m.key){
@@ -1666,9 +1668,13 @@ function pbOnInput(ev){
   if(hint){
     hint.style.display='block'; hint.style.color='#15803d';
     var manual=amt&&amt.getAttribute('data-auto')!=='1';
-    hint.textContent='💡 '+(manual?'Sugerido: ':'')+m.qty+' × $'+m.price.toFixed(2)+'/'+m.unit+' = $'+m.total.toFixed(2)+' · '+m.label+' (c/ tax)';
+    hint.textContent='💡 '+(manual?'Sugerido: ':'')+m.qty+' × $'+m.price.toFixed(2)+'/'+m.unit+' = $'+m.total.toFixed(2)+' · '+m.label+' (c/ tax)'+((manual&&hint.id==='ee-hint')?' — toque para usar':'');
+    if(hint.id==='ee-hint') hint._pbTotal=manual?m.total:null;
   }
 }
+// Edit Expense: a tap on the suggestion applies it
+document.addEventListener('click',function(e){ var h=e.target&&e.target.id==='ee-hint'?e.target:null; if(!h||h._pbTotal==null) return;
+  var a=document.getElementById('ee-amount'); if(a){ a.value=Number(h._pbTotal).toFixed(2); a.setAttribute('data-auto','1'); } pbOnInput({target:document.getElementById('ee-desc')}); });
 document.addEventListener('input', pbOnInput, false);
 
 // ══════ S1 — helpers load only their own data ══════
@@ -4082,9 +4088,13 @@ var editingExpenseId=null;
 function openEditExpense(id){
   var exp=projectExpenses.find(function(e){return e.id===id;});
   if(!exp) return showToast('Expense not found','err');
-  editingExpenseId=id;
+  editingExpenseId=id; window._eePid=exp.projectId||exp.pid||'';
   document.getElementById('ee-desc').value=exp.desc||'';
   document.getElementById('ee-amount').value=exp.amount||'';
+  try{ var _m=pbMatch(exp.desc||'',window._eePid), _a=document.getElementById('ee-amount'), _h=document.getElementById('ee-hint');
+    var _auto=!!(_m&&_m.key&&_m.price>0&&Math.abs((Number(exp.amount)||0)-_m.total)<0.005);
+    _a.setAttribute('data-auto',_auto?'1':''); if(_h){ _h.style.display='none'; _h.textContent=''; }
+    pbStart(); pbOnInput({target:document.getElementById('ee-desc')}); }catch(e){}
   document.getElementById('ee-type').value=exp.type||'📦 General';
   document.getElementById('ee-date').value = exp.date ? localDateStr(parseLocalDate(exp.date)) : localDateStr();
   document.getElementById('modal-edit-expense').classList.add('open');
