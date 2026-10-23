@@ -1968,12 +1968,12 @@ function updateHelperStats(){
   var wrap=document.getElementById('proj-selector-wrap'), sel=document.getElementById('clock-proj-select');
   if(!open){
     var myProj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;});
-    sel.innerHTML='<option value="">No project</option>'+myProj.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'">'+lbl+'</option>';}).join('');
-    wrap.style.display=myProj.length>0?'block':'none';
+    sel.innerHTML='<option value="">No project</option>'+myProj.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'">'+lbl+'</option>';}).join('')+wlCatOpts('');
+    wrap.style.display='block';   // the categories (maintenance, warehouse, supplies) are always there
   } else { wrap.style.display='none'; }
   // Status text
   var projName='';
-  if(open&&open.projectId){var pj=projects.find(function(p){return p.id===open.projectId;}); if(pj) projName='WORKING ON: '+pj.name.toUpperCase();}
+  if(open){ var pj=wlProjOf(open); if(pj) projName='WORKING ON: '+String(pj.name).toUpperCase(); }
   document.getElementById('clock-status').textContent=open?(projName||'CLOCKED IN SINCE '+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'NOT CLOCKED IN';
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
   if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red'; tel.className='clock-time'; updateElapsed(open.startTime);}
@@ -2018,8 +2018,8 @@ function toggleClock(){
       db.collection('entries').doc(open.id).update({endTime:new Date().toISOString(),clockOutLocation:loc||null});
       showToast(loc?'Clocked out! 📍':'Clocked out! ✅');
     } else {
-      var projId=document.getElementById('clock-proj-select').value||null;
-      db.collection('entries').add({helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:projId});
+      var _pv=wlPickVal(document.getElementById('clock-proj-select').value), projId=_pv.projectId;
+      db.collection('entries').add({helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:projId,category:_pv.category});
       showToast(loc?'Clocked in! 📍':'Clocked in! ⏱');
     }
   });
@@ -2075,7 +2075,7 @@ function renderHelperHistory(){
     var rows = wEnts.map(function(e){
       var mins = gMin(e);
       var pay = (mins/60)*rate;
-      var proj = e.projectId ? projects.find(function(p){return p.id===e.projectId;}) : null;
+      var proj = wlProjOf(e);
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border);font-size:12px">'+
         '<div>'+
           '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
@@ -2174,7 +2174,7 @@ function renderDashboard(){
 
   // No-project alert
   var alert=document.getElementById('no-proj-alert');
-  var noProj=entries.filter(function(e){return !e.endTime&&!e.projectId;});
+  var noProj=entries.filter(function(e){return !e.endTime&&!e.projectId&&!e.category;});
   if(alert){
     if(noProj.length>0){
       var ap=projects.filter(function(p){return p.status==='active';});
@@ -2217,7 +2217,7 @@ function wlRecentHtml(rec){
     if(label!==lastDay){ out+='<div class="wl-rc-day">'+label+'</div>'; lastDay=label; }
     var h=hById(e.helperId), name=h?h.name:'?';
     var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
-    var p=e.projectId?projects.filter(function(x){return x.id===e.projectId;})[0]:null;
+    var p=wlProjOf(e);
     var ot=(typeof wlEntryLabor==='function')?wlEntryLabor(e).otMins:0;
     out+='<div class="wl-rc-row"><div class="wl-rc-av">'+wlEsc(ini)+'</div>'+
       '<div class="wl-rc-mid"><div class="wl-rc-name">'+wlEsc(name)+'</div>'+
@@ -2237,7 +2237,7 @@ function wlRenderOnClock(){
   for(var i=0;i<open.length;i++){
     var e=open[i], hp=hById(e.helperId), name=hp?hp.name:'?';
     var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
-    var p=e.projectId?projects.filter(function(x){return x.id===e.projectId;})[0]:null;
+    var p=wlProjOf(e);
     h+='<div class="wl-oc-row"><div class="wl-oc-av'+(p?'':' warn')+'">'+wlEsc(ini)+'</div><div class="wl-oc-mid"><div class="wl-oc-name">'+wlEsc(name)+'</div>'+
        '<div class="wl-oc-sub'+(p?'':' warn')+'">'+(p?wlEsc(p.name):'No job picked')+'</div></div>'+
        '<div class="wl-oc-time" data-start="'+wlEsc(e.startTime)+'">'+wlHm((Date.now()-new Date(e.startTime))/60000)+'</div></div>';
@@ -3044,7 +3044,7 @@ function renderEntriesList(){
       if(proj&&proj.status!=='active'&&!apList.some(function(p){return p.id===proj.id;})){
         apList=apList.concat([proj]);
       }
-      var apOpts='<option value="">No project</option>'+apList.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'')+(p.status&&p.status!=='active'?' ('+(p.status==='completed'?'done':p.status)+')':'');return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+lbl+'</option>';}).join('');
+      var apOpts='<option value="">No project</option>'+apList.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'')+(p.status&&p.status!=='active'?' ('+(p.status==='completed'?'done':p.status)+')':'');return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+lbl+'</option>';}).join('')+wlCatOpts(e.category||'');
       var hasLoc=e.clockInLocation||e.clockOutLocation;
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
@@ -3271,6 +3271,23 @@ function renderSummary(){
       '<div class="sum-pay">'+fmtC(wp.totalPay)+'</div>'+
       '</div></div>';
   }).join('');
+  // Overhead hours in the period (not on a client project): maintenance, warehouse, supplies
+  try{ var byCat={}, catM=0, dayCat={};   // minutes and labor $ per category; minutes per day per category (for the overhead day)
+    for(var ci=0;ci<entries.length;ci++){ var ce=entries[ci]; if(!ce.category||!ce.endTime) continue; var ct=new Date(ce.startTime).getTime(); if(ct<range.s||ct>range.e) continue;
+      var cm=gMin(ce), cc=0; try{ cc=wlEntryLabor(ce).cost||0; }catch(x){} var B=byCat[ce.category]||(byCat[ce.category]={m:0,labor:0,oh:0,ohDays:0}); B.m+=cm; B.labor+=cc; catM+=cm;
+      var dk=wlOhDate(ce.startTime); var DD=dayCat[dk]||(dayCat[dk]={}); DD[ce.category]=(DD[ce.category]||0)+cm; }
+    var skipped=0;
+    for(var dk2 in dayCat){ var oth=null; try{ oth=wlOhOthers(dk2,null); }catch(x){ oth={units:0}; }
+      if(oth&&oth.units>0){ skipped++; continue; }   // a project already carries this day's overhead: not charged twice
+      var dm=0; for(var c2 in dayCat[dk2]) dm+=dayCat[dk2][c2]; var rate=(typeof DAILY_OVERHEAD!=='undefined')?Number(DAILY_OVERHEAD)||0:0;
+      for(var c3 in dayCat[dk2]){ var sh=dm>0?dayCat[dk2][c3]/dm:0; byCat[c3].oh+=rate*sh; byCat[c3].ohDays+=sh; } }
+    if(catM>0){ var ch='', tl=0, to=0;
+      for(var ck in byCat){ var Bc=byCat[ck]; tl+=Bc.labor; to+=Bc.oh;
+        ch+='<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px"><div style="font-weight:700">'+wlCatLabel(ck)+' <span style="color:var(--muted);font-weight:600">'+Math.floor(Bc.m/60)+'h '+p2(Bc.m%60)+'m</span></div>'+
+           '<div style="text-align:right;color:var(--muted)">'+fmtC(Bc.labor)+' labor'+(Bc.oh>0?' + '+fmtC(Bc.oh)+' overhead ('+(Math.round(Bc.ohDays*10)/10)+' day'+(Bc.ohDays!==1?'s':'')+')':'')+' = <b style="color:var(--text)">'+fmtC(Bc.labor+Bc.oh)+'</b></div></div>'; }
+      list.innerHTML+='<div class="sum-row" style="display:block;border-top:2px dashed var(--border)"><div class="sum-name" style="margin-bottom:2px">🧰 Overhead work · not on a project</div>'+ch+
+        '<div style="display:flex;justify-content:space-between;padding-top:6px;font-size:12.5px;font-weight:800"><span>Total</span><span>'+fmtC(tl+to)+'</span></div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">Overhead day = the daily overhead rate on days with no project charged'+(skipped?' · '+skipped+' day'+(skipped!==1?'s':'')+' already charged to a project (not counted twice)':'')+'</div></div>'; } }catch(e){}
   var th=document.getElementById('sum-total-hrs'), tp=document.getElementById('sum-total-pay');
   if(th) th.textContent=Math.floor(totalM/60)+'h '+p2(totalM%60)+'m';
   if(tp) tp.textContent=fmtC(totalP);
@@ -4197,7 +4214,7 @@ function saveEditProject(){
 }
 window.saveEditProject=saveEditProject;
 
-function assignEntryProj(eid,pid){if(!pid) return; db.collection('entries').doc(eid).update({projectId:pid}); var p=projects.find(function(x){return x.id===pid;}); showToast('Assigned to '+(p?p.name:'project')+'! ✅');}
+function assignEntryProj(eid,pid){if(!pid) return; var v=wlPickVal(pid); db.collection('entries').doc(eid).update({projectId:v.projectId,category:v.category}); var p=v.projectId?projects.find(function(x){return x.id===v.projectId;}):null; showToast('Assigned to '+(p?p.name:(v.category?wlCatLabel(v.category):'project'))+'! ✅');}
 window.assignEntryProj=assignEntryProj;
 
 // ── PHOTOS ─────────────────────────────────────────────
@@ -4362,6 +4379,13 @@ tpSyncAll();
 
 
 // Project list for "+ Hours": same rule as the entry project picker (active projects).
+
+// ── Work categories: hours that are not on a client project (maintenance, warehouse, supplies)
+var WL_CATS=[{id:'maintenance',label:'🔧 Maintenance · equipment / rig',short:'🔧 Maintenance'},{id:'shop',label:'🧹 Warehouse · cleaning / organizing',short:'🧹 Warehouse'},{id:'supplies',label:'🚚 Supplies run / pickup',short:'🚚 Supplies'}];
+function wlCatOpts(selId){ var h=''; for(var i=0;i<WL_CATS.length;i++) h+='<option value="__cat:'+WL_CATS[i].id+'"'+(selId===WL_CATS[i].id?' selected':'')+'>'+WL_CATS[i].label+'</option>'; return h; }
+function wlCatLabel(id){ for(var i=0;i<WL_CATS.length;i++) if(WL_CATS[i].id===id) return WL_CATS[i].short; return id?String(id):''; }
+function wlProjOf(e){ if(!e) return null; if(e.projectId){ var p=projects.find(function(x){return x.id===e.projectId;}); if(p) return p; } if(e.category) return {name:wlCatLabel(e.category),isCat:true,id:'__cat:'+e.category}; return null; }
+function wlPickVal(v){ v=String(v||''); if(v.indexOf('__cat:')===0) return {projectId:null,category:v.substring(6)}; return {projectId:v||null,category:null}; }
 function qhFillProjects(){
   var sel=document.getElementById('qh-proj'); if(!sel) return;
   while(sel.firstChild) sel.removeChild(sel.firstChild);
@@ -4372,6 +4396,7 @@ function qhFillProjects(){
     var p=list[i]; o=document.createElement('option'); o.value=p.id;
     o.textContent=p.name+(p.desc?' · '+p.desc:''); sel.appendChild(o);
   }
+  sel.insertAdjacentHTML('beforeend',wlCatOpts(''));
   sel.value='';
 }
 function saveQuickHours(){
@@ -4382,7 +4407,7 @@ function saveQuickHours(){
   if(e<=s) return showToast('End must be after start','err');
   var _qhSel=document.getElementById('qh-proj'), _qhPid=_qhSel?_qhSel.value:'';
   var _qhEntry={helperId:quickHoursHelperId,startTime:s.toISOString(),endTime:e.toISOString(),note:note||'Added by admin',type:'manual',addedByAdmin:true};
-  if(_qhPid) _qhEntry.projectId=_qhPid;   // same link clock-ins use: counts in that project's labor P&L
+  var _qv=wlPickVal(_qhPid); if(_qv.projectId) _qhEntry.projectId=_qv.projectId; if(_qv.category) _qhEntry.category=_qv.category;   // same link clock-ins use: counts in that project's labor P&L
   db.collection('entries').add(_qhEntry);
   closeModal('modal-quick-hours');
   var _qhP=_qhPid?projects.find(function(x){return x.id===_qhPid;}):null;
@@ -4635,7 +4660,7 @@ window.wlRestoreRun=wlRestoreRun;
 
 function exportCSV(){
   var rows=[['Helper','Date','Start','End','Minutes','Note','Type','Project']];
-  entries.filter(function(e){return e.endTime;}).forEach(function(e){var h=hById(e.helperId); var p=e.projectId?projects.find(function(x){return x.id===e.projectId;}):null; rows.push([h?h.name:'?',new Date(e.startTime).toLocaleDateString(),new Date(e.startTime).toLocaleTimeString(),new Date(e.endTime).toLocaleTimeString(),gMin(e),e.note||'',e.type,p?p.name:'']);});
+  entries.filter(function(e){return e.endTime;}).forEach(function(e){var h=hById(e.helperId); var p=wlProjOf(e); rows.push([h?h.name:'?',new Date(e.startTime).toLocaleDateString(),new Date(e.startTime).toLocaleTimeString(),new Date(e.endTime).toLocaleTimeString(),gMin(e),e.note||'',e.type,p?p.name:'']);});
   var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.map(function(r){return r.map(function(v){return '"'+v+'"';}).join(',');}).join('\n')],{type:'text/csv'})); a.download='worklog.csv'; a.click(); showToast('CSV exported!');
 }
 window.exportCSV=exportCSV;
@@ -4749,7 +4774,7 @@ function startGeofence(){
       if(!open&&!clockedOutToday&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
         sessionStorage.setItem('geo_clocked_'+currentHelper.id,'1');
         var loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
-        var projId=document.getElementById('clock-proj-select').value||null;
+        var _pv2=wlPickVal(document.getElementById('clock-proj-select').value), projId=_pv2.projectId;
         db.collection('entries').add({
           helperId:currentHelper.id,
           startTime:new Date().toISOString(),
@@ -4757,7 +4782,8 @@ function startGeofence(){
           note:'Auto clock in via geofence',
           type:'geofence',
           clockInLocation:loc,
-          projectId:projId
+          projectId:projId,
+          category:_pv2.category
         });
         showToast('📍 Auto clocked in at depot!');
       }
