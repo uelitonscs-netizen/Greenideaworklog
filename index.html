@@ -3892,7 +3892,7 @@ function renderProjects(filter){
           if(mb.oc.inch===0&&ocBF===0) html+='<div style="font-size:10px;color:var(--amber);margin-top:-5px;margin-bottom:8px">⚠️ Set thickness (inches) in project settings to calculate BF</div>';
         }
         if(mb.celBags>0||celUsed>0) html+=matRow('📦 Cellulose',mb.celBags,celUsed,'bags');
-        if(mb.roxBags>0||roxUsed>0) html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags');
+        // (the merged Roxul total is shown below, only when FieldBid sent no per-R detail — same rule as fiberglass)
         // FieldBid now sends a per-SKU breakdown. When present, show one row per
         // material (Fiberglass R-19, R-38, Roxul R-21...) instead of one merged
         // total, which made two different products look like a single line.
@@ -3928,7 +3928,8 @@ function renderProjects(filter){
             html+=matRow(_lbm, _dm.qty, _um, 'bags')+costTag(_dm,p.id); }
           if(_detMw.length>1&&_umw.other>0) html+=matRow('🪨 Roxul (other R / no R)'+(_umw.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_umw.otherRs.join(', ')+'</span>':''),0,_umw.other,'bags');
         }
-        if(mb.ignSqft>0||ignUsed>0){
+        else if(mb.roxBags>0||roxUsed>0){ html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags'); }
+  if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
           var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
           html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
