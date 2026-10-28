@@ -217,6 +217,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .tp-ap button{border:none;background:#fff;color:#b0b6bd;font-weight:700;font-size:15px;padding:10px 14px;cursor:pointer;font-family:inherit;}
 .tp-ap button.on-am{background:var(--green);color:#fff;font-weight:800;}
 .tp-ap button.on-pm{background:#d97706;color:#fff;font-weight:800;}
+
+.ws-l{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px;}
+.ws-in{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:#1a1a1a;}
+.ws-mate{display:flex;align-items:center;justify-content:flex-start;gap:10px;font-size:14px;font-weight:600;padding:8px 2px;color:var(--text);}
+.ws-mate input[type=checkbox]{width:20px!important;height:20px!important;min-width:20px;flex:none;margin:0;padding:0;accent-color:var(--green);}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -2489,6 +2494,8 @@ function wlFbuAct(a,id){
   else if(a==='tog'){ var r=_wlFbuAll.rows[parseInt(id,10)]; if(r){ r.on=!r.on; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); } }
   else if(a==='allapply') wlFbuAllApply();
   else if(a==='ohsplit') wlOhSplit([id]);
+  else if(a==='ohhours') wlOhSplitHours(id==='all'?null:[id]);
+  else if(a==='spgo') wlSplitApply(id);
   else if(a==='ohkeep') wlOhKeep(id,true);
   else if(a==='ohunkeep') wlOhKeep(id,false);
   else if(a==='ohshowkept'){ window._wlOhShowKept=!window._wlOhShowKept; wlOhReview(); }
@@ -2787,23 +2794,99 @@ function wlOhOverDays(kept){
   out.sort(function(a,b){ return a.date<b.date?1:-1; });
   return out;
 }
+// ══ Days split between jobs: the day's overhead follows the hours ══
+// Person-hours per project on one day (client projects only; categories keep their own rule)
+function wlDayHours(date){ var by={}, hs={}; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(!e||!e.endTime||!e.projectId||!e.startTime) continue; if(wlOhDate(e.startTime)!==date) continue; var m=gMin(e); if(!(m>0)) continue; by[e.projectId]=(by[e.projectId]||0)+m; hs[e.helperId]=1; } return {by:by, helpers:Object.keys(hs).length}; }
+// The plan for one day: how many teams (2 people ≈ 1 team, the app's rule), the day's overhead, and each job's share by hours
+function wlOhHoursPlan(date){
+  var dh=wlDayHours(date), pids=[], tot=0; for(var k in dh.by){ var pj=null; for(var q=0;q<projects.length;q++) if(projects[q].id===k){ pj=projects[q]; break; } if(pj&&dh.by[k]>0){ pids.push(k); tot+=dh.by[k]; } }
+  if(!pids.length||!tot) return null;
+  var teams=Math.max(1,Math.min(NUM_TEAMS||1,Math.round(dh.helpers/2))), charged={}, chTot=0, other=0;
+  for(var p=0;p<projects.length;p++){ var pr=projects[p], od=pr.ohDays||[]; for(var j=0;j<od.length;j++){ var d=od[j]; if(!d||d.date!==date) continue; var amt=(Number(d.teams)||1)*(Number(d.rate)>0?Number(d.rate):DAILY_OVERHEAD); if(pids.indexOf(pr.id)>=0){ charged[pr.id]=(charged[pr.id]||0)+amt; chTot+=amt; } else other+=amt; } }
+  var pool=teams*DAILY_OVERHEAD; if(chTot>0) pool=Math.min(pool,chTot); pool=Math.max(0,Math.min(pool,wlOhCap()-other)); pool=Math.round(pool*100)/100;
+  var rows=[], done=true, acc=0;
+  for(var r=0;r<pids.length;r++){ var sh=(r===pids.length-1)?Math.round((pool-acc)*100)/100:Math.round(pool*dh.by[pids[r]]/tot*100)/100; acc+=sh; var pn=''; for(var z=0;z<projects.length;z++) if(projects[z].id===pids[r]) pn=projects[z].name||'?';
+    rows.push({pid:pids[r],name:pn,mins:dh.by[pids[r]],share:sh,now:Math.round((charged[pids[r]]||0)*100)/100}); if(Math.abs((charged[pids[r]]||0)-sh)>0.5) done=false; }
+  return {date:date,teams:teams,helpers:dh.helpers,pool:pool,rows:rows,done:done};
+}
+// Days in the last 60 that had hours on 2+ jobs and are not yet split by hours
+function wlOhHoursDays(){ var seen={}, out=[], lim=Date.now()-60*86400000; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(!e||!e.endTime||!e.projectId||!e.startTime) continue; var t=new Date(e.startTime).getTime(); if(t<lim) continue; var d=wlOhDate(e.startTime); (seen[d]=seen[d]||{})[e.projectId]=1; }
+  for(var d2 in seen){ if(Object.keys(seen[d2]).length<2) continue; var pl=wlOhHoursPlan(d2); if(pl&&pl.rows.length>=2&&!pl.done) out.push(pl); }
+  out.sort(function(a,b){ return a.date<b.date?1:-1; }); return out; }
+function wlOhHoursHtml(){ var L=wlOhHoursDays(); if(!L.length) return '';
+  var h='<div class="wl-fbu-sub" style="margin-top:14px"><b>⏱ Days split between jobs</b> · the crew worked on more than one job. <b>Split by hours</b> charges the day\'s overhead to each job by the hours logged there (2 people ≈ 1 team).</div>';
+  for(var i=0;i<L.length;i++){ var g=L[i]; h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span>'+g.helpers+' '+(g.helpers===1?'person':'people')+' ≈ '+g.teams+' team'+(g.teams>1?'s':'')+' · '+fmtC(g.pool)+'</span></div>';
+    for(var r=0;r<g.rows.length;r++){ var R=g.rows[r]; h+='<div class="wl-oh-day-row"><span>'+wlEsc(R.name)+' · '+fmtD(R.mins)+'</span><span class="wl-oh-amt">'+(R.now?'<s style="color:var(--muted);font-weight:600">'+fmtC(R.now)+'</s> ':'')+fmtC(R.share)+'</span></div>'; }
+    h+='<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="ohhours" data-id="'+g.date+'">Split by hours</button></div></div>'; }
+  if(L.length>1) h+='<button type="button" class="wl-fbu-go" data-fbu="ohhours" data-id="all">Split all '+L.length+' days by hours</button>';
+  return h; }
+function wlOhSplitHours(dates){ var L=wlOhHoursDays(); if(dates) L=L.filter(function(g){ return dates.indexOf(g.date)>=0; }); if(!L.length) return;
+  var upd={}; for(var i=0;i<L.length;i++){ var g=L[i]; for(var r=0;r<g.rows.length;r++){ var R=g.rows[r], pr=null; for(var q=0;q<projects.length;q++) if(projects[q].id===R.pid) pr=projects[q];
+      if(!pr) continue; var nd=upd[pr.id]||(upd[pr.id]=JSON.parse(JSON.stringify(pr.ohDays||[]))), hit=false;
+      for(var j=0;j<nd.length;j++){ if(nd[j]&&nd[j].date===g.date){ var t=Number(nd[j].teams)||1; nd[j].rate=Math.round(R.share/t*100)/100; nd[j].ok=true; hit=true; } }
+      if(!hit) nd.push({date:g.date,teams:1,rate:R.share,ok:true}); } }
+  var batch=db.batch(), n=0; for(var pid in upd){ batch.update(db.collection('projects').doc(pid),{ohDays:upd[pid],overhead:calcOHTotal(upd[pid])}); n++; }
+  wlFbuShow('<div class="wl-fbu-msg">Updating '+n+' project(s)…</div>','Overhead review');
+  batch.commit().then(function(){ showToast('Overhead split by hours on '+L.length+' day(s) ✅'); setTimeout(wlOhReview,800); })
+    .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not saved: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>','Overhead review'); });
+}
+window.wlOhSplitHours=wlOhSplitHours;
+
+// ══ Split one entry: the crew moved to another job (or maintenance / warehouse / supplies) at a given time ══
+function wlSplitEntry(eid){ var e=null; for(var i=0;i<entries.length;i++) if(entries[i].id===eid) e=entries[i]; if(!e) return;
+  var st=new Date(e.startTime), en=e.endTime?new Date(e.endTime):new Date(), mid=new Date((st.getTime()+en.getTime())/2); mid.setMinutes(Math.round(mid.getMinutes()/15)*15,0,0);
+  var hh=('0'+mid.getHours()).slice(-2)+':'+('0'+mid.getMinutes()).slice(-2), from=wlProjOf(e), fromName=from?from.name:'No project';
+  var dk=wlOhDate(e.startTime), mates='';
+  for(var j=0;j<entries.length;j++){ var x=entries[j]; if(!x||x.id===e.id||x.helperId===e.helperId||!x.startTime) continue; if(wlOhDate(x.startTime)!==dk) continue; if((x.projectId||'')!==(e.projectId||'')||(x.category||'')!==(e.category||'')) continue;
+    var hx=null; for(var q=0;q<helpers.length;q++) if(helpers[q].id===x.helperId) hx=helpers[q];
+    mates+='<label class="ws-mate"><input type="checkbox" class="ws-mc" value="'+x.id+'" checked> '+wlEsc(hx?hx.name:'?')+' · '+new Date(x.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'–'+(x.endTime?new Date(x.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'now')+'</label>'; }
+  var he=null; for(var q2=0;q2<helpers.length;q2++) if(helpers[q2].id===e.helperId) he=helpers[q2];
+  var opts='<option value="">Choose…</option>'+projects.filter(function(p){ return p.status==='active'&&p.id!==e.projectId; }).map(function(p){ return '<option value="'+p.id+'">'+wlEsc(p.name+(p.desc?' · '+p.desc:''))+'</option>'; }).join('')+wlCatOpts('');
+  var h='<div class="wl-fbu-sub"><b>'+wlEsc(he?he.name:'')+'</b> · '+st.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+st.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'–'+(e.endTime?en.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'now')+' on <b>'+wlEsc(fromName)+'</b></div>'+
+    '<label class="ws-l">Switched at<input type="time" id="wsT" value="'+hh+'" class="ws-in"></label>'+
+    '<label class="ws-l">Then worked on<select id="wsP" class="ws-in">'+opts+'</select></label>'+
+    (mates?'<div class="ws-l">Same for the crew</div>'+mates:'')+
+    '<div class="wl-fbu-sub" style="margin-top:8px">Before that time the hours stay on '+wlEsc(fromName)+'; after it they go to the job you chose.</div>'+
+    '<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="spgo" data-id="'+e.id+'">✂️ Split</button></div>';
+  wlFbuShow(h,'Split hours');
+}
+window.wlSplitEntry=wlSplitEntry;
+function wlSplitApply(eid){ var tv=(document.getElementById('wsT')||{}).value||'', pv=wlPickVal((document.getElementById('wsP')||{}).value||'');
+  if(!/^\d\d:\d\d$/.test(tv)){ showToast('Enter the time they switched','err'); return; }
+  if(!pv.projectId&&!pv.category){ showToast('Choose where they worked after','err'); return; }
+  var ids=[eid], cb=document.querySelectorAll('#wl-fbu .ws-mc'); for(var c=0;c<cb.length;c++) if(cb[c].checked) ids.push(cb[c].value);
+  var hh=parseInt(tv.slice(0,2),10), mm=parseInt(tv.slice(3,5),10), batch=db.batch(), n=0, skip=0;
+  for(var i=0;i<ids.length;i++){ var e=null; for(var k=0;k<entries.length;k++) if(entries[k].id===ids[i]) e=entries[k]; if(!e) continue;
+    var s0=new Date(e.startTime), t=new Date(s0.getFullYear(),s0.getMonth(),s0.getDate(),hh,mm,0,0), end=e.endTime?new Date(e.endTime):null;
+    if(!(t>s0)||(end&&!(t<end))||(!end&&!(t<new Date()))){ skip++; continue; }
+    var from=wlProjOf(e);
+    batch.update(db.collection('entries').doc(e.id),{endTime:t.toISOString()});
+    var ne={helperId:e.helperId,startTime:t.toISOString(),endTime:e.endTime||null,note:'Split from '+(from?from.name:'—'),type:e.endTime?'manual':(e.type||'clock'),addedByAdmin:true,projectId:pv.projectId,category:pv.category};
+    if(e.endTime&&e.clockOutLocation) ne.clockOutLocation=e.clockOutLocation;
+    batch.set(db.collection('entries').doc(),ne); n++; }
+  if(!n){ showToast('That time is outside the hours of this entry','err'); return; }
+  batch.commit().then(function(){ wlFbuClose(); showToast('✂️ Split '+n+' entr'+(n>1?'ies':'y')+(skip?' · '+skip+' skipped (time outside their hours)':'')+' ✅'); })
+    .catch(function(e2){ showToast('Not saved: '+(e2&&e2.message||e2),'err'); });
+}
+window.wlSplitApply=wlSplitApply;
+
 function wlOhBanner(){
   var b=document.getElementById('wl-ohaudit'); if(!b) return;
-  var o=wlOhOverDays(); if(!o.length){ b.innerHTML=''; return; }
+  var o=wlOhOverDays(); if(!o.length){ var _hd=0; try{ _hd=wlOhHoursDays().length; }catch(e){} b.innerHTML=_hd?'<button type="button" class="wl-oh-banner" onclick="wlOhReview()">⏱ '+_hd+' day'+(_hd>1?'s':'')+' split between jobs — split the overhead by hours</button>':''; return; }
   var extra=0; for(var i=0;i<o.length;i++) extra+=o[i].amount-wlOhCap();
   b.innerHTML='<button type="button" class="wl-oh-banner" onclick="wlOhReview()">⚠ Overhead counted more than once on <b>'+o.length+' day'+(o.length>1?'s':'')+'</b> (≈'+fmtC(extra)+' extra) — Review</button>';
 }
 window.wlOhBanner=wlOhBanner;
 function wlOhReview(){
   var o=wlOhOverDays(), cap=wlOhCap();
-  if(!o.length){ wlFbuShow('<div class="wl-fbu-msg">No day has overhead above the company day ('+fmtC(cap)+'). ✅</div>'+wlOhKeptHtml(),'Overhead review'); return; }
+  if(!o.length){ wlFbuShow('<div class="wl-fbu-msg">No day has overhead above the company day ('+fmtC(cap)+'). ✅</div>'+wlOhHoursHtml()+wlOhKeptHtml(),'Overhead review'); return; }
   var h='<div class="wl-fbu-sub">Your company day is '+fmtC(cap)+' ('+NUM_TEAMS+' teams × '+fmtC(DAILY_OVERHEAD)+'). These days were charged more than that across jobs. <b>Split evenly</b> divides the day between the teams charged.</div>';
   for(var i=0;i<o.length;i++){ var g=o[i];
     h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span class="bad">'+g.units+' teams · '+fmtC(g.amount)+'</span></div>';
     for(var r=0;r<g.rows.length;r++) h+='<div class="wl-oh-day-row"><button type="button" class="wl-oh-link" data-fbu="ohgo" data-id="'+wlEsc(g.rows[r].pid)+'">'+wlEsc(g.rows[r].name)+(g.rows[r].teams>1?' ×'+g.rows[r].teams:'')+' <span class="wl-oh-chev">›</span></button><span class="wl-oh-amt">'+fmtC(g.rows[r].amount)+'<button type="button" class="wl-oh-edit" data-fbu="ohedit" data-id="'+wlEsc(g.rows[r].pid)+'" aria-label="Edit overhead days">✏️</button></span></div>';
     h+='<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="ohsplit" data-id="'+g.date+'">Split evenly → '+fmtC(cap/g.units)+'/team</button><button type="button" class="wl-oh-keep" data-fbu="ohkeep" data-id="'+g.date+'">✓ Correct — keep</button></div></div>'; }
   if(o.length>1) h+='<button type="button" class="wl-fbu-go" data-fbu="ohsplitall">Split all '+o.length+' days</button>';
-  h+=wlOhKeptHtml();
+  h+=wlOhHoursHtml()+wlOhKeptHtml();
   wlFbuShow(h,'Overhead review');
 }
 window.wlOhReview=wlOhReview;
@@ -3049,7 +3132,7 @@ function renderEntriesList(){
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
       html+='<div style="font-size:12px;font-weight:700">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>';
-      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+((wlEntryLabor(e).otMins||0)>0?' <span style="font-size:10px;font-weight:800;color:#d97706;background:#fdf4e3;border-radius:5px;padding:1px 5px;vertical-align:middle">OT '+fmtD(wlEntryLabor(e).otMins)+'</span>':'')+'</div><button data-eid="'+e.id+'" onclick="openEditEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:#2563eb;font-size:13px;padding:2px 6px" title="Edit times">✏️</button><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div>';
+      html+='<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+((wlEntryLabor(e).otMins||0)>0?' <span style="font-size:10px;font-weight:800;color:#d97706;background:#fdf4e3;border-radius:5px;padding:1px 5px;vertical-align:middle">OT '+fmtD(wlEntryLabor(e).otMins)+'</span>':'')+'</div><button data-eid="'+e.id+'" onclick="openEditEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:#2563eb;font-size:13px;padding:2px 6px" title="Edit times">✏️</button><button data-eid="'+e.id+'" onclick="wlSplitEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;font-size:13px;padding:2px 4px" title="Split: they moved to another job">✂️</button><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 4px">✕</button></div>';
       html+='</div>';
       html+='<div style="display:flex;gap:8px;margin-bottom:8px">';
       html+='<div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px 12px">';
