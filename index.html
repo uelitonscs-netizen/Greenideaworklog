@@ -2403,17 +2403,26 @@ function wlJobTopHtml(p,laborCost,extraCost){
   if(acts) h+='<div class="wl-jt-acts">'+acts+'</div>';
   var budget=p.budget||0;
   if(budget>0){
-    var oh=p.overhead||0, profit=budget-laborCost-extraCost-oh, cost=laborCost+extraCost+oh, scale=Math.max(budget,cost);
+    var oh=p.overhead||0, _dp=wlDispPending(p).amt, profit=budget-laborCost-extraCost-oh-_dp, cost=laborCost+extraCost+oh+_dp, scale=Math.max(budget,cost);
     var pc=function(x){return (100*Math.max(0,x)/scale).toFixed(2)+'%';};
     h+='<div class="wl-jt-con"><div class="wl-jt-row"><span class="wl-jt-lbl">Contract</span>'+(p.source==='fieldbid'?'<span class="wl-jt-src">FieldBid estimate</span>':'')+'</div>'+
        '<div class="wl-jt-row"><span class="wl-jt-amt">'+fmtC(budget)+'</span><span class="wl-jt-pl '+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'−')+fmtC(Math.abs(profit))+(profit>=0?' profit':' loss')+'</span></div>'+
-       '<div class="wl-jt-bar"><i style="width:'+pc(laborCost)+';background:#2b8a46"></i><i style="width:'+pc(extraCost)+';background:#97c459"></i><i style="width:'+pc(oh)+';background:#b4b2a9"></i></div>'+
-       '<div class="wl-jt-leg"><span><b style="background:#2b8a46"></b>Labor '+fmtC(laborCost)+'</span><span><b style="background:#97c459"></b>Materials '+fmtC(extraCost)+'</span>'+(oh>0?'<span><b style="background:#b4b2a9"></b>Overhead '+fmtC(oh)+'</span>':'')+'</div>'+
+       '<div class="wl-jt-bar"><i style="width:'+pc(laborCost)+';background:#2b8a46"></i><i style="width:'+pc(extraCost)+';background:#97c459"></i><i style="width:'+pc(oh)+';background:#b4b2a9"></i><i style="width:'+pc(_dp)+';background:#d9a441"></i></div>'+
+       '<div class="wl-jt-leg"><span><b style="background:#2b8a46"></b>Labor '+fmtC(laborCost)+'</span><span><b style="background:#97c459"></b>Materials '+fmtC(extraCost)+'</span>'+(oh>0?'<span><b style="background:#b4b2a9"></b>Overhead '+fmtC(oh)+'</span>':'')+(_dp>0?'<span><b style="background:#d9a441"></b>Disposal (planned) '+fmtC(_dp)+'</span>':'')+'</div>'+
        (cost>budget?'<div class="wl-jt-over">Costs are '+fmtC(cost-budget)+' over the contract</div>':'')+'</div>';
   }
   return h;
 }
 window.wlJobTopHtml=wlJobTopHtml;
+// ══ Disposal: a removal job always has it. The disposal sent by FieldBid counts as a cost until the
+// dumpster / disposal expense is logged; from then on the real expense counts instead (never both). ══
+function wlDispPending(p){ var det=(p&&p.matBudget&&p.matBudget.detail)||[], plan=0, assumed=false;
+  for(var i=0;i<det.length;i++){ var d=det[i]; if(d&&d.key==='dumpster'){ plan+=Number(d.cost)||0; if(d.assumed) assumed=true; } }
+  if(!(plan>0)) return {amt:0,plan:0,got:0,assumed:false};
+  var got=0; for(var j=0;j<projectExpenses.length;j++){ var e=projectExpenses[j]; if(!e||e.projectId!==p.id) continue; if(/dumpster|disposal|\bdump\b|dump run|junk|haul/i.test(String(e.desc||''))) got+=Number(e.amount)||0; }
+  return {amt:Math.max(0,Math.round((plan-got)*100)/100),plan:plan,got:got,assumed:assumed}; }
+window.wlDispPending=wlDispPending;
+
 
 // ── UPDATE FROM FIELDBID (WorkLog novo) ────────────────────────────
 // FieldBid keeps fieldbid/wlsync__<estimateId> = what "Send to WorkLog" would send.
@@ -3573,7 +3582,8 @@ function exportProjectReport(pid){
   var laborCost=projEntries.reduce(function(sum,e){return sum+wlEntryLabor(e).cost;},0);
   var matCost=expenses.reduce(function(s,e){return s+e.amount;},0);
   var overhead=p.overhead||0;
-  var totalCost=laborCost+matCost+overhead;
+  var dispCost=wlDispPending(p).amt;   // disposal planned, not logged yet
+  var totalCost=laborCost+matCost+overhead+dispCost;
   var profit=budget-totalCost;
   var margin=budget>0?(profit/budget)*100:0;
 
@@ -3764,7 +3774,8 @@ function exportProjectReport(pid){
   '<tr><td data-en="Labor" data-pt="Mão de Obra">Labor</td><td style="text-align:right;color:#dc2626">− '+fmtC2(laborCost)+'</td></tr>'+
   '<tr style="font-size:11px"><td style="padding-left:16px;color:#888" data-en="Total hours" data-pt="Total de horas">Total hours</td><td style="text-align:right;color:#888">'+fmtD2(totalMins)+' ('+totalDays+' <span data-en="team days" data-pt="dias de equipe">team days</span> · '+numTeams+' team'+(numTeams>1?'s':'')+' × '+totalPeople+' people)</td></tr>'+
   '<tr><td data-en="Materials & Extras" data-pt="Materiais e Extras">Materials & Extras</td><td style="text-align:right;color:#dc2626">− '+fmtC2(matCost)+'</td></tr>'+
-  '<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
+  (dispCost>0?'<tr><td data-en="Disposal (planned)" data-pt="Descarte (previsto)">Disposal (planned)</td><td style="text-align:right;color:#dc2626">− '+fmtC2(dispCost)+'</td></tr>':'')+
+'<tr><td data-en="Overhead" data-pt="Overhead">Overhead</td><td style="text-align:right;color:#dc2626">− '+fmtC2(overhead)+'</td></tr>'+
   '<tr style="background:#f8fdf9"><td><strong data-en="Net Profit" data-pt="Lucro Líquido">Net Profit</strong></td><td style="text-align:right;font-weight:800;font-size:16px;color:'+(profit>=0?'#16a34a':'#dc2626')+'">'+fmtC2(profit)+'</td></tr>'+
   '</table>'+
 
@@ -3868,9 +3879,10 @@ function renderProjects(filter){
     if(budget>0) html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Budget: '+fmtC(budget)+'</span><span style="color:'+(pct>=100?'var(--red)':'var(--text)')+'">'+pct+'% used · '+fmtC(totalCost)+'</span></div><div style="background:#e0e0e0;border-radius:99px;height:6px"><div style="background:'+(pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)')+';height:6px;border-radius:99px;width:'+pct+'%"></div></div></div>';
     // P&L Section
     var overhead = p.overhead || 0;
-    var profit = budget - laborCost - extraCost - overhead;
+    var _dpP = wlDispPending(p);
+    var profit = budget - laborCost - extraCost - overhead - _dpP.amt;
     var profitPct = budget > 0 ? Math.round((profit/budget)*100) : 0;
-    var costPct = budget > 0 ? Math.min(100, Math.round(((laborCost+extraCost+overhead)/budget)*100)) : 0;
+    var costPct = budget > 0 ? Math.min(100, Math.round(((laborCost+extraCost+overhead+_dpP.amt)/budget)*100)) : 0;
     var isProfit = profit >= 0;
     if(budget > 0){
       html += '<div style="background:'+(isProfit?'#f0fdf4':'#fef2f2')+';border:1px solid '+(isProfit?'#16a34a33':'#dc262633')+';border-radius:12px;padding:14px;margin-bottom:14px">';
@@ -3920,6 +3932,7 @@ function renderProjects(filter){
         else if(p.workingDays){ daysLabel=' ('+p.workingDays+' days)'; }
         html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">⚙️ Overhead'+daysLabel+'</span><span style="color:var(--red);font-weight:700">− '+fmtC(overhead)+'</span></div>';
       }
+      if(_dpP.amt>0) html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e022"><span style="color:#444">🗑 Disposal <span style="color:var(--muted);font-size:11px">planned'+(_dpP.assumed?' · 1 assumed':'')+(_dpP.got>0?' · '+fmtC(_dpP.got)+' logged':'')+'</span></span><span style="color:var(--red);font-weight:700">− '+fmtC(_dpP.amt)+'</span></div>';
       // Total
       html += '<div style="display:flex;justify-content:space-between;font-size:15px;padding:8px 0 4px;font-family:var(--font-d);font-weight:800"><span>'+(isProfit?'🟢 Net Profit':'🔴 Net Loss')+'</span><span style="color:'+(isProfit?'#16a34a':'var(--red)')+'">'+( isProfit?'':'− ')+fmtC(Math.abs(profit))+'</span></div>';
       // Bar
@@ -5126,7 +5139,7 @@ function renderAnalytics(){
     },0);
     var materialsCost = pExpenses.reduce(function(s,e){ return s+e.amount; },0);
     var overhead = p.overhead||0;
-    var totalCost = laborCost + materialsCost + overhead;
+    var totalCost = laborCost + materialsCost + overhead + wlDispPending(p).amt;
     var budget = p.budget||0;
     var profit = budget - totalCost;
     var margin = budget>0 ? (profit/budget)*100 : 0;
