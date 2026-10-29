@@ -222,6 +222,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .ws-in{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:#1a1a1a;}
 .ws-mate{display:flex;align-items:center;justify-content:flex-start;gap:10px;font-size:14px;font-weight:600;padding:8px 2px;color:var(--text);}
 .ws-mate input[type=checkbox]{width:20px!important;height:20px!important;min-width:20px;flex:none;margin:0;padding:0;accent-color:var(--green);}
+
+.wl-oh-teams{display:flex;align-items:center;gap:8px;margin:2px 0 6px;font-size:12.5px;color:var(--muted);}
+.wl-oh-teams span{flex:1;} .wl-oh-teams b{min-width:18px;text-align:center;font-size:15px;color:var(--text);}
+.wl-oh-teams button{width:32px;height:30px;border:1px solid var(--border2);background:#fff;border-radius:9px;font-size:17px;font-weight:800;color:var(--green);cursor:pointer;line-height:1;}
+.wl-oh-teams button:disabled{opacity:.35;}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -2495,6 +2500,7 @@ function wlFbuAct(a,id){
   else if(a==='allapply') wlFbuAllApply();
   else if(a==='ohsplit') wlOhSplit([id]);
   else if(a==='ohhours') wlOhSplitHours(id==='all'?null:[id]);
+  else if(a==='ohhteam'){ var _p=String(id).split('|'), _cur=wlOhHoursPlan(_p[0]); var _nv=Math.max(1,Math.min(NUM_TEAMS||1,((_cur&&_cur.teams)||1)+parseInt(_p[1],10))); window._wlOhTeamsOv[_p[0]]=_nv; wlOhReview(); }
   else if(a==='ohhskip') wlOhHrsSkip(id,true);
   else if(a==='ohhunskip') wlOhHrsSkip(id,false);
   else if(a==='ohhshowskip'){ window._wlOhShowHrsSkip=!window._wlOhShowHrsSkip; wlOhReview(); }
@@ -2782,7 +2788,7 @@ function wlOhSuggest(prefix){
   var list=document.getElementById(prefix+'-days-list'), have=list.querySelectorAll('[id^="'+prefix+'-ohrow-"]').length;
   if(have&&!confirm('Replace the '+have+' day(s) in the list with '+ks.length+' day(s) from the logged hours?')) return;
   list.innerHTML='';
-  for(var j=0;j<ks.length;j++){ var n=Object.keys(byDay[ks[j]]).length; addOHDayRow(prefix,ks[j],Math.max(1,Math.round(n/2))); }
+  for(var j=0;j<ks.length;j++){ var n=Object.keys(byDay[ks[j]]).length; addOHDayRow(prefix,ks[j],1); /* the people on this job that day are one team (raise it on a day two crews were there) */ }
   showToast(ks.length+' day(s) from the hours — check the teams, then Save');
 }
 window.wlOhSuggest=wlOhSuggest;
@@ -2800,11 +2806,19 @@ function wlOhOverDays(kept){
 // ══ Days split between jobs: the day's overhead follows the hours ══
 // Person-hours per project on one day (client projects only; categories keep their own rule)
 function wlDayHours(date){ var by={}, hs={}; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(!e||!e.endTime||!e.projectId||!e.startTime) continue; if(wlOhDate(e.startTime)!==date) continue; var m=gMin(e); if(!(m>0)) continue; by[e.projectId]=(by[e.projectId]||0)+m; hs[e.helperId]=1; } return {by:by, helpers:Object.keys(hs).length}; }
-// The plan for one day: how many teams (2 people ≈ 1 team, the app's rule), the day's overhead, and each job's share by hours
+// Teams on a day: people on the same job at the same time are ONE team, however many they are.
+// So the number of teams is the most different jobs being worked at the same moment that day.
+function wlDayTeams(date){ var ev=[]; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(!e||!e.endTime||!e.projectId||!e.startTime) continue; if(wlOhDate(e.startTime)!==date) continue;
+    var a=new Date(e.startTime).getTime(), b=new Date(e.endTime).getTime(); if(!(b>a)) continue; ev.push([a,1,e.projectId]); ev.push([b,-1,e.projectId]); }
+  ev.sort(function(x,y){ return x[0]-y[0]||x[1]-y[1]; });   // at the same minute a job ends before the next starts
+  var act={}, n=0, mx=0; for(var k=0;k<ev.length;k++){ var pid=ev[k][2]; if(ev[k][1]>0){ act[pid]=(act[pid]||0)+1; if(act[pid]===1){ n++; if(n>mx) mx=n; } } else { act[pid]--; if(act[pid]===0) n--; } }
+  return Math.max(1,mx); }
+window._wlOhTeamsOv=window._wlOhTeamsOv||{};   // a number you set with − / + for a day, until you split it
+// The plan for one day: how many teams, the day's overhead, and each job's share by hours
 function wlOhHoursPlan(date){
   var dh=wlDayHours(date), pids=[], tot=0; for(var k in dh.by){ var pj=null; for(var q=0;q<projects.length;q++) if(projects[q].id===k){ pj=projects[q]; break; } if(pj&&dh.by[k]>0){ pids.push(k); tot+=dh.by[k]; } }
   if(!pids.length||!tot) return null;
-  var teams=Math.max(1,Math.min(NUM_TEAMS||1,Math.round(dh.helpers/2))), charged={}, chTot=0, other=0;
+  var _ov=window._wlOhTeamsOv[date], teams=Math.max(1,Math.min(NUM_TEAMS||1,_ov||wlDayTeams(date))), charged={}, chTot=0, other=0;
   for(var p=0;p<projects.length;p++){ var pr=projects[p], od=pr.ohDays||[]; for(var j=0;j<od.length;j++){ var d=od[j]; if(!d||d.date!==date) continue; var amt=(Number(d.teams)||1)*(Number(d.rate)>0?Number(d.rate):DAILY_OVERHEAD); if(pids.indexOf(pr.id)>=0){ charged[pr.id]=(charged[pr.id]||0)+amt; chTot+=amt; } else other+=amt; } }
   var pool=teams*DAILY_OVERHEAD; if(chTot>0) pool=Math.min(pool,chTot); pool=Math.max(0,Math.min(pool,wlOhCap()-other)); pool=Math.round(pool*100)/100;
   var rows=[], done=true, acc=0;
@@ -2817,8 +2831,9 @@ function wlOhHoursDays(){ var seen={}, out=[], lim=Date.now()-60*86400000; for(v
   for(var d2 in seen){ if(Object.keys(seen[d2]).length<2) continue; if(wlOhHrsSkipped(d2)) continue; var pl=wlOhHoursPlan(d2); if(pl&&pl.rows.length>=2&&!pl.done) out.push(pl); }
   out.sort(function(a,b){ return a.date<b.date?1:-1; }); return out; }
 function wlOhHoursHtml(){ var L=wlOhHoursDays(); if(!L.length) return '';
-  var h='<div class="wl-fbu-sub" style="margin-top:14px"><b>⏱ Days split between jobs</b> · the crew worked on more than one job. <b>Split by hours</b> charges the day\'s overhead to each job by the hours logged there (2 people ≈ 1 team).</div>';
-  for(var i=0;i<L.length;i++){ var g=L[i]; h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span>'+g.helpers+' '+(g.helpers===1?'person':'people')+' ≈ '+g.teams+' team'+(g.teams>1?'s':'')+' · '+fmtC(g.pool)+'</span></div>';
+  var h='<div class="wl-fbu-sub" style="margin-top:14px"><b>⏱ Days split between jobs</b> · the crew worked on more than one job. <b>Split by hours</b> charges the day\'s overhead to each job by the hours logged there. People on the same job at the same time are one team — correct it with − / + if needed.</div>';
+  for(var i=0;i<L.length;i++){ var g=L[i]; h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span>'+g.helpers+' '+(g.helpers===1?'person':'people')+' · '+fmtC(g.pool)+'</span></div>'+
+      '<div class="wl-oh-teams"><span>Teams that day</span><button type="button" data-fbu="ohhteam" data-id="'+g.date+'|-1"'+(g.teams<=1?' disabled':'')+'>−</button><b>'+g.teams+'</b><button type="button" data-fbu="ohhteam" data-id="'+g.date+'|1"'+(g.teams>=(NUM_TEAMS||1)?' disabled':'')+'>+</button></div>';
     for(var r=0;r<g.rows.length;r++){ var R=g.rows[r]; h+='<div class="wl-oh-day-row"><span>'+wlEsc(R.name)+' · '+fmtD(R.mins)+'</span><span class="wl-oh-amt">'+(R.now?'<s style="color:var(--muted);font-weight:600">'+fmtC(R.now)+'</s> ':'')+fmtC(R.share)+'</span></div>'; }
     h+='<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="ohhours" data-id="'+g.date+'">Split by hours</button><button type="button" class="wl-oh-keep" data-fbu="ohhskip" data-id="'+g.date+'">✕ Doesn\'t apply</button></div></div>'; }
   if(L.length>1) h+='<button type="button" class="wl-fbu-go" data-fbu="ohhours" data-id="all">Split all '+L.length+' days by hours</button>';
