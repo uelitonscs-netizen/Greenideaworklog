@@ -2495,6 +2495,9 @@ function wlFbuAct(a,id){
   else if(a==='allapply') wlFbuAllApply();
   else if(a==='ohsplit') wlOhSplit([id]);
   else if(a==='ohhours') wlOhSplitHours(id==='all'?null:[id]);
+  else if(a==='ohhskip') wlOhHrsSkip(id,true);
+  else if(a==='ohhunskip') wlOhHrsSkip(id,false);
+  else if(a==='ohhshowskip'){ window._wlOhShowHrsSkip=!window._wlOhShowHrsSkip; wlOhReview(); }
   else if(a==='spgo') wlSplitApply(id);
   else if(a==='ohkeep') wlOhKeep(id,true);
   else if(a==='ohunkeep') wlOhKeep(id,false);
@@ -2811,15 +2814,33 @@ function wlOhHoursPlan(date){
 }
 // Days in the last 60 that had hours on 2+ jobs and are not yet split by hours
 function wlOhHoursDays(){ var seen={}, out=[], lim=Date.now()-60*86400000; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(!e||!e.endTime||!e.projectId||!e.startTime) continue; var t=new Date(e.startTime).getTime(); if(t<lim) continue; var d=wlOhDate(e.startTime); (seen[d]=seen[d]||{})[e.projectId]=1; }
-  for(var d2 in seen){ if(Object.keys(seen[d2]).length<2) continue; var pl=wlOhHoursPlan(d2); if(pl&&pl.rows.length>=2&&!pl.done) out.push(pl); }
+  for(var d2 in seen){ if(Object.keys(seen[d2]).length<2) continue; if(wlOhHrsSkipped(d2)) continue; var pl=wlOhHoursPlan(d2); if(pl&&pl.rows.length>=2&&!pl.done) out.push(pl); }
   out.sort(function(a,b){ return a.date<b.date?1:-1; }); return out; }
 function wlOhHoursHtml(){ var L=wlOhHoursDays(); if(!L.length) return '';
   var h='<div class="wl-fbu-sub" style="margin-top:14px"><b>⏱ Days split between jobs</b> · the crew worked on more than one job. <b>Split by hours</b> charges the day\'s overhead to each job by the hours logged there (2 people ≈ 1 team).</div>';
   for(var i=0;i<L.length;i++){ var g=L[i]; h+='<div class="wl-oh-day"><div class="wl-oh-day-hd"><b>'+wlOhFmtDate(g.date)+'</b><span>'+g.helpers+' '+(g.helpers===1?'person':'people')+' ≈ '+g.teams+' team'+(g.teams>1?'s':'')+' · '+fmtC(g.pool)+'</span></div>';
     for(var r=0;r<g.rows.length;r++){ var R=g.rows[r]; h+='<div class="wl-oh-day-row"><span>'+wlEsc(R.name)+' · '+fmtD(R.mins)+'</span><span class="wl-oh-amt">'+(R.now?'<s style="color:var(--muted);font-weight:600">'+fmtC(R.now)+'</s> ':'')+fmtC(R.share)+'</span></div>'; }
-    h+='<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="ohhours" data-id="'+g.date+'">Split by hours</button></div></div>'; }
+    h+='<div class="wl-oh-acts"><button type="button" class="wl-oh-split" data-fbu="ohhours" data-id="'+g.date+'">Split by hours</button><button type="button" class="wl-oh-keep" data-fbu="ohhskip" data-id="'+g.date+'">✕ Doesn\'t apply</button></div></div>'; }
   if(L.length>1) h+='<button type="button" class="wl-fbu-go" data-fbu="ohhours" data-id="all">Split all '+L.length+' days by hours</button>';
+  return h+wlOhHrsSkippedHtml(); }
+// Days you dismissed ("doesn't apply"): kept on the projects of that day, so they stay dismissed on every device
+function wlOhHrsSkipped(d){ for(var i=0;i<projects.length;i++){ var a=projects[i].ohHrsSkip; if(a&&a.indexOf(d)>=0) return true; } return false; }
+function wlOhHrsSkippedList(){ var out={}, lim=new Date(Date.now()-60*86400000).toISOString().slice(0,10); for(var i=0;i<projects.length;i++){ var a=projects[i].ohHrsSkip||[]; for(var j=0;j<a.length;j++) if(a[j]>=lim) out[a[j]]=1; } return Object.keys(out).sort().reverse(); }
+function wlOhHrsSkippedHtml(){ var L=wlOhHrsSkippedList(); if(!L.length) return '';
+  var h='<button type="button" class="wl-oh-keep" style="width:100%;margin-top:10px" data-fbu="ohhshowskip">'+(window._wlOhShowHrsSkip?'▾':'▸')+' Dismissed day'+(L.length>1?'s':'')+' ('+L.length+')</button>';
+  if(window._wlOhShowHrsSkip) for(var i=0;i<L.length;i++) h+='<div class="wl-oh-day-row" style="padding:8px 4px"><span>'+wlOhFmtDate(L[i])+'</span><button type="button" class="wl-oh-keep" style="flex:none;min-height:30px;padding:0 10px" data-fbu="ohhunskip" data-id="'+L[i]+'">↺ Show again</button></div>';
   return h; }
+function wlOhHrsSkip(date,on){
+  var pids={}, pl=wlOhHoursPlan(date); if(pl) for(var r=0;r<pl.rows.length;r++) pids[pl.rows[r].pid]=1;
+  for(var i=0;i<projects.length;i++){ var a=projects[i].ohHrsSkip; if(a&&a.indexOf(date)>=0) pids[projects[i].id]=1; }
+  var batch=db.batch(), n=0;
+  for(var q=0;q<projects.length;q++){ var p=projects[q]; if(!pids[p.id]) continue; var arr=(p.ohHrsSkip||[]).filter(function(x){ return x!==date; }); if(on) arr.push(date);
+    p.ohHrsSkip=arr; batch.update(db.collection('projects').doc(p.id),{ohHrsSkip:arr}); n++; }
+  if(!n) return;
+  batch.commit().then(function(){ showToast(on?'Dismissed · '+wlOhFmtDate(date):'Back in the list · '+wlOhFmtDate(date)); }).catch(function(e){ showToast('Not saved: '+(e&&e.message||e),'err'); });
+  try{ wlOhBanner(); }catch(e){} wlOhReview();
+}
+window.wlOhHrsSkip=wlOhHrsSkip;
 function wlOhSplitHours(dates){ var L=wlOhHoursDays(); if(dates) L=L.filter(function(g){ return dates.indexOf(g.date)>=0; }); if(!L.length) return;
   var upd={}; for(var i=0;i<L.length;i++){ var g=L[i]; for(var r=0;r<g.rows.length;r++){ var R=g.rows[r], pr=null; for(var q=0;q<projects.length;q++) if(projects[q].id===R.pid) pr=projects[q];
       if(!pr) continue; var nd=upd[pr.id]||(upd[pr.id]=JSON.parse(JSON.stringify(pr.ohDays||[]))), hit=false;
