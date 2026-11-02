@@ -227,6 +227,25 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .wl-oh-teams span{flex:1;} .wl-oh-teams b{min-width:18px;text-align:center;font-size:15px;color:var(--text);}
 .wl-oh-teams button{width:32px;height:30px;border:1px solid var(--border2);background:#fff;border-radius:9px;font-size:17px;font-weight:800;color:var(--green);cursor:pointer;line-height:1;}
 .wl-oh-teams button:disabled{opacity:.35;}
+
+.wl-res-bar{display:flex;flex-direction:column;gap:8px;margin:4px 0 12px;}
+.wl-res-modes{display:flex;gap:6px;} .wl-res-modes button{flex:1;padding:8px 6px;border:1px solid var(--border2);background:#fff;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);font-family:var(--font-d);} .wl-res-modes button.on{background:var(--green);border-color:var(--green);color:#fff;}
+.wl-res-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;} .wl-res-nav b{font-size:16px;font-family:var(--font-d);} .wl-res-nav button{width:40px;height:34px;border:1px solid var(--border2);background:#fff;border-radius:9px;font-size:18px;font-weight:800;color:var(--green);} .wl-res-nav button:disabled{opacity:.3;}
+.wl-res-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;} .wl-res-kpi{background:var(--card2,#f3f5f1);border-radius:12px;padding:10px 12px;} .wl-res-kv{font-size:19px;font-weight:800;font-family:var(--font-d);} .wl-res-kl{font-size:11px;color:var(--muted);margin-top:2px;}
+.wl-res-proj{background:#eef6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 12px;font-size:12.5px;color:#1e3a8a;margin-bottom:10px;} .wl-res-proj div{font-size:11px;color:#475569;margin-top:4px;}
+.wl-res-mix{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--muted);margin:0 2px 12px;}
+.wl-res-job{border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+.wl-res-top{display:flex;align-items:center;justify-content:space-between;gap:8px;} .wl-res-st{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;} .wl-res-st.done{background:#ecfdf5;color:#166534;}
+.wl-res-sub{font-size:11.5px;color:var(--muted);margin:2px 0 6px;}
+.wl-res-nums{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12.5px;color:var(--muted);} .wl-res-nums b{color:var(--text);}
+.wl-res-pj{font-size:12px;color:#1e3a8a;margin-top:6px;} .wl-res-det{font-size:11px;color:var(--muted);margin-top:6px;}
+.wl-res-print{width:100%;margin:6px 0 10px;padding:12px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;font-size:14px;font-family:var(--font-d);}
+
+.wl-burn{border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fff}.wl-burn.warn{border-color:#f59e0b;background:#fffbeb}.wl-burn.over{border-color:#ef4444;background:#fef2f2}
+.wl-burn-hd{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-family:var(--font-d);font-size:13px;margin-bottom:6px}.wl-burn-hd span{font-size:10.5px;color:var(--muted);font-weight:600}
+.wl-burn-row{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:3px 0}.wl-burn-bar{height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden}.wl-burn-bar i{display:block;height:100%;background:#2b8a46;border-radius:4px}.wl-burn-row.warn .wl-burn-bar i{background:#f59e0b}.wl-burn-row.over .wl-burn-bar i{background:#ef4444}.wl-burn-v{white-space:nowrap;color:var(--text)}.wl-burn-v b{font-family:var(--font-d)}
+.wl-burn-al{display:block;width:100%;text-align:left;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:10px;padding:9px 12px;margin:0 0 8px;font-size:12.5px;font-family:var(--font-m)}.wl-burn-al.over{border-color:#ef4444;background:#fef2f2;color:#991b1b}
+.wl-burn-dash{margin:0 0 12px}.wl-burn-dash-hd{font-family:var(--font-d);font-weight:800;font-size:13px;margin-bottom:6px;color:#92400e}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -665,6 +684,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="wl-fbnew"></div>
       <div id="wl-onclock"></div>
       <div id="no-proj-alert"></div>
+      <div id="dash-burn"></div>
       <div id="dash-grid" class="helpers-grid"></div>
       <div class="card">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:12px;font-family:var(--font-d)">RECENT ACTIVITY</div>
@@ -715,10 +735,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
         <button id="rep-toggle-advances" onclick="switchReport('advances',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Advances</button>
-        <button id="rep-toggle-accuracy" onclick="switchReport('accuracy',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted);white-space:nowrap">🎯 Accuracy</button>
+        <button id="rep-toggle-accuracy" onclick="switchReport('accuracy',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted);white-space:nowrap">🎯 Accuracy</button><button id="rep-toggle-results" onclick="switchReport('results',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted);white-space:nowrap">📈 Results</button>
       </div>
 
-      <div id="rep-accuracy" style="display:none"></div>
+      <div id="rep-accuracy" style="display:none"></div><div id="rep-results" style="display:none"></div>
 
       <!-- Entries panel -->
       <div id="rep-entries">
@@ -1049,7 +1069,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <button class="proj-filter-pill"         data-filter="paused"  onclick="setProjFilter('paused',this)">⏸ Paused</button>
         <button class="proj-filter-pill"         data-filter="completed" onclick="setProjFilter('completed',this)">✓ Done</button>
       </div>
-      <div id="wl-ohaudit"></div>
+      <div id="wl-burn"></div><div id="wl-ohaudit"></div>
       <div id="projects-list"></div>
     </div>
 
@@ -2181,6 +2201,7 @@ function renderDashboard(){
   // On the clock now (stage 4)
   if(window.wlRenderOnClock) wlRenderOnClock();
   if(window.wlRenderFbNew) wlRenderFbNew();
+  try{ var _db=document.getElementById('dash-burn'); if(_db){ var _L=wlBurnList(); _db.innerHTML=_L.length?'<div class="wl-burn-dash"><div class="wl-burn-dash-hd">⚠️ '+_L.length+' job'+(_L.length>1?'s':'')+' at or over the estimate</div>'+_L.map(function(x){ var b=x.b, bits=[]; if(b.hours&&b.hours.level!=='ok') bits.push('hours '+Math.round(b.hours.pct)+'%'); if(b.mat&&b.mat.level!=='ok') bits.push('materials '+Math.round(b.mat.pct)+'%'); if(b.days&&b.days.level!=='ok') bits.push('days '+Math.round(b.days.pct)+'%'); return '<button type="button" class="wl-burn-al '+b.level+'" onclick="wlGoProject(\''+x.p.id+'\',\'sum\',\'\')">'+(b.level==='over'?'⚠':'⏱')+' <b>'+wlEsc(x.p.name||'')+'</b> · '+bits.join(' · ')+'</button>'; }).join('')+'</div>':''; } }catch(e){}
 
   // No-project alert
   var alert=document.getElementById('no-proj-alert');
@@ -2647,6 +2668,137 @@ function wlFbuAllApply(){
 // Groups jobs by type of work and compares FieldBid's estimate with what WorkLog
 // recorded. Averages are value-weighted (sum actual ÷ sum estimated); a job only
 // counts for a line when that line was estimated. Margin uses complete estimates.
+
+// ══ RESULTS (Reports → 📈 Results): the financial statement of a period ══════════════════════
+// One row per job, with the same figures the job card and the Accuracy report use. A job belongs
+// to the period of its last worked day (or its end date). Jobs in progress also get a PROJECTED
+// profit: contract − (at least the FieldBid estimate for labor, materials and overhead) − other
+// expenses − disposal still to log.
+var _wlRes={mode:'month',ofs:0,status:'all'};
+function wlResRange(){ var now=new Date(), a,b, label;
+  if(_wlRes.mode==='month'){ a=new Date(now.getFullYear(),now.getMonth()+_wlRes.ofs,1); b=new Date(a.getFullYear(),a.getMonth()+1,1); label=a.toLocaleDateString('en-US',{month:'long',year:'numeric'}); }
+  else if(_wlRes.mode==='quarter'){ var q=Math.floor(now.getMonth()/3)+_wlRes.ofs; a=new Date(now.getFullYear(),q*3,1); b=new Date(a.getFullYear(),a.getMonth()+3,1); label='Q'+(Math.floor(a.getMonth()/3)+1)+' '+a.getFullYear(); }
+  else if(_wlRes.mode==='year'){ a=new Date(now.getFullYear()+_wlRes.ofs,0,1); b=new Date(a.getFullYear()+1,0,1); label=String(a.getFullYear()); }
+  else { a=new Date(2000,0,1); b=new Date(2100,0,1); label='All time'; }
+  return {a:a.getTime(),b:b.getTime(),label:label}; }
+function wlResJob(p){ var lm=0, lc=0, mat=0, oth=0, days={};
+  for(var i=0;i<entries.length;i++){ var en=entries[i]; if(en.projectId!==p.id||!en.endTime) continue; var L=wlEntryLabor(en); lm+=L.mins; lc+=L.cost; var d=new Date(en.startTime); days[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=1; }
+  for(var j=0;j<projectExpenses.length;j++){ var x=projectExpenses[j]; if(x.projectId!==p.id) continue; var a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else oth+=a; }
+  var oh=Number(p.overhead)||0, disp=wlDispPending(p).amt, budget=Number(p.budget)||0, e=p.estimate||{}, done=(p.status||'active')==='completed';
+  var cost=lc+mat+oth+oh+disp, profit=budget-cost;
+  // projected: a job in progress will cost at least what was estimated for each part
+  var pL=done?lc:Math.max(lc,Number(e.laborCost)||0), pM=done?mat:Math.max(mat,Number(e.materialCost)||0), pO=done?oh:Math.max(oh,Number(e.ohCost)||0);
+  var pCost=pL+pM+pO+oth+disp, pProfit=budget-pCost, hrs=lm/60;
+  return {p:p,done:done,budget:budget,lc:lc,mat:mat,oth:oth,oh:oh,disp:disp,cost:cost,profit:profit,margin:budget?profit/budget*100:null,hrs:hrs,days:Object.keys(days).length,
+          perHour:hrs>0?profit/hrs:null,pCost:pCost,pProfit:pProfit,pMargin:budget?pProfit/budget*100:null,hasEst:!!(e.laborCost||e.materialCost||e.ohCost),date:wlAccLastDate(p),sqft:Number(e.totalSqft)||0}; }
+function wlResData(){ var r=wlResRange(), out=[];
+  for(var i=0;i<projects.length;i++){ var p=projects[i]; if(!p||!(Number(p.budget)>0)) continue; var st=p.status||'active';
+    if(_wlRes.status==='done'&&st!=='completed') continue; if(_wlRes.status==='active'&&st==='completed') continue;
+    var j=wlResJob(p); if(!j.date||j.date<r.a||j.date>=r.b) continue; out.push(j); }
+  out.sort(function(x,y){ return y.date-x.date; }); return {range:r,jobs:out}; }
+function wlResAgg(js){ var t={n:js.length,budget:0,lc:0,mat:0,oth:0,oh:0,disp:0,cost:0,profit:0,hrs:0,pProfit:0,pCost:0,sqft:0,nDone:0};
+  for(var i=0;i<js.length;i++){ var j=js[i]; t.budget+=j.budget; t.lc+=j.lc; t.mat+=j.mat; t.oth+=j.oth; t.oh+=j.oh; t.disp+=j.disp; t.cost+=j.cost; t.profit+=j.profit; t.hrs+=j.hrs; t.pProfit+=j.pProfit; t.pCost+=j.pCost; t.sqft+=j.sqft; if(j.done) t.nDone++; }
+  t.margin=t.budget?t.profit/t.budget*100:null; t.pMargin=t.budget?t.pProfit/t.budget*100:null; t.perHour=t.hrs>0?t.profit/t.hrs:null; return t; }
+function wlResPct(v){ return v===null?'—':(Math.round(v)+'%'); }
+function wlResKpi(l,v,c){ return '<div class="wl-res-kpi"><div class="wl-res-kv" style="color:'+(c||'var(--text)')+'">'+v+'</div><div class="wl-res-kl">'+l+'</div></div>'; }
+function wlResRender(){ var box=document.getElementById('rep-results'); if(!box) return; var D=wlResData(), r=D.range, js=D.jobs, t=wlResAgg(js);
+  var h='<div class="wl-res-bar"><div class="wl-res-modes">'+[['month','Month'],['quarter','Quarter'],['year','Year'],['all','All']].map(function(m){ return '<button type="button" class="'+(_wlRes.mode===m[0]?'on':'')+'" onclick="_wlRes.mode=\''+m[0]+'\';_wlRes.ofs=0;wlResRender()">'+m[1]+'</button>'; }).join('')+'</div>'+
+    (_wlRes.mode!=='all'?'<div class="wl-res-nav"><button type="button" onclick="_wlRes.ofs--;wlResRender()">‹</button><b>'+r.label+'</b><button type="button" onclick="_wlRes.ofs++;wlResRender()"'+(_wlRes.ofs>=0?' disabled':'')+'>›</button></div>':'<div class="wl-res-nav"><b>'+r.label+'</b></div>')+
+    '<div class="wl-res-modes">'+[['all','All jobs'],['done','Done'],['active','In progress']].map(function(m){ return '<button type="button" class="'+(_wlRes.status===m[0]?'on':'')+'" onclick="_wlRes.status=\''+m[0]+'\';wlResRender()">'+m[1]+'</button>'; }).join('')+'</div></div>';
+  if(!js.length){ box.innerHTML=h+'<div class="wl-acc-empty">No jobs with a contract value in this period. A job counts in the period of its last worked day.</div>'; return; }
+  var pc=t.profit>=0?'var(--green)':'var(--red)';
+  h+='<div class="wl-res-kpis">'+wlResKpi('Revenue · '+t.n+' job'+(t.n!==1?'s':''),fmtC(t.budget),'#2563eb')+wlResKpi('Costs',fmtC(t.cost),'var(--red)')+wlResKpi('Profit · '+wlResPct(t.margin),fmtC(t.profit),pc)+wlResKpi('Per labor hour · '+Math.round(t.hrs)+' h',t.perHour!==null?fmtC(t.perHour):'—',pc)+'</div>';
+  if(t.nDone<t.n) h+='<div class="wl-res-proj">'+(t.n-t.nDone)+' job'+(t.n-t.nDone!==1?'s':'')+' in progress · projected profit for the period <b>'+fmtC(t.pProfit)+'</b> ('+wlResPct(t.pMargin)+')<div>Projected = contract − at least the FieldBid estimate for labor, materials and overhead − other expenses − disposal still to log.</div></div>';
+  h+='<div class="wl-res-mix"><span>Labor '+fmtC(t.lc)+'</span><span>Materials '+fmtC(t.mat)+'</span>'+(t.oth>0?'<span>Other '+fmtC(t.oth)+'</span>':'')+'<span>Overhead '+fmtC(t.oh)+'</span>'+(t.disp>0?'<span>Disposal planned '+fmtC(t.disp)+'</span>':'')+'</div>';
+  for(var i=0;i<js.length;i++){ var j=js[i], c=j.profit>=0?'var(--green)':'var(--red)';
+    h+='<div class="wl-res-job"><div class="wl-res-top"><button type="button" class="wl-acc-name" onclick="wlGoProject(\''+j.p.id+'\',\'sum\',\'\')">'+wlEsc(j.p.name||'')+'</button><span class="wl-res-st '+(j.done?'done':'')+'">'+(j.done?'Done':'In progress')+'</span></div>'+
+      '<div class="wl-res-sub">'+(j.p.client?wlEsc(j.p.client)+' · ':'')+new Date(j.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+Math.round(j.hrs)+' h · '+j.days+' day'+(j.days!==1?'s':'')+(j.sqft?' · '+Math.round(j.sqft).toLocaleString('en-US')+' sq ft':'')+'</div>'+
+      '<div class="wl-res-nums"><span>Contract <b>'+fmtC(j.budget)+'</b></span><span>Costs <b>'+fmtC(j.cost)+'</b></span><span>Profit <b style="color:'+c+'">'+fmtC(j.profit)+'</b> '+wlResPct(j.margin)+'</span><span>$/h <b>'+(j.perHour!==null?fmtC(j.perHour):'—')+'</b></span></div>'+
+      (!j.done?'<div class="wl-res-pj">Projected: <b>'+fmtC(j.pProfit)+'</b> ('+wlResPct(j.pMargin)+')'+(j.hasEst?'':' · no FieldBid estimate, same as actual')+'</div>':'')+
+      '<div class="wl-res-det">Labor '+fmtC(j.lc)+' · Materials '+fmtC(j.mat)+(j.oth?' · Other '+fmtC(j.oth):'')+' · Overhead '+fmtC(j.oh)+(j.disp?' · Disposal planned '+fmtC(j.disp):'')+'</div></div>'; }
+  h+='<button type="button" class="wl-res-print" onclick="wlResExport()">🖨️ Print / PDF — '+wlEsc(r.label)+'</button>';
+  box.innerHTML=h; }
+window.wlResRender=wlResRender;
+function wlResExport(){ var D=wlResData(), r=D.range, js=D.jobs, t=wlResAgg(js); if(!js.length){ showToast('Nothing to export for this period','err'); return; }
+  function n(v){ return '$'+(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function n0(v){ return '$'+Math.round(v).toLocaleString('en-US'); }
+  function pc(v){ return v===null?'—':(Math.round(v)+'%'); }
+  function bar(m){ if(m===null) return ''; var w=Math.max(0,Math.min(100,m)), col=m>=30?'#1a6b2a':(m>=15?'#d9a441':'#c0392b'); return '<div class="mb"><i style="width:'+w+'%;background:'+col+'"></i></div>'; }
+  var cost=t.cost||1, seg=[['Labor',t.lc,'#1a6b2a'],['Materials',t.mat+t.oth,'#4f9d69'],['Overhead',t.oh,'#9aa5a0'],['Disposal',t.disp,'#d9a441']];
+  var stack='', legend=''; for(var i=0;i<seg.length;i++){ if(seg[i][1]<=0) continue; var w=seg[i][1]/cost*100; stack+='<i style="width:'+w.toFixed(1)+'%;background:'+seg[i][2]+'"></i>'; legend+='<span><b style="background:'+seg[i][2]+'"></b>'+seg[i][0]+' '+n0(seg[i][1])+' · '+Math.round(w)+'%</span>'; }
+  var rows=''; for(var j=0;j<js.length;j++){ var x=js[j], pcol=x.profit>=0?'#1a6b2a':'#c0392b';
+    rows+='<tr'+(j%2?' class="alt"':'')+'><td><b>'+wlEsc(x.p.name||'')+'</b>'+(x.p.client?'<div class="c">'+wlEsc(x.p.client)+'</div>':'')+'</td><td><span class="st '+(x.done?'done':'prog')+'">'+(x.done?'Done':'In progress')+'</span></td><td class="r">'+n0(x.budget)+'</td><td class="r">'+n0(x.lc)+'</td><td class="r">'+n0(x.mat+x.oth)+'</td><td class="r">'+n0(x.oh+x.disp)+'</td><td class="r"><b style="color:'+pcol+'">'+n0(x.profit)+'</b>'+(!x.done&&x.hasEst?'<div class="c">proj. '+n0(x.pProfit)+'</div>':'')+'</td><td class="r"><b>'+pc(x.margin)+'</b>'+bar(x.margin)+'</td><td class="r">'+Math.round(x.hrs)+' h<div class="c">'+(x.perHour!==null?n0(x.perHour)+'/h':'—')+'</div></td></tr>'; }
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Job results · '+wlEsc(r.label)+'</title><style>'+
+    '@page{size:letter;margin:14mm}body{font-family:Inter,"Segoe UI",Arial,sans-serif;margin:0;color:#1a1a1a;font-size:12px;background:#fff}'+
+    '.hd{background:#0f3d1d;color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between}.hd .lg{display:flex;align-items:center;gap:12px}.hd .dot{width:34px;height:34px;border-radius:50%;background:#1a6b2a;display:flex;align-items:center;justify-content:center;font-size:18px}.hd h1{font-size:17px;margin:0}.hd small{display:block;color:#bfe3c6;font-size:11px;letter-spacing:.08em;margin-top:2px}.hd .rt{text-align:right;font-size:11px;color:#cfe9d5;line-height:1.5}'+
+    '.ttl{padding:18px 24px 6px}.ttl h2{margin:0;font-size:22px}.ttl div{color:#666;margin-top:3px}'+
+    '.k{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:10px 24px 6px}.k div{border:1px solid #e3e6e2;border-top:4px solid #1a6b2a;border-radius:10px;padding:10px 12px;background:#fafbf9}.k b{font-size:20px;display:block;margin-bottom:2px}.k span{color:#666;font-size:11px}.k .rev{border-top-color:#2563eb}.k .cst{border-top-color:#c0392b}.k .prf{border-top-color:#1a6b2a}.k .hr{border-top-color:#d9a441}'+
+    '.sec{padding:14px 24px 0}.sec h3{font-size:11px;letter-spacing:.08em;color:#1a6b2a;margin:0 0 8px;text-transform:uppercase}'+
+    '.stk{display:flex;height:16px;border-radius:8px;overflow:hidden;background:#eee}.stk i{display:block;height:100%}.lgd{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:11px;color:#444}.lgd b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}'+
+    '.pj{margin:12px 24px 0;background:#eef6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;color:#1e3a8a;font-size:12px}.pj small{display:block;color:#475569;margin-top:3px;font-size:10.5px}'+
+    'table{width:calc(100% - 48px);margin:14px 24px 0;border-collapse:collapse}th{text-align:left;font-size:10.5px;color:#fff;background:#1a6b2a;padding:8px 8px}th.r,td.r{text-align:right;white-space:nowrap}td{padding:8px;border-bottom:1px solid #e8ebe7;vertical-align:top}tr.alt td{background:#f6f8f5}.c{color:#777;font-size:10.5px;margin-top:2px}'+
+    '.st{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}.st.done{background:#e3f4e8;color:#166534}.st.prog{background:#fff3e0;color:#9a3412}'+
+    '.mb{height:5px;background:#e8ebe7;border-radius:3px;margin-top:4px;min-width:60px}.mb i{display:block;height:100%;border-radius:3px}'+
+    'tfoot td{font-weight:700;background:#eef4ef;border-top:2px solid #1a6b2a;border-bottom:none}'+
+    '.note{color:#666;font-size:10.5px;margin:14px 24px 0;line-height:1.5}.ft{margin:22px 24px 0;padding-top:8px;border-top:1px solid #ddd;font-size:10px;color:#888;display:flex;justify-content:space-between}'+
+    '@media print{button{display:none}.hd{-webkit-print-color-adjust:exact;print-color-adjust:exact}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
+    '<button onclick="window.print()" style="position:fixed;bottom:18px;right:18px;background:#2563eb;color:#fff;border:none;border-radius:24px;padding:12px 20px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9">🖨️ Print / PDF</button>'+
+    '<div class="hd"><div class="lg"><div class="dot">🌱</div><div><h1>Green Idea Insulation</h1><small>JOB RESULTS REPORT</small></div></div><div class="rt">238 Webster Street #3 · Worcester, MA 01603<br>774-578-7186 | 508-579-0762</div></div>'+
+    '<div class="ttl"><h2>'+wlEsc(r.label)+'</h2><div>'+(_wlRes.status==='done'?'Finished jobs':(_wlRes.status==='active'?'Jobs in progress':'All jobs'))+' · '+t.n+' job'+(t.n!==1?'s':'')+' · generated '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div>'+
+    '<div class="k"><div class="rev"><b>'+n0(t.budget)+'</b><span>Revenue (contracts)</span></div><div class="cst"><b>'+n0(t.cost)+'</b><span>Costs</span></div><div class="prf"><b style="color:'+(t.profit>=0?'#1a6b2a':'#c0392b')+'">'+n0(t.profit)+'</b><span>Profit · margin '+pc(t.margin)+'</span></div><div class="hr"><b>'+(t.perHour!==null?n0(t.perHour):'—')+'</b><span>Profit per labor hour · '+Math.round(t.hrs)+' h</span></div></div>'+
+    '<div class="sec"><h3>Where the money went</h3><div class="stk">'+stack+'</div><div class="lgd">'+legend+'</div></div>'+
+    (t.nDone<t.n?'<div class="pj">'+(t.n-t.nDone)+' job'+(t.n-t.nDone!==1?'s':'')+' still in progress — costs are to date. <b>Projected profit for the period: '+n0(t.pProfit)+' ('+pc(t.pMargin)+')</b><small>Projected assumes each open job costs at least its FieldBid estimate for labor, materials and overhead, plus other expenses and the disposal still to log.</small></div>':'')+
+    '<table><thead><tr><th>Job</th><th>Status</th><th class="r">Contract</th><th class="r">Labor</th><th class="r">Materials</th><th class="r">Overhead</th><th class="r">Profit</th><th class="r">Margin</th><th class="r">Hours · $/h</th></tr></thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="2">Total · '+t.n+' job'+(t.n!==1?'s':'')+'</td><td class="r">'+n0(t.budget)+'</td><td class="r">'+n0(t.lc)+'</td><td class="r">'+n0(t.mat+t.oth)+'</td><td class="r">'+n0(t.oh+t.disp)+'</td><td class="r" style="color:'+(t.profit>=0?'#1a6b2a':'#c0392b')+'">'+n0(t.profit)+'</td><td class="r">'+pc(t.margin)+'</td><td class="r">'+Math.round(t.hrs)+' h · '+(t.perHour!==null?n0(t.perHour):'—')+'</td></tr></tfoot></table>'+
+    '<div class="note">Materials include other job expenses. Overhead is the per-team daily cost charged to each job and includes the disposal planned until the dumpster expense is logged. Labor includes overtime at the configured rate. A job counts in the period of its last worked day. Margin bar: green ≥ 30%, amber 15–30%, red below 15%.</div>'+
+    '<div class="ft"><span>Green Idea Insulation · WorkLog</span><span>'+wlEsc(r.label)+'</span></div></body></html>';
+  var w=window.open('','_blank'); if(w){ w.document.write(html); w.document.close(); } else { var blob=new Blob([html],{type:'text/html'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='results-'+r.label.replace(/[^a-z0-9]/gi,'_')+'.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); },5000); } }
+window.wlResExport=wlResExport;
+
+
+// ══ ESTIMATE BURN: how much of the FieldBid estimate a job in progress has already used ══════════
+// hours vs man-hours estimated · materials $ vs estimated · worked days vs overhead days estimated.
+// Levels: ok (< 80%), warn (80–100%), over (> 100%). Shown while the job is active, so you can act today.
+function wlBurn(p){ var e=p&&p.estimate; if(!e||(p.status||'active')==='completed') return null;
+  var lm=0, mat=0, days={}; for(var i=0;i<entries.length;i++){ var en=entries[i]; if(en.projectId!==p.id||!en.startTime) continue; lm+=en.endTime?gMin(en):Math.max(0,Math.round((Date.now()-new Date(en.startTime))/60000)); var d=new Date(en.startTime); days[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=1; }
+  for(var j=0;j<projectExpenses.length;j++){ var x=projectExpenses[j]; if(x.projectId===p.id&&/material/i.test(String(x.type||''))) mat+=Number(x.amount)||0; }
+  var eH=Number(e.manHours)||0, eM=Number(e.materialCost)||0, eD=Number(e.ohDays)||0, nd=Object.keys(days).length;
+  function part(a,b,unit){ if(!(b>0)) return null; var pct=a/b*100; return {a:a,e:b,pct:pct,level:pct>100?'over':(pct>=80?'warn':'ok'),unit:unit}; }
+  var out={hours:part(lm/60,eH,'h'),mat:part(mat,eM,'$'),days:part(nd,eD,'d')}; var lv='ok';
+  var ks=['hours','mat','days']; for(var k=0;k<ks.length;k++){ var q=out[ks[k]]; if(!q) continue; if(q.level==='over') lv='over'; else if(q.level==='warn'&&lv!=='over') lv='warn'; }
+  out.level=lv; out.any=!!(out.hours||out.mat||out.days); return out; }
+function wlBurnTxt(q,unit){ if(!q) return ''; var a=unit==='$'?fmtC(q.a):(unit==='h'?(Math.round(q.a*10)/10)+' h':q.a+' d'), b=unit==='$'?fmtC(q.e):(unit==='h'?q.e+' h':q.e+' d'); return a+' / '+b+' <b>'+Math.round(q.pct)+'%</b>'; }
+function wlBurnHtml(p){ var b=wlBurn(p); if(!b||!b.any) return '';
+  var h='<div class="wl-burn '+b.level+'"><div class="wl-burn-hd">'+(b.level==='over'?'⚠ Over the estimate':(b.level==='warn'?'⏱ Close to the estimate':'✅ Within the estimate'))+'<span>FieldBid estimate</span></div><div class="wl-burn-rows">';
+  var rows=[['hours','Hours','h'],['mat','Materials','$'],['days','Days','d']];
+  for(var i=0;i<rows.length;i++){ var q=b[rows[i][0]]; if(!q) continue; h+='<div class="wl-burn-row '+q.level+'"><span>'+rows[i][1]+'</span><div class="wl-burn-bar"><i style="width:'+Math.min(100,q.pct).toFixed(1)+'%"></i></div><span class="wl-burn-v">'+wlBurnTxt(q,rows[i][2])+'</span></div>'; }
+  return h+'</div></div>'; }
+window.wlBurnHtml=wlBurnHtml;
+function wlBurnList(){ var out=[]; for(var i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue; var b=wlBurn(p); if(b&&b.any&&b.level!=='ok') out.push({p:p,b:b}); } out.sort(function(x,y){ return (y.b.level==='over'?1:0)-(x.b.level==='over'?1:0); }); return out; }
+function wlBurnBanner(){ var el=document.getElementById('wl-burn'); if(!el) return; var L=wlBurnList(); if(!L.length){ el.innerHTML=''; return; }
+  var h=''; for(var i=0;i<L.length;i++){ var p=L[i].p, b=L[i].b, bits=[]; if(b.hours&&b.hours.level!=='ok') bits.push('hours '+Math.round(b.hours.pct)+'%'); if(b.mat&&b.mat.level!=='ok') bits.push('materials '+Math.round(b.mat.pct)+'%'); if(b.days&&b.days.level!=='ok') bits.push('days '+Math.round(b.days.pct)+'%');
+    h+='<button type="button" class="wl-burn-al '+b.level+'" onclick="wlGoProject(\''+p.id+'\',\'sum\',\'\')">'+(b.level==='over'?'⚠':'⏱')+' <b>'+wlEsc(p.name||'')+'</b> · '+bits.join(' · ')+' of the estimate</button>'; }
+  el.innerHTML=h; }
+window.wlBurnBanner=wlBurnBanner;
+
+// ══ RESULTS → FIELDBID: a compact summary per job type, read by FieldBid's "Price check" ═══════
+// Finished jobs of the last 12 months with a complete FieldBid estimate (same rules as the Accuracy report).
+// Published to fieldbid/wl_insights whenever the numbers change. FieldBid only suggests; you approve.
+function wlInsightsBuild(){ var cut=Date.now()-365*864e5, types={}, all=[];
+  for(var i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='completed'||!p.estimate||p.evaExclude) continue; var j=wlAccJob(p); if(!j||!j.complete||!(j.date>=cut)) continue; all.push(j); (types[j.type]=types[j.type]||[]).push(j); }
+  function agg(js){ var g=wlAccAgg(js), o={n:js.length,aL:r2(g.aL),eL:r2(g.eL),aM:r2(g.aM),eM:r2(g.eM),aO:r2(g.aO),eO:r2(g.eO),bud:0,bE:0,actCost:0,estCost:0,sq:0,hA:0};
+    for(var k=0;k<js.length;k++){ var j=js[k]; o.bud+=j.budget; o.bE+=j.estBudget; o.actCost+=j.actCost; o.estCost+=j.estCost; o.sq+=j.sqft; o.hA+=j.lh; }
+    o.bud=r2(o.bud); o.bE=r2(o.bE); o.actCost=r2(o.actCost); o.estCost=r2(o.estCost); o.mA=o.bud?r2((o.bud-o.actCost)/o.bud*100):null; o.mE=o.bE?r2((o.bE-o.estCost)/o.bE*100):null;
+    o.overPct=o.bE?r2((o.actCost-o.estCost)/o.bE*100):null;   // how much the price would have to move to keep the planned margin
+    o.hPer1k=o.sq?r2(o.hA/o.sq*1000):null; o.hPer1kE=g.hE!==null?r2(g.hE):null; o.costSq=o.sq?r2(o.actCost/o.sq):null; o.priceSq=o.sq?r2(o.bud/o.sq):null; return o; }
+  function r2(v){ return Math.round(v*100)/100; }
+  var out={updatedAt:new Date().toISOString(),months:12,all:agg(all),types:{}}; for(var t in types) out.types[t]=agg(types[t]); return out; }
+var _wlInsLast='';
+function wlInsightsPublish(){ try{ if(localStorage.getItem('wl_session')!=='admin') return; var o=wlInsightsBuild(); var key=JSON.stringify([o.all,o.types]); if(key===_wlInsLast) return; _wlInsLast=key;
+    db.collection('fieldbid').doc('wl_insights').set({data:JSON.stringify(o),updatedAt:o.updatedAt}).then(function(){ }).catch(function(e){ console.warn('insights not published',e&&e.message); }); }catch(e){} }
+window.wlInsightsPublish=wlInsightsPublish;
+var _wlInsT=null; function wlInsightsLater(){ clearTimeout(_wlInsT); _wlInsT=setTimeout(wlInsightsPublish,20000); }
+
 var _wlAcc={months:0,inProg:false};
 function wlAccLastDate(p){
   var t=0; for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.projectId===p.id&&e.startTime){ var x=new Date(e.endTime||e.startTime).getTime(); if(x>t) t=x; } }
@@ -2702,7 +2854,7 @@ function wlAccCard(title,g,cls){
   return h+wlAccConclusion(g)+'</div>';
 }
 function wlAccRender(){
-  var box=document.getElementById('rep-accuracy'); if(!box) return;
+  var box=document.getElementById('rep-accuracy'); if(!box) return; try{ wlInsightsPublish(); }catch(e){}
   var cut=_wlAcc.months?Date.now()-_wlAcc.months*30.44*864e5:0, all=[], excluded=0, noEst=0;
   for(var i=0;i<projects.length;i++){ var p=projects[i], st=p.status||'active';
     if(!_wlAcc.inProg&&st!=='completed') continue;
@@ -3090,6 +3242,7 @@ function switchReport(panel, btn){
   currentReport = panel;
   document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
   document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
+  var resEl=document.getElementById('rep-results'); if(resEl) resEl.style.display = panel==='results'?'block':'none'; var resBt=document.getElementById('rep-toggle-results'); if(resBt){ resBt.style.background=panel==='results'?'var(--green)':'transparent'; resBt.style.color=panel==='results'?'#fff':'var(--muted)'; } if(panel==='results'){ currentReport='results'; wlResRender(); }
   document.getElementById('rep-payments').style.display = panel==='payments'?'block':'none';
   var advEl=document.getElementById('tab-advances'); if(advEl) advEl.style.display = panel==='advances'?'block':'none';
   if(panel==='advances') renderAdvances();
@@ -3817,7 +3970,7 @@ function exportProjectReport(pid){
 window.exportProjectReport=exportProjectReport;
 
 function renderProjects(filter){
-  if(window.wlOhBanner) wlOhBanner();
+  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater();
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
@@ -3941,7 +4094,8 @@ function renderProjects(filter){
       html += '</div>';
     }
 
-    if(window.wlEvaHtml) html+=wlEvaHtml(p,laborMin,laborCost,expenses);
+    if(window.wlBurnHtml&&(p.status||'active')==='active') html+=wlBurnHtml(p);
+  if(window.wlEvaHtml) html+=wlEvaHtml(p,laborMin,laborCost,expenses);
     html+='</div>'+wlTabOpen(p.id,'mat');
     // Material Budget Section
     var mb=p.matBudget;
