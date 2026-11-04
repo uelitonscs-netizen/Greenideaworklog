@@ -504,10 +504,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-eva-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-d);font-weight:800;font-size:16px;margin-bottom:6px;}
 .wl-eva-type{min-height:34px;border:1px solid var(--border2);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;background:#fff;color:var(--text);max-width:52%;}
 .wl-eva-note{font-size:12px;color:var(--muted);margin:2px 0 8px;}
-.wl-eva-t{width:100%;border-collapse:collapse;font-size:13px;}
+.wl-eva-t{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed;}
+.wl-eva-t th:first-child,.wl-eva-t td:first-child{width:27%;} .wl-eva-t th:nth-child(2),.wl-eva-t td:nth-child(2),.wl-eva-t th:nth-child(3),.wl-eva-t td:nth-child(3){width:22%;}
+.wl-eva-pct{display:block;font-size:11px;font-weight:600;opacity:.85;}
+.wl-eva-t td{overflow-wrap:anywhere;}
 .wl-eva-t th{text-align:right;color:var(--muted);font-weight:600;font-size:11px;padding:4px 4px;}
 .wl-eva-t th:first-child{text-align:left;}
-.wl-eva-t td{padding:8px 4px;border-top:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.wl-eva-t td{padding:8px 3px;border-top:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;white-space:normal;}
 .wl-eva-t td:first-child{text-align:left;white-space:normal;font-weight:600;}
 .wl-eva-sub{font-size:11px;color:var(--muted);font-weight:400;margin-top:1px;}
 .wl-eva-t td.bad,.wl-eva-sq b.bad{color:var(--red);font-weight:800;}
@@ -2556,7 +2559,7 @@ function wlEvaRow(label,est,act,sub,costLike,unitFmt){
   var d=act-est, pct=est?Math.round(d/est*100):0;
   var bad=costLike?(d>0.005):(d<-0.005), good=costLike?(d<-0.005):(d>0.005);
   var cls=Math.abs(pct)<5&&est?'':(bad?'bad':(good?'good':''));
-  var dtxt=(est||act)?((d>0?'+':(d<0?'−':''))+f(Math.abs(d))+(est?' <span>('+(pct>0?'+':'')+pct+'%)</span>':'')):'—';
+  var dtxt=(est||act)?((d>0?'+':(d<0?'−':''))+f(Math.abs(d))+(est?'<span class="wl-eva-pct">'+(pct>0?'+':'')+pct+'%</span>':'')):'—';
   return '<tr><td>'+label+(sub?'<div class="wl-eva-sub">'+sub+'</div>':'')+'</td><td>'+(est||est===0?f(est):'—')+'</td><td>'+f(act)+'</td><td class="'+cls+'">'+dtxt+'</td></tr>';
 }
 function wlEvaHtml(p,laborMin,laborCost,exps){
