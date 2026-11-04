@@ -5275,6 +5275,33 @@ function updateClientSuggestions(){
 }
 window.updateClientSuggestions = updateClientSuggestions;
 
+
+// ══ ANALYTICS CHECKS: what a finished job is still missing (hours not logged, planned material never bought)
+var _WL_MATKW={cc:['closed cell','closedcell','close cell','closed-cell','c.c.'],oc:['open cell','opencell','open-cell','o.c.'],cel:['cellulose','celulose','cellulos','dense pack','densepack','blown'],mw:['roxul','rockwool','rock wool','mineral wool','mineralwool','stone wool','comfortbatt'],fg:['fiberglass','fiber glass','fibreglass','batt','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'],ign:['ignition','intumescent','fire paint','dc315','dc-315','fireshell'],fb:['fire block','fireblock','fire-block'],dumpster:['dumpster','disposal','dump','junk','haul']};
+function wlMatCheck(p){ var mb=p.matBudget, out=[]; if(!mb) return out; var ex=[]; for(var i=0;i<projectExpenses.length;i++){ if(projectExpenses[i].projectId===p.id) ex.push(String(projectExpenses[i].desc||'').toLowerCase()); }
+  function logged(kws){ for(var a=0;a<ex.length;a++){ var d=ex[a]; for(var k=0;k<kws.length;k++){ if(kws[k].length>=2&&d.indexOf(kws[k])>=0) return true; } if(kws===_WL_MATKW.cc&&/\bcc\b/.test(d)) return true; if(kws===_WL_MATKW.oc&&/\boc\b/.test(d)) return true; if(kws===_WL_MATKW.fg&&/\bfg\b/.test(d)) return true; } return false; }
+  function want(label,kws){ if(!logged(kws)) out.push(label); }
+  if(mb.cc&&(mb.cc.sqft||0)*(mb.cc.inch||0)>0) want('Closed cell',_WL_MATKW.cc);
+  if(mb.oc&&(mb.oc.sqft||0)*(mb.oc.inch||0)>0) want('Open cell',_WL_MATKW.oc);
+  if((mb.celBags||0)>0) want('Cellulose',_WL_MATKW.cel);
+  if((mb.roxBags||0)>0) want('Roxul',_WL_MATKW.mw);
+  if((mb.fbgBags||0)>0) want('Fiberglass',_WL_MATKW.fg);
+  if((mb.ignSqft||0)>0) want('Ignition barrier',_WL_MATKW.ign);
+  if((mb.fbSqft||0)>0) want('Fire blocking',_WL_MATKW.fb);
+  var det=Array.isArray(mb.detail)?mb.detail:[], seen={};
+  for(var d=0;d<det.length;d++){ var it=det[d]; if(!it||!(it.cost>0)||!it.key) continue; var key=String(it.key);
+    if(key==='ccSet'||key==='ocSet'||/^(fgR|mwR)\d+/.test(key)) continue;
+    if(key==='dumpster'){ if(!logged(_WL_MATKW.dumpster)) out.push('Disposal'); continue; }
+    var lab=String(it.label||key), words=lab.toLowerCase().replace(/\(.*?\)/g,'').split(/[^a-z0-9.]+/).filter(function(w){ return w.length>=4&&['with','from','each','roll','rolls','bags','unit','units','boxes','cases'].indexOf(w)<0; });
+    if(!words.length||seen[lab]) continue; seen[lab]=1; if(!logged(words)) out.push(lab); }
+  return out; }
+function wlJobChecks(p){ var w=[]; var hrs=0; for(var i=0;i<entries.length;i++){ if(entries[i].projectId===p.id&&entries[i].endTime) hrs+=gMin(entries[i]); } if(!hrs) w.push('no hours logged'); var miss=wlMatCheck(p); if(miss.length) w.push('not logged: '+miss.join(', ')); return w; }
+window.wlJobChecks=wlJobChecks;
+
+// ══ CLIENT GROUPING: "PMZ Devolpment LLC", "Pmz development" and "PMZ Development, LLC" are one client
+function wlClientNorm(n){ return String(n||'').toLowerCase().replace(/[.,'"()\-]/g,' ').replace(/\b(llc|inc|corp|co|ltd|the)\b/g,' ').replace(/\s+/g,' ').trim(); }
+function wlLev(a,b){ var m=a.length, n=b.length; if(!m) return n; if(!n) return m; var prev=[], cur=[]; for(var j=0;j<=n;j++) prev[j]=j; for(var i=1;i<=m;i++){ cur=[i]; for(var k=1;k<=n;k++){ cur[k]=Math.min(prev[k]+1,cur[k-1]+1,prev[k-1]+(a.charAt(i-1)===b.charAt(k-1)?0:1)); } prev=cur; } return prev[n]; }
+function wlClientKey(name,known){ var nm=wlClientNorm(name); if(!nm) return 'No Client'; for(var i=0;i<known.length;i++){ var k=known[i]; if(k===nm) return k; if(nm.length>=6&&k.length>=6){ var d=wlLev(nm,k); if(d<=2&&d<=Math.floor(Math.min(nm.length,k.length)/4)) return k; } } known.push(nm); return nm; }
 function renderAnalytics(){
   var yearSel = document.getElementById('analytics-year');
   // Populate year options
@@ -5287,9 +5314,11 @@ function renderAnalytics(){
   var selYear = yearSel.value;
 
   // Filter projects by year
+  var _inProg=0;
   var filteredProjects = projects.filter(function(p){
-    if(selYear==='all') return true;
-    return p.start && parseLocalDate(p.start).getFullYear() == selYear;
+    var yr=(selYear==='all')||(p.start && parseLocalDate(p.start).getFullYear() == selYear); if(!yr) return false;
+    if((p.status||'active')!=='completed'){ if((p.budget||0)>0) _inProg++; return false; }   // only finished jobs count
+    return true;
   });
 
   // Build per-project P&L
@@ -5309,15 +5338,16 @@ function renderAnalytics(){
       id:p.id, name:p.name, client:p.client||'No Client',
       budget:budget, labor:laborCost, materials:materialsCost,
       overhead:overhead, totalCost:totalCost, profit:profit, margin:margin,
-      start:p.start
+      start:p.start, checks:wlJobChecks(p)
     };
   }).filter(function(p){ return p.budget>0; });
 
   // Group by client
-  var clientMap = {};
+  var clientMap = {}, _ck=[];
   projData.forEach(function(p){
-    var c = p.client;
-    if(!clientMap[c]) clientMap[c]={client:c,projects:[],totalBudget:0,totalCost:0,totalProfit:0,totalLabor:0,totalMaterials:0,totalOverhead:0};
+    var c = wlClientKey(p.client,_ck);
+    if(!clientMap[c]) clientMap[c]={client:p.client,names:{},projects:[],totalBudget:0,totalCost:0,totalProfit:0,totalLabor:0,totalMaterials:0,totalOverhead:0};
+    clientMap[c].names[p.client]=(clientMap[c].names[p.client]||0)+1; var _best=null,_bn=0; for(var _q in clientMap[c].names){ if(clientMap[c].names[_q]>_bn||(clientMap[c].names[_q]===_bn&&_q.length>_best.length)){ _best=_q; _bn=clientMap[c].names[_q]; } } clientMap[c].client=_best;
     clientMap[c].projects.push(p);
     clientMap[c].totalBudget+=p.budget;
     clientMap[c].totalCost+=p.totalCost;
@@ -5339,7 +5369,7 @@ function renderAnalytics(){
     {label:'Total Revenue',val:fmtC(totalBudget),color:'#2563eb'},
     {label:'Total Profit',val:fmtC(totalProfit),color:totalProfit>=0?'#16a34a':'#dc2626'},
     {label:'Avg Margin',val:avgMargin.toFixed(1)+'%',color:avgMargin>=20?'#16a34a':avgMargin>=10?'#d97706':'#dc2626'},
-    {label:'Projects',val:projData.length,color:'var(--text)'}
+    {label:'Finished jobs'+(_inProg?' · '+_inProg+' in progress not counted':''),val:projData.length,color:'var(--text)'}
   ].map(function(k){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 12px;text-align:center">'+
       '<div style="font-size:20px;font-weight:800;color:'+k.color+';font-family:var(--font-d)">'+k.val+'</div>'+
@@ -5364,7 +5394,7 @@ function renderAnalytics(){
         '<div style="background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">'+
           '<div style="height:100%;width:'+barW+'%;background:'+barColor+';border-radius:99px;transition:width .4s"></div>'+
         '</div>'+
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue · '+fmtC(c.totalProfit)+' profit</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.projects.length+' project'+(c.projects.length!==1?'s':'')+' · '+fmtC(c.totalBudget)+' revenue · '+fmtC(c.totalProfit)+' profit'+(function(){ var n=0; for(var q=0;q<c.projects.length;q++) if(c.projects[q].checks&&c.projects[q].checks.length) n++; return n?' · <span style="color:#b45309;font-weight:700">⚠ '+n+' job'+(n>1?'s':'')+' incomplete</span>':''; })()+'</div>'+
       '</div>';
     }).join('');
   }
@@ -5380,7 +5410,7 @@ function renderAnalytics(){
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">'+
         '<div>'+
           '<div style="font-weight:600">'+p.name+'</div>'+
-          '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+parseLocalDate(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+
+          '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+parseLocalDate(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+(p.checks&&p.checks.length?'<div style="color:#b45309;font-size:11px;margin-top:3px;font-weight:600">⚠ '+p.checks.join(' · ')+'</div>':'')+
         '</div>'+
         '<div style="text-align:right">'+
           '<div style="font-weight:700;color:'+(mc>=0?'#16a34a':'#dc2626')+'">'+fmtC(p.profit)+'</div>'+
