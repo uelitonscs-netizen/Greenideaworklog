@@ -1699,7 +1699,8 @@ function pbOnInput(ev){
     return;
   }
   var empty=!amt||amt.value==='';
-  if(amt&&(empty||auto)){ amt.value=m.total.toFixed(2); amt.setAttribute('data-auto','1'); }
+  var typing=amt&&document.activeElement===amt;   // never overwrite an amount being typed
+  if(amt&&!typing&&(empty||auto)){ amt.value=m.total.toFixed(2); amt.setAttribute('data-auto','1'); }
   if(hint){
     hint.style.display='block'; hint.style.color='#15803d';
     var manual=amt&&amt.getAttribute('data-auto')!=='1';
@@ -4396,7 +4397,7 @@ function saveExpense(pid){
 }
 window.saveExpense=saveExpense;
 
-function delExpense(id){db.collection('projectExpenses').doc(id).delete(); showToast('Expense deleted');}
+function delExpense(id){ db.collection('projectExpenses').doc(id).delete().then(function(){ showToast('Expense deleted'); }).catch(function(e){ showToast('Not deleted: '+((e&&(e.code||e.message))||'error'),'err'); }); }
 window.delExpense=delExpense;
 
 var editingExpenseId=null;
@@ -4417,16 +4418,21 @@ function openEditExpense(id){
 window.openEditExpense=openEditExpense;
 
 function saveEditExpense(){
-  if(!editingExpenseId) return;
+  if(!editingExpenseId) return; var id=editingExpenseId;
   var desc=document.getElementById('ee-desc').value.trim();
-  var amount=parseFloat(document.getElementById('ee-amount').value);
+  var amount=parseFloat(String(document.getElementById('ee-amount').value||'').replace(',','.'));
   var type=document.getElementById('ee-type').value;
   var date=document.getElementById('ee-date').value;
   if(!desc) return showToast('Enter a description','err');
   if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
-  db.collection('projectExpenses').doc(editingExpenseId).update({desc:desc,amount:amount,type:type,date:date});
-  closeModal('modal-edit-expense');
-  showToast('Expense updated! ✅');
+  amount=Math.round(amount*100)/100; var upd={desc:desc,amount:amount,type:type,date:date,updatedAt:new Date().toISOString()};
+  // show the change right away, then confirm it with the cloud; if the cloud refuses, undo and reopen with what was typed
+  var before=null; for(var i=0;i<projectExpenses.length;i++){ if(projectExpenses[i].id===id){ before=Object.assign({},projectExpenses[i]); Object.assign(projectExpenses[i],upd); break; } }
+  closeModal('modal-edit-expense'); try{ refreshView(); }catch(e){}
+  db.collection('projectExpenses').doc(id).set(upd,{merge:true}).then(function(){ showToast('Expense updated! ✅'); }).catch(function(e){
+    if(before){ for(var j=0;j<projectExpenses.length;j++){ if(projectExpenses[j].id===id){ projectExpenses[j]=before; break; } } try{ refreshView(); }catch(_e){} }
+    showToast('Not saved: '+((e&&(e.code||e.message))||'error')+' — check the connection and try again','err');
+    try{ openEditExpense(id); document.getElementById('ee-desc').value=desc; document.getElementById('ee-amount').value=amount; document.getElementById('ee-amount').setAttribute('data-auto',''); document.getElementById('ee-type').value=type; document.getElementById('ee-date').value=date; }catch(_e){} });
 }
 window.saveEditExpense=saveEditExpense;
 
