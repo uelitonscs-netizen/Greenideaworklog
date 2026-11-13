@@ -1617,6 +1617,9 @@ function pbUnitInText(s){
 function pbMatch(text,pid){
   var s=pbNorm(text);
   if(s.replace(/\s/g,'').length<3) return null;
+  // a bag size written on a Roxul / fiberglass line ("80 sf/bag", "(80 sq ft)", "24 oc") is not the unit of the purchase: take it out before reading units
+  var bagSf=0; try{ bagSf=wlBagSf(text)||0; }catch(_e){}
+  if(bagSf){ s=s.replace(/\(?\d{2,3}(?:[.,]\d+)?\s*(?:sq\.?\s*ft|sqft|sf)\s*(?:\/|per|a)?\s*(?:bag)?\)?/g,' ').replace(/\b(?:24|16)\s*(?:"|in|inch|oc|o\.c\.)/g,' ').replace(/\s*·\s*$/,'').replace(/\s{2,}/g,' '); }
   var qty=1, m;
   m=s.match(/^\s*(\d+(?:[.,]\d+)?)\s*(?:x\b)?/);
   if(m){ qty=parseFloat(m[1].replace(',','.')); }
@@ -1667,6 +1670,9 @@ function pbMatch(text,pid){
   } else if(wrote && wrote!==unit && !(wrote==='sheet'&&unit==='sheet')){
     if(!(unit==='un')) return {key:null,msg:d.label+': preço é por '+unit+', mas a descrição diz "'+wrote+'" — preencha o valor manualmente'};
   }
+  // a different bag size: price scales with the coverage (price per quoted bag ÷ its sq ft × this bag's sq ft)
+  if(bagSf&&/^(mwR|fgR)\d+/.test(key)){ var planned=0; try{ for(var pi=0;pi<projects.length;pi++){ if(projects[pi].id===pid){ var det=(projects[pi].matBudget&&projects[pi].matBudget.detail)||[]; for(var di=0;di<det.length;di++) if(det[di].key===key){ planned=Number(det[di].sfBag)||0; break; } break; } } }catch(_e){}
+    if(planned>0&&price>0){ var per=price/planned; note+=' ($'+price.toFixed(2)+'/bag of '+planned+' sf → $'+per.toFixed(3)+'/sf × '+bagSf+' sf)'; price=Math.round(per*bagSf*100)/100; } else note+=' (price per quoted bag · '+bagSf+' sf bag not scaled)'; }
   return {key:key,label:d.label+note,unit:unit,qty:qty,price:price,total:Math.round(qty*price*100)/100};
 }
 function pbReset(pid){
