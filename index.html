@@ -248,6 +248,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .wl-burn-dash{margin:0 0 12px}.wl-burn-dash-hd{font-family:var(--font-d);font-weight:800;font-size:13px;margin-bottom:6px;color:#92400e}
 
 .wl-ins-st{font-size:12px;border-radius:10px;padding:8px 11px;margin:0 0 10px;background:#f1f5f9;color:#475569}.wl-ins-st.ok{background:#ecfdf5;color:#166534}.wl-ins-st.bad{background:#fef2f2;color:#991b1b}.wl-ins-st small{color:inherit;opacity:.8}
+.pb-bag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}.pb-bag span{font-size:11px;color:var(--muted);font-weight:700}.pb-bag button{border:1px solid var(--border2);background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--text);font-family:var(--font-d)}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -1674,6 +1675,13 @@ function pbReset(pid){
   if(h){ h.style.display='none'; h.textContent=''; }
 }
 window.pbReset=pbReset;
+
+function pbBagChips(t,m){ var id=t.id+'-bag', el=document.getElementById(id); var isBag=m&&m.key&&/^(mwR|fgR)\d+/.test(String(m.key)); var has=wlBagSf(t.value);
+  if(!isBag||has||!/\d/.test(t.value)){ if(el) el.style.display='none'; return; }
+  if(!el){ el=document.createElement('div'); el.id=id; el.className='pb-bag'; t.parentNode.insertBefore(el,t.nextSibling); }
+  var planned=0; try{ var pid=(t.id==='ee-desc')?(window._eePid||''):t.id.substring(4), pr=null; for(var pi=0;pi<projects.length;pi++) if(projects[pi].id===pid){ pr=projects[pi]; break; } var det=(pr&&pr.matBudget&&pr.matBudget.detail)||[]; for(var di=0;di<det.length;di++) if(det[di].key===m.key){ planned=Number(det[di].sfBag)||0; break; } }catch(e){} var opts=[]; if(planned) opts.push(planned); var std=[39.8,59.7,80]; for(var z=0;z<std.length;z++){ if(opts.indexOf(std[z])<0) opts.push(std[z]); }   // the same R comes in several bag sizes (R-15: 39.8, 59.7 or 80 sf…)
+  el.innerHTML='<span>Bag size</span>'+opts.map(function(v){ return '<button type="button" data-v="'+v+'">'+v+' sf'+(v===planned?' · as quoted':'')+'</button>'; }).join('')+'<button type="button" data-v="other">other…</button>'; el.style.display='flex';
+  var bs=el.querySelectorAll('button'); for(var i=0;i<bs.length;i++){ bs[i].onclick=function(){ var v=this.getAttribute('data-v'); if(v==='other'){ var x=prompt('Square feet per bag (from the label):',''); if(x===null) return; v=parseFloat(String(x).replace(',','.')); if(!(v>=20&&v<=200)){ showToast('Enter a value between 20 and 200 sq ft','err'); return; } } t.value=t.value.replace(/\s+$/,'')+' · '+v+' sf/bag'; try{ t.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} el.style.display='none'; }; } }
 function pbOnInput(ev){
   var t=ev&&ev.target; if(!t||!t.id) return;
   if(t.id.indexOf('exa-')===0||t.id==='ee-amount'){ t.setAttribute('data-auto',''); return; }   // typed by hand: never overwrite
@@ -1683,7 +1691,7 @@ function pbOnInput(ev){
   var amt=(t.id==='ee-desc')?document.getElementById('ee-amount'):document.getElementById('exa-'+pid), hint=(t.id==='ee-desc')?document.getElementById('ee-hint'):document.getElementById('exh-'+pid);
   if(hint&&hint.id==='ee-hint') hint._pbTotal=null;
   var auto=amt&&amt.getAttribute('data-auto')==='1';
-  var m=pbMatch(t.value,pid);
+  var m=pbMatch(t.value,pid); try{ pbBagChips(t,m); }catch(_e){}
   if(!m||!m.key){
     if(auto){ amt.value=''; amt.setAttribute('data-auto',''); }
     if(hint){
@@ -3173,9 +3181,16 @@ document.addEventListener('click',function(ev){
 
 // Bags used per R-value for the per-SKU rows (fiberglass / Roxul), from this project's
 // expense descriptions. Same rule as the project report.
+
+// ══ BAG SIZE: Roxul / fiberglass bags vary (59.7, 80 sq ft…). When the expense says the size
+// ("12 bags Roxul 80 sf", "(80 sq ft)", "24 oc"), the quantity is converted to bags of the size the
+// estimate was planned with, so "Quoted vs used" compares like with like.
+function wlBagSf(desc){ var d=String(desc||'').toLowerCase(); var m=d.match(/(\d{2,3}(?:\.\d+)?)\s*(?:sq\.?\s*ft|sqft|sf)\s*(?:\/|per|a)?\s*(?:bag)?/); if(m){ var v=parseFloat(m[1]); if(v>=20&&v<=200) return v; } if(/\b24\s*(?:\"|in|inch|oc|o\.c\.)/.test(d)) return 80; if(/\b16\s*(?:\"|in|inch|oc|o\.c\.)/.test(d)) return 59.7; return 0; }
+function wlBagNorm(desc,qty,plannedSf){ var bs=wlBagSf(desc); if(!bs||!(plannedSf>0)) return {q:qty,note:''}; var eq=Math.round(qty*bs/plannedSf*10)/10; return {q:eq,note:qty+' × '+bs+' sf = '+eq+' bags of '+plannedSf+' sf'}; }
+window.wlBagSf=wlBagSf;
 function wlSkuUsage(pid,skus,kind){
   var kw=kind==='mw'?['roxul','mineral wool','mineralwool','rockwool','rock wool','stone wool','comfortbatt']:['fiberglass','fiber glass','fibre glass','fibreglass','batt'];
-  var byR={}, other=0, otherRs={};
+  var byR={}, other=0, otherRs={}, notes=[];
   for(var i=0;i<projectExpenses.length;i++){ var x=projectExpenses[i]; if(x.projectId!==pid) continue;
     var d=String(x.desc||'').toLowerCase(), hit=false;
     for(var k=0;k<kw.length;k++){ if(d.indexOf(kw[k])>=0){ hit=true; break; } }
@@ -3183,10 +3198,10 @@ function wlSkuUsage(pid,skus,kind){
     if(kind!=='mw'&&(d.indexOf('roxul')>=0||d.indexOf('mineral')>=0||d.indexOf('rockwool')>=0)) continue;
     var q=parseFloat((d.match(/^\s*([\d.]+)/)||[0,0])[1])||0; if(!q) continue;
     var rm=d.match(/\br[\s-]?(\d{2})\b/), r=rm?parseInt(rm[1],10):0, matched=false;
-    for(var s=0;s<skus.length;s++){ var sr=parseInt(String(skus[s].key||'').replace(/\D/g,''),10); if(r&&sr===r){ byR[sr]=(byR[sr]||0)+q; matched=true; break; } }
+    for(var s=0;s<skus.length;s++){ var sr=parseInt(String(skus[s].key||'').replace(/\D/g,''),10); if(r&&sr===r){ var nb=wlBagNorm(d,q,skus[s].sfBag||0); if(nb.note) notes.push('R-'+sr+': '+nb.note); byR[sr]=(byR[sr]||0)+nb.q; matched=true; break; } }
     if(!matched){ other+=q; if(r) otherRs['R-'+r]=1; }
   }
-  return {byR:byR, other:other, otherRs:Object.keys(otherRs)};
+  return {byR:byR, other:other, otherRs:Object.keys(otherRs), notes:notes};
 }
 window.wlSkuUsage=wlSkuUsage;
 
@@ -4224,6 +4239,7 @@ function renderProjects(filter){
           for(var _mi=0;_mi<_detMw.length;_mi++){ var _dm=_detMw[_mi], _smr=parseInt(String(_dm.key||'').replace(/\D/g,''),10), _um=_umw.byR[_smr]||0, _lbm='🪨 '+_dm.label;
             if(_detMw.length===1&&_umw.other>0){ _um+=_umw.other; if(_umw.otherRs.length) _lbm+=' <span style="color:#b45309;font-size:11px">⚠ bought: '+_umw.otherRs.join(', ')+'</span>'; }
             html+=matRow(_lbm, _dm.qty, _um, 'bags')+costTag(_dm,p.id); }
+          if(_umw.notes&&_umw.notes.length) html+='<div style="font-size:10.5px;color:var(--muted);margin:-4px 0 8px">🪨 bag size noted: '+_umw.notes.join(' · ')+'</div>';
           if(_detMw.length>1&&_umw.other>0) html+=matRow('🪨 Roxul (other R / no R)'+(_umw.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_umw.otherRs.join(', ')+'</span>':''),0,_umw.other,'bags');
         }
         else if(mb.roxBags>0||roxUsed>0){ html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags'); }
