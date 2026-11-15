@@ -270,6 +270,16 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 /* helper: the Clock / History / Jobs tabs stay on screen while the page scrolls */
 .helper-body{overflow:visible;}
 .helper-tabs{position:-webkit-sticky;position:sticky;top:8px;z-index:60;box-shadow:0 0 0 10px var(--bg),var(--shadow-sm);}
+/* crew reports */
+.htab.wl-dot{position:relative}.htab.wl-dot::after{content:'';position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:#dc2626}
+.wl-rp-row{display:flex;align-items:center;gap:8px;margin:0 0 8px}.wl-rp-row .lb{flex:1;font-size:13px;font-weight:600}.wl-rp-row input[type=number]{width:84px;text-align:center}.wl-rp-row select{width:auto;min-width:74px}.wl-rp-row .u{font-size:11px;color:var(--muted);width:46px}
+.wl-rp-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin:0 0 10px}
+.wl-rp-new{display:inline-block;background:#dc2626;color:#fff;font-size:10px;font-weight:800;border-radius:6px;padding:2px 6px;margin-left:6px}
+.wl-rp-ans{margin-top:8px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:8px 10px;font-size:13px;color:#065f46}
+#wl-rp{position:fixed;inset:0;z-index:9500;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#wl-rp-pill{position:fixed;left:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;background:#dc2626;color:#fff;border:none;border-radius:999px;padding:10px 16px;font-weight:800;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+@media print{#wl-rp-pill{display:none!important}}
+#screen-helper.active ~ #wl-rp-pill,#screen-landing.active ~ #wl-rp-pill{display:none}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -1126,6 +1136,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <button class="htab active" onclick="hTab('clock',this)" data-t="⏱ Clock">⏱ Clock</button>
       <button class="htab" onclick="hTab('history',this)" data-t="📋 History">📋 History</button>
       <button class="htab" onclick="hTab('jobs',this)" data-t="📁 Jobs">📁 Jobs</button>
+      <button class="htab" id="wl-rep-tab" style="display:none" onclick="hTab('report',this)" data-t="📝 Report">📝 Report</button>
     </div>
 
     <!-- CLOCK -->
@@ -1144,6 +1155,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label" data-t="TODAY">TODAY</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label" data-t="THIS WEEK">THIS WEEK</div></div>
       </div>
+      <div id="wl-rep-ask" style="display:none;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:13.5px;font-weight:600"></div>
       <div id="wl-inst" style="display:none;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-size:13px;line-height:1.5"></div>
       <div id="wl-hver" style="text-align:center;font-size:10.5px;color:var(--muted);margin:12px 0 0"></div>
       <!-- Advance Balance - only shows if owed -->
@@ -1176,6 +1188,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <!-- JOBS -->
     <div id="hpanel-jobs" class="hpanel">
       <div id="helper-jobs-list"></div>
+    </div>
+
+    <!-- DAILY REPORT -->
+    <div id="hpanel-report" class="hpanel">
+      <div id="wl-rep-form"></div>
+      <div id="wl-rep-list"></div>
     </div>
 
     <!-- MY PAY -->
@@ -1769,7 +1787,7 @@ function wlEntSort(a,b){ return String(b.startTime||'')<String(a.startTime||'')?
 // What the helper sees = what the server sent (or the copy saved on the phone) + punches still waiting to be sent
 function wlqOverlay(list,hid){
   var out=list.slice(), q=wlqAll();
-  for(var i=0;i<q.length;i++){ var op=q[i]; if(op.hid!==hid||op.dropped) continue;
+  for(var i=0;i<q.length;i++){ var op=q[i]; if(op.hid!==hid||op.dropped||(op.col&&op.col!=='entries')) continue;
     var j=-1; for(var k=0;k<out.length;k++){ if(out[k].id===op.id){ j=k; break; } }
     if(op.k==='add'){ if(j<0) out.push(Object.assign({id:op.id,_pending:true},op.data)); }
     else if(j>=0){ out[j]=Object.assign({},out[j],op.data,{_pending:true}); }
@@ -1779,9 +1797,9 @@ function wlqOverlay(list,hid){
 function wlqApply(){ if(window._listenersStarted||!_wlHelperId) return; entries=wlqOverlay(_wlBase,_wlHelperId); }
 function wlqSend(op){
   var key=op.k+':'+op.id+':'+op.at; if(_wlqBusy[key]) return; _wlqBusy[key]=1;
-  var ref=db.collection('entries').doc(op.id), pr;
+  var ref=db.collection(op.col||'entries').doc(op.id), pr;
   try{ pr=op.k==='add'?ref.set(op.data):ref.update(op.data); }catch(e){ delete _wlqBusy[key]; return; }
-  pr.then(function(){ delete _wlqBusy[key]; wlqRemove(op); wlqApply(); wlqBadge(); try{ refreshView(); }catch(e){} })
+  pr.then(function(){ delete _wlqBusy[key]; wlqRemove(op); wlqApply(); wlqBadge(); try{ refreshView(); if(op.col==='helperReports') wlRepRender(); }catch(e){} })
     .catch(function(e){ delete _wlqBusy[key];
       var a=wlqAll(), i=wlqFind(a,op), c=String((e&&e.code)||e||'error'); if(i<0) return;
       a[i].tries=(a[i].tries||0)+1; a[i].err=c;
@@ -1798,6 +1816,7 @@ function wlqFlush(){
   var byId={}, i; for(i=0;i<_wlBase.length;i++) byId[_wlBase[i].id]=_wlBase[i];
   for(i=0;i<q.length;i++){ var op=q[i]; if(op.hid!==_wlHelperId||op.dropped) continue;
     if(_wlqBusy[op.k+':'+op.id+':'+op.at]) continue;
+    if(op.col==='helperReports'){ if(_wlRepLive!==_wlHelperId) continue; var _rf=false; for(var _ri=0;_ri<_wlRepBase.length;_ri++){ if(_wlRepBase[_ri].id===op.id) _rf=true; } if(_rf) wlqRemove(op); else wlqSend(op); continue; }
     if(op.k==='add'){ if(byId[op.id]){ wlqRemove(op); } else wlqSend(op); }
     else { var e=byId[op.id], addWaiting=false; for(var j=0;j<q.length;j++){ if(q[j].k==='add'&&q[j].id===op.id) addWaiting=true; }
       if(e){ if(op.data&&op.data.endTime&&e.endTime) wlqRemove(op); else wlqSend(op); }   // already closed on the server (same punch confirmed, or closed by the office): never overwrite
@@ -1813,15 +1832,16 @@ window.wlqDismiss=wlqDismiss;
 function wlqBadge(){
   var el=document.getElementById('wl-hq'); if(!el) return;
   if(window._listenersStarted||!_wlHelperId){ el.className='wl-hq'; el.innerHTML=''; return; }
-  var q=wlqMine(), pend=0, dead=[], i; for(i=0;i<q.length;i++){ if(q[i].dead) dead.push(q[i]); else pend++; }
+  var q=wlqMine(), pend=0, rpend=0, dead=[], i; for(i=0;i<q.length;i++){ if(q[i].dead) dead.push(q[i]); else if(q[i].col==='helperReports') rpend++; else pend++; }
   var off=(navigator.onLine===false)||_wlHelperLive!==_wlHelperId, h='';
   if(dead.length){
     h=wlPt()?('⚠ '+dead.length+' ponto'+(dead.length>1?'s':'')+' NÃO '+(dead.length>1?'foram salvos':'foi salvo')+'. Mostre isto ao escritório:'):('⚠ '+dead.length+' punch'+(dead.length>1?'es':'')+' could NOT be saved. Show this to the office:');
-    for(i=0;i<dead.length;i++){ var d=dead[i].data||{}, t=d.endTime&&dead[i].k==='upd'?d.endTime:d.startTime;
-      h+='<br>• '+(dead[i].k==='upd'?(wlPt()?'Saída ':'Clock out '):(d.endTime?(wlPt()?'Horas ':'Hours '):(wlPt()?'Entrada ':'Clock in ')))+(t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(d.endTime&&dead[i].k==='add'?' → '+new Date(d.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''); }
+    for(i=0;i<dead.length;i++){ var d=dead[i].data||{}, t=d.endTime&&dead[i].k==='upd'?d.endTime:(d.startTime||d.createdAt);
+      h+='<br>• '+(dead[i].col==='helperReports'?(wlPt()?'Relatório ':'Report '):dead[i].k==='upd'?(wlPt()?'Saída ':'Clock out '):(d.endTime?(wlPt()?'Horas ':'Hours '):(wlPt()?'Entrada ':'Clock in ')))+(t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(d.endTime&&dead[i].k==='add'?' → '+new Date(d.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''); }
     h+='<br><button type="button" onclick="wlqDismiss()">'+(wlPt()?'OK, já avisei o escritório':'OK, I told the office')+'</button>';
     el.className='wl-hq err'; el.innerHTML=h; return;
   }
+  if(!pend&&rpend){ el.className='wl-hq info'; el.innerHTML=wlPt()?((off?'📴 Sem sinal. ':'⏳ Enviando… ')+rpend+' relatório'+(rpend>1?'s':'')+' salvo'+(rpend>1?'s':'')+' neste celular'+(off?' — envia sozinho quando o sinal voltar.':'.')):((off?'📴 No connection. ':'⏳ Sending… ')+rpend+' report'+(rpend>1?'s':'')+' saved on this phone'+(off?' — sent automatically when the signal is back.':'.')); return; }
   if(pend){ el.className='wl-hq info'; el.innerHTML=wlPt()?((off?'📴 Sem sinal. ':'⏳ Enviando… ')+pend+' ponto'+(pend>1?'s':'')+' salvo'+(pend>1?'s':'')+' neste celular'+(off?' — '+(pend>1?'serão enviados':'será enviado')+' sozinho quando o sinal voltar. Seu tempo está contando normalmente.':'.')):((off?'📴 No connection. ':'⏳ Sending… ')+pend+' punch'+(pend>1?'es':'')+' saved on this phone'+(off?' — will be sent automatically when the signal is back. Your time is counting normally.':'.')); return; }
   if(off&&window._wlHelperReady===_wlHelperId){ el.className='wl-hq info'; el.innerHTML=wlPt()?'📴 Sem sinal — mostrando o que está salvo neste celular. Você pode bater entrada e saída normalmente.':'📴 No connection — showing what is saved on this phone. You can clock in and out normally.'; return; }
   el.className='wl-hq'; el.innerHTML='';
@@ -1869,7 +1889,7 @@ window.addEventListener('offline',function(){ wlqBadge(); });
 
 // ══════ H2 — helper screen in Portuguese / English ══════
 // The helper picks PT or EN on his own screen (default: the phone's language). The office screens stay in English.
-var _WL_PT={"LOGGED IN AS": "CONECTADO COMO", "⏱ Clock": "⏱ Ponto", "📋 History": "📋 Histórico", "📁 Jobs": "📁 Trabalhos", "Select Project (optional)": "Escolha o projeto (opcional)", "TODAY": "HOJE", "THIS WEEK": "ESTA SEMANA", "ADVANCE OWED": "ADIANTAMENTO A DESCONTAR", "No project": "Sem projeto", "NOT CLOCKED IN": "PONTO FECHADO", "WORKING ON: ": "TRABALHANDO EM: ", "CLOCKED IN SINCE ": "PONTO ABERTO DESDE ", "Clock In": "Bater entrada", "Clock Out": "Bater saída", "Loading your hours…": "Carregando suas horas…", "Getting location...": "Pegando a localização...", "● LIVE": "● ABERTO", "Still loading your hours — wait a few seconds": "Ainda carregando suas horas — espere alguns segundos", "Clocked out! 📍": "Saída registrada! 📍", "Clocked out! ✅": "Saída registrada! ✅", "Clocked in! 📍": "Entrada registrada! 📍", "Clocked in! ⏱": "Entrada registrada! ⏱", "Already clocked in": "O ponto já está aberto", "Already clocked in!": "O ponto já está aberto!", "Already clocked out today!": "Você já bateu a saída hoje!", "📷 Clocked in! ✅": "📷 Entrada registrada! ✅", "📍 Auto clocked in at depot!": "📍 Entrada automática no depósito!", " Saved on this phone — sends when online.": " Salvo neste celular — envia quando voltar o sinal.", "No entries yet.": "Nenhum registro ainda.", "WEEK TOTAL": "TOTAL DA SEMANA", "entry": "registro", "entries": "registros", " reg + ": " normal + ", " OT": " extra", "No projects assigned.": "Nenhum projeto atribuído.", "MY HOURS": "MINHAS HORAS", "📸 PHOTOS": "📸 FOTOS", "Note": "Observação", "No photos yet.": "Nenhuma foto ainda.", "Incident": "Incidente", "Progress": "Andamento", "Material Delivered": "Material entregue", "Completion": "Conclusão", "active": "ativo", "completed": "concluído", "paused": "pausado", "Preparing photo...": "Preparando a foto...", "Uploading...": "Enviando...", "Photo saved! 📸": "Foto salva! 📸", "Photo too large": "Foto grande demais", "Could not read this photo — try again": "Não consegui ler esta foto — tente de novo", "This photo format is not supported — take the photo with the camera": "Formato de foto não aceito — tire a foto com a câmera", "No connection — keep the app open, the photo is sent when the signal is back": "Sem sinal — deixe o app aberto, a foto é enviada quando o sinal voltar", "Dont forget to clock out!": "Não esqueça de bater a saída!", "You are back at the depot with time still running.": "Você voltou ao depósito e o ponto continua aberto.", "Slow connection — your screen opens as soon as it loads": "Conexão lenta — sua tela abre assim que carregar", "Opening your screen…": "Abrindo a sua tela…", "This helper link is no longer active": "Este link de helper não está mais ativo", "Helper not found": "Helper não encontrado", "🔧 Maintenance · equipment / rig": "🔧 Manutenção · equipamento / rig", "🧹 Warehouse · cleaning / organizing": "🧹 Depósito · limpeza / organização", "🚚 Supplies run / pickup": "🚚 Buscar material / compras", "🔧 Maintenance": "🔧 Manutenção", "🧹 Warehouse": "🧹 Depósito", "🚚 Supplies": "🚚 Compras", "active job": "projeto ativo", "active jobs": "projetos ativos", "offline copy": "cópia sem sinal", "jobs error: ": "erro nos projetos: ", "Added by admin":"Adicionado pelo escritório","Clock in via QR Code":"Entrada pelo QR Code","Auto clock in via geofence":"Entrada automática no depósito","Entry added!": "Registro adicionado!", "This entry was already added": "Este registro já foi adicionado"};
+var _WL_PT={"LOGGED IN AS": "CONECTADO COMO", "⏱ Clock": "⏱ Ponto", "📋 History": "📋 Histórico", "📁 Jobs": "📁 Trabalhos", "Select Project (optional)": "Escolha o projeto (opcional)", "TODAY": "HOJE", "THIS WEEK": "ESTA SEMANA", "ADVANCE OWED": "ADIANTAMENTO A DESCONTAR", "No project": "Sem projeto", "NOT CLOCKED IN": "PONTO FECHADO", "WORKING ON: ": "TRABALHANDO EM: ", "CLOCKED IN SINCE ": "PONTO ABERTO DESDE ", "Clock In": "Bater entrada", "Clock Out": "Bater saída", "Loading your hours…": "Carregando suas horas…", "Getting location...": "Pegando a localização...", "● LIVE": "● ABERTO", "Still loading your hours — wait a few seconds": "Ainda carregando suas horas — espere alguns segundos", "Clocked out! 📍": "Saída registrada! 📍", "Clocked out! ✅": "Saída registrada! ✅", "Clocked in! 📍": "Entrada registrada! 📍", "Clocked in! ⏱": "Entrada registrada! ⏱", "Already clocked in": "O ponto já está aberto", "Already clocked in!": "O ponto já está aberto!", "Already clocked out today!": "Você já bateu a saída hoje!", "📷 Clocked in! ✅": "📷 Entrada registrada! ✅", "📍 Auto clocked in at depot!": "📍 Entrada automática no depósito!", " Saved on this phone — sends when online.": " Salvo neste celular — envia quando voltar o sinal.", "No entries yet.": "Nenhum registro ainda.", "WEEK TOTAL": "TOTAL DA SEMANA", "entry": "registro", "entries": "registros", " reg + ": " normal + ", " OT": " extra", "No projects assigned.": "Nenhum projeto atribuído.", "MY HOURS": "MINHAS HORAS", "📸 PHOTOS": "📸 FOTOS", "Note": "Observação", "No photos yet.": "Nenhuma foto ainda.", "Incident": "Incidente", "Progress": "Andamento", "Material Delivered": "Material entregue", "Completion": "Conclusão", "active": "ativo", "completed": "concluído", "paused": "pausado", "Preparing photo...": "Preparando a foto...", "Uploading...": "Enviando...", "Photo saved! 📸": "Foto salva! 📸", "Photo too large": "Foto grande demais", "Could not read this photo — try again": "Não consegui ler esta foto — tente de novo", "This photo format is not supported — take the photo with the camera": "Formato de foto não aceito — tire a foto com a câmera", "No connection — keep the app open, the photo is sent when the signal is back": "Sem sinal — deixe o app aberto, a foto é enviada quando o sinal voltar", "Dont forget to clock out!": "Não esqueça de bater a saída!", "You are back at the depot with time still running.": "Você voltou ao depósito e o ponto continua aberto.", "Slow connection — your screen opens as soon as it loads": "Conexão lenta — sua tela abre assim que carregar", "Opening your screen…": "Abrindo a sua tela…", "This helper link is no longer active": "Este link de helper não está mais ativo", "Helper not found": "Helper não encontrado", "🔧 Maintenance · equipment / rig": "🔧 Manutenção · equipamento / rig", "🧹 Warehouse · cleaning / organizing": "🧹 Depósito · limpeza / organização", "🚚 Supplies run / pickup": "🚚 Buscar material / compras", "🔧 Maintenance": "🔧 Manutenção", "🧹 Warehouse": "🧹 Depósito", "🚚 Supplies": "🚚 Compras", "active job": "projeto ativo", "active jobs": "projetos ativos", "offline copy": "cópia sem sinal", "jobs error: ": "erro nos projetos: ", "Added by admin":"Adicionado pelo escritório","Clock in via QR Code":"Entrada pelo QR Code","Auto clock in via geofence":"Entrada automática no depósito","📝 Report": "📝 Relatório", "DAILY REPORT": "RELATÓRIO DO DIA", "Project": "Projeto", "🏢 Office (no project) — message": "🏢 Escritório (sem projeto) — recado", "Choose…": "Escolha…", "WHAT WAS USED TODAY": "O QUE FOI USADO HOJE", "Closed cell": "Closed cell", "Open cell": "Open cell", "gallons": "galões", "bags": "bags", "Cellulose": "Celulose", "Roxul": "Roxul", "Fiberglass": "Fiberglass", "bag size": "tam. da bag", "📷 Photo of the machine counter": "📷 Foto do contador da máquina", "📷 Add a photo": "📷 Adicionar foto", "Change photo": "Trocar foto", "Remove": "Remover", "Note (what happened, what is missing…)": "Observação (o que aconteceu, o que está faltando…)", "Message for the office": "Recado para o escritório", "Send report": "Enviar relatório", "Send message": "Enviar recado", "MY REPORTS": "MEUS RELATÓRIOS", "No reports yet.": "Nenhum relatório ainda.", "Office message": "Recado ao escritório", "sent ✓": "enviado ✓", "waiting for signal ⏳": "esperando sinal ⏳", "Office answered:": "Escritório respondeu:", "Choose the project first": "Escolha o projeto primeiro", "Fill in what was used, a note or a photo": "Preencha o que foi usado, uma observação ou uma foto", "Report sent! 📝": "Relatório enviado! 📝", "Message sent! 📝": "Recado enviado! 📝", "Fill now": "Preencher agora", "Later": "Depois", "📝 Send today's report for ": "📝 Enviar o relatório de hoje de ", "Photo added ✓": "Foto adicionada ✓","Entry added!": "Registro adicionado!", "This entry was already added": "Este registro já foi adicionado"};
 function wlPt(){ try{ return !wlIsOffice()&&wlLang()==='pt'; }catch(e){ return false; } }
 function wlT(x){ if(!wlPt()) return x; var v=_WL_PT[x]; return v===undefined?x:v; }
 function wlLoc(){ return wlPt()?'pt-BR':'en-US'; }
@@ -1884,7 +1904,8 @@ function wlI18n(){ try{
   var bx=document.getElementById('wl-lang'); if(bx){ if(wlIsOffice()){ bx.style.display='none'; } else { bx.style.display='flex'; var L=wlLang(), bs=bx.querySelectorAll('button'); for(var j=0;j<bs.length;j++){ var on=bs[j].getAttribute('data-l')===L; bs[j].style.background=on?'#fff':'transparent'; bs[j].style.color=on?'#17522a':'#fff'; } } }
 }catch(e){} }
 function wlLangRefresh(){ try{ wlI18n(); updateHelperStats(); var a=document.querySelector('.hpanel.active'); if(a){ if(a.id==='hpanel-history') renderHelperHistory(); else if(a.id==='hpanel-jobs') renderHelperJobs(); }
-  var cr=document.getElementById('clockout-reminder'); if(cr&&cr.parentNode){ cr.parentNode.removeChild(cr); showClockOutReminder(); } }catch(e){} }
+  var cr=document.getElementById('clockout-reminder'); if(cr&&cr.parentNode){ cr.parentNode.removeChild(cr); showClockOutReminder(); }
+  _wlRepBuilt=''; if(a&&a.id==='hpanel-report') wlRepRender(true); wlRepAskDraw(); }catch(e){} }
 window.wlT=wlT; window.wlI18n=wlI18n;
 
 // "Put WorkLog on your home screen" — shown to the helper until the app is opened from the icon
@@ -1912,6 +1933,148 @@ function wlInstCard(){
 }
 function wlInstGo(){ try{ var d=window.deferredPrompt; if(!d) return; d.prompt(); d.userChoice.then(function(){ window.deferredPrompt=null; wlInstCard(); }); }catch(e){} }
 window.wlInstCard=wlInstCard; window.wlInstGo=wlInstGo;
+
+
+// ══════ R1 — crew reports (what was used today, photo of the machine counter, message to the office) ══════
+var _wlRepBase=[], _wlRepLive=null, _wlRepErr='', _wlRepPhoto='', _wlRepBuilt='', _wlRepAskPid='', wlReports=[], _wlRpFilter='';
+var _WL_RP_F=[['ccGal','Closed cell','gallons'],['ocGal','Open cell','gallons'],['celBags','Cellulose','bags'],['roxBags','Roxul','bags'],['fbgBags','Fiberglass','bags']];
+function wlRepEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function wlRepOn(){ return wlIsOffice()||_wlRepLive===_wlHelperId||(wlLsGet('wl_rep_ok')==='1'&&!/permission/.test(_wlRepErr)); }
+// the helper's reports = what the server sent + reports still waiting on this phone
+function wlRepList(){ var out=_wlRepBase.slice(), q=wlqAll(), i, j;
+  if(wlIsOffice()&&currentHelper){ out=[]; for(i=0;i<wlReports.length;i++){ if(wlReports[i].helperId===currentHelper.id) out.push(wlReports[i]); } }
+  else for(i=0;i<q.length;i++){ var op=q[i]; if(op.col!=='helperReports'||op.hid!==_wlHelperId||op.k!=='add') continue; var f=false; for(j=0;j<out.length;j++){ if(out[j].id===op.id){ f=true; out[j]=Object.assign({},out[j],{_pending:true}); } } if(!f) out.push(Object.assign({id:op.id,_pending:true},op.data)); }
+  out.sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); return out; }
+function wlRepItems(it,html){ var out=[], i; it=it||{};
+  for(i=0;i<_WL_RP_F.length;i++){ var k=_WL_RP_F[i][0], v=it[k]; if(!(v>0)) continue; var t=(html?wlT(_WL_RP_F[i][1]):_WL_RP_F[i][1]);
+    if(k==='roxBags'){ if(it.roxR) t+=' R-'+it.roxR; } if(k==='fbgBags'){ if(it.fbgR) t+=' R-'+it.fbgR; }
+    t+=': '+v+' '+(html?wlT(_WL_RP_F[i][2]):_WL_RP_F[i][2]); if(k==='roxBags'&&it.roxSf) t+=' ('+it.roxSf+' sf)'; if(k==='fbgBags'&&it.fbgSf) t+=' ('+it.fbgSf+' sf)'; out.push(t); }
+  return out; }
+function wlRepTab(){ var tb=document.getElementById('wl-rep-tab'); if(!tb) return; var on=wlRepOn(); tb.style.display=on?'':'none';
+  if(!on){ var pn=document.getElementById('hpanel-report'); if(pn&&pn.classList.contains('active')){ var f=document.querySelector('.htab'); if(f) hTab('clock',f); } return; }
+  var L=wlRepList(), dot=false; for(var i=0;i<L.length;i++){ if(L[i].reply&&L[i].reply.text&&!L[i].replySeenAt) dot=true; } tb.classList.toggle('wl-dot',dot&&!wlIsOffice()); }
+function wlRepRender(force){
+  var fm=document.getElementById('wl-rep-form'), ls=document.getElementById('wl-rep-list'); if(!fm||!ls||!currentHelper) return;
+  var h=currentHelper, my=projects.filter(function(p){ return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0; }), sig=wlLang()+'|'+h.id+'|'+my.map(function(p){return p.id;}).join(',');
+  if(force||_wlRepBuilt!==sig){
+    var keep={}, ids=['rp-proj','rp-cc','rp-oc','rp-cel','rp-rox','rp-roxr','rp-roxsf','rp-fbg','rp-fbgr','rp-note'], i; for(i=0;i<ids.length;i++){ var e0=document.getElementById(ids[i]); if(e0) keep[ids[i]]=e0.value; }
+    function num(id){ return '<input type="number" inputmode="decimal" min="0" step="any" id="'+id+'" placeholder="0"/>'; }
+    function sel(id,arr,first){ var o='<select id="'+id+'"><option value="">'+first+'</option>'; for(var k=0;k<arr.length;k++) o+='<option value="'+arr[k]+'">'+arr[k]+'</option>'; return o+'</select>'; }
+    var x='<div class="card"><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:10px">'+wlT('DAILY REPORT')+' · '+new Date().toLocaleDateString(wlLoc(),{weekday:'short',month:'short',day:'numeric'})+'</div>';
+    x+='<div class="fg"><label>'+wlT('Project')+'</label><select id="rp-proj" onchange="wlRepMode()"><option value="">'+wlT('Choose…')+'</option>';
+    for(i=0;i<my.length;i++) x+='<option value="'+my[i].id+'">'+wlRepEsc(my[i].name)+(my[i].desc?' · '+wlRepEsc(my[i].desc):'')+'</option>';
+    x+='<option value="office">'+wlT('🏢 Office (no project) — message')+'</option></select></div>';
+    x+='<div id="rp-mat"><div style="font-size:11px;color:var(--muted);font-weight:700;margin:4px 0 8px">'+wlT('WHAT WAS USED TODAY')+'</div>';
+    x+='<div class="wl-rp-row"><span class="lb">'+wlT('Closed cell')+'</span>'+num('rp-cc')+'<span class="u">'+wlT('gallons')+'</span></div>';
+    x+='<div class="wl-rp-row"><span class="lb">'+wlT('Open cell')+'</span>'+num('rp-oc')+'<span class="u">'+wlT('gallons')+'</span></div>';
+    x+='<div class="wl-rp-row"><span class="lb">'+wlT('Cellulose')+'</span>'+num('rp-cel')+'<span class="u">'+wlT('bags')+'</span></div>';
+    x+='<div class="wl-rp-row"><span class="lb">'+wlT('Roxul')+'</span>'+num('rp-rox')+'<span class="u">'+wlT('bags')+'</span></div>';
+    x+='<div class="wl-rp-row" style="margin-top:-4px"><span class="lb" style="font-weight:400;font-size:11.5px;color:var(--muted)">Roxul · R / '+wlT('bag size')+'</span>'+sel('rp-roxr',[13,15,21,23,30],'R')+sel('rp-roxsf',[39.8,59.7,80],'sf')+'</div>';
+    x+='<div class="wl-rp-row"><span class="lb">'+wlT('Fiberglass')+'</span>'+num('rp-fbg')+'<span class="u">'+wlT('bags')+'</span></div>';
+    x+='<div class="wl-rp-row" style="margin-top:-4px"><span class="lb" style="font-weight:400;font-size:11.5px;color:var(--muted)">Fiberglass · R</span>'+sel('rp-fbgr',[11,13,15,19,21,30,38,49],'R')+'</div></div>';
+    x+='<div id="rp-photo-box" style="margin:6px 0 10px"></div>';
+    x+='<div class="fg"><textarea id="rp-note" rows="3" style="width:100%"></textarea></div>';
+    x+='<button type="button" class="btn" id="rp-send" onclick="wlRepSend()" style="width:100%"></button></div>';
+    fm.innerHTML=x; _wlRepBuilt=sig;
+    for(i=0;i<ids.length;i++){ var e1=document.getElementById(ids[i]); if(e1&&keep[ids[i]]!==undefined){ e1.value=keep[ids[i]]; } }
+    wlRepMode(); wlRepPhotoDraw();
+  }
+  var L=wlRepList(), y='<div style="font-size:11px;color:var(--muted);font-weight:700;margin:14px 2px 8px">'+wlT('MY REPORTS')+'</div>';
+  if(!L.length) y+='<div style="color:var(--muted);font-size:13px;padding:6px 2px">'+wlT('No reports yet.')+'</div>';
+  for(var n=0;n<L.length&&n<40;n++){ var r=L[n], pn=r.projectId?(r.projectName||''):wlT('Office message'), its=wlRepItems(r.items,true);
+    y+='<div class="wl-rp-card"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+wlRepEsc(pn)+'</b><span style="font-size:11px;color:var(--muted);white-space:nowrap">'+new Date(r.createdAt).toLocaleDateString(wlLoc(),{month:'short',day:'numeric'})+' · '+wlT(r._pending?'waiting for signal ⏳':'sent ✓')+'</span></div>';
+    if(its.length) y+='<div style="font-size:13px;margin-top:4px">'+wlRepEsc(its.join(' · '))+'</div>';
+    if(r.note) y+='<div style="font-size:13px;color:#4b5563;margin-top:4px;white-space:pre-wrap">'+wlRepEsc(r.note)+'</div>';
+    if(r.photo) y+='<img src="'+r.photo+'" onclick="wlRepZoom(this.src)" style="margin-top:8px;width:92px;height:92px;object-fit:cover;border-radius:10px;border:1px solid var(--border)"/>';
+    if(r.reply&&r.reply.text) y+='<div class="wl-rp-ans"><b>'+wlT('Office answered:')+'</b> '+wlRepEsc(r.reply.text)+'</div>';
+    y+='</div>'; }
+  ls.innerHTML=y;
+}
+function wlRepMode(){ var sl=document.getElementById('rp-proj'), m=document.getElementById('rp-mat'), nt=document.getElementById('rp-note'), bt=document.getElementById('rp-send'); if(!sl) return; var off=sl.value==='office';
+  if(m) m.style.display=off?'none':''; if(nt) nt.placeholder=wlT(off?'Message for the office':'Note (what happened, what is missing…)'); if(bt) bt.textContent=wlT(off?'Send message':'Send report'); wlRepPhotoDraw(); }
+function wlRepPhotoDraw(){ var bx=document.getElementById('rp-photo-box'); if(!bx) return; var sl=document.getElementById('rp-proj'), off=sl&&sl.value==='office';
+  if(_wlRepPhoto) bx.innerHTML='<div style="display:flex;align-items:center;gap:10px"><img src="'+_wlRepPhoto+'" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--border)"/><button type="button" class="btn sm ghost" onclick="wlRepPick()">'+wlT('Change photo')+'</button><button type="button" class="btn sm ghost" onclick="_wlRepPhoto=\'\';wlRepPhotoDraw()">'+wlT('Remove')+'</button></div>';
+  else bx.innerHTML='<button type="button" class="btn ghost" style="width:100%" onclick="wlRepPick()">'+wlT(off?'📷 Add a photo':'📷 Photo of the machine counter')+'</button>'; }
+// one photo, reduced on the phone before sending (same treatment as the job photos)
+function wlRepPick(){
+  var old=document.getElementById('wl-rp-input'); if(old&&old.parentNode) old.parentNode.removeChild(old);
+  var input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.id='wl-rp-input'; input.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px'; document.body.appendChild(input);
+  input.onchange=function(){ var file=input.files&&input.files[0]; if(!file) return; if(file.size>40*1024*1024) return showToast('Photo too large','err');
+    var img=new Image(), url=null;
+    img.onload=function(){ try{ var w=img.naturalWidth||img.width, hh=img.naturalHeight||img.height, sc=w>800?800/w:1, c=document.createElement('canvas'); c.width=Math.round(w*sc); c.height=Math.round(hh*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        var b64=c.toDataURL('image/jpeg',0.7); if(!b64||b64.indexOf('data:image/jpeg')!==0){ showToast('Could not read this photo — try again','err'); return; } _wlRepPhoto=b64; wlRepPhotoDraw(); showToast('Photo added ✓'); }catch(e){ showToast('Could not read this photo — try again','err'); }
+      if(url){ try{ URL.revokeObjectURL(url); }catch(e){} } };
+    img.onerror=function(){ showToast('This photo format is not supported — take the photo with the camera','err'); };
+    try{ url=URL.createObjectURL(file); img.src=url; }catch(e){ var rd=new FileReader(); rd.onload=function(ev){ img.src=ev.target.result; }; rd.readAsDataURL(file); }
+  };
+  input.click();
+}
+function wlRepSend(){
+  if(!currentHelper) return; var g=function(id){ var e=document.getElementById(id); return e?e.value:''; }, pv=g('rp-proj'); if(!pv) return showToast('Choose the project first','err');
+  var off=pv==='office', it={}, note=String(g('rp-note')||'').trim();
+  if(!off){ var m=[['ccGal','rp-cc'],['ocGal','rp-oc'],['celBags','rp-cel'],['roxBags','rp-rox'],['fbgBags','rp-fbg']]; for(var i=0;i<m.length;i++){ var v=parseFloat(String(g(m[i][1])).replace(',','.')); if(v>0) it[m[i][0]]=Math.round(v*100)/100; }
+    if(it.roxBags){ if(g('rp-roxr')) it.roxR=parseInt(g('rp-roxr'),10); if(g('rp-roxsf')) it.roxSf=parseFloat(g('rp-roxsf')); } if(it.fbgBags&&g('rp-fbgr')) it.fbgR=parseInt(g('rp-fbgr'),10); }
+  var any=false; for(var k in it){ if(it.hasOwnProperty(k)) any=true; }
+  if(!any&&!note&&!_wlRepPhoto) return showToast('Fill in what was used, a note or a photo','err');
+  var pj=off?null:projects.filter(function(p){return p.id===pv;})[0], hid=currentHelper.id;
+  var data={helperId:hid,helperName:currentHelper.name||'',projectId:off?null:pv,projectName:pj?(pj.name||''):'',date:localDateStr(),createdAt:new Date().toISOString(),items:it,note:note,photo:_wlRepPhoto||''};
+  if(window._listenersStarted){ db.collection('helperReports').add(data).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+  else { var id; try{ id=db.collection('helperReports').doc().id; }catch(e){ id='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,10); } wlqPut({k:'add',col:'helperReports',id:id,hid:hid,data:data,at:Date.now()}); }
+  _wlRepPhoto=''; _wlRepBuilt=''; var ids=['rp-cc','rp-oc','rp-cel','rp-rox','rp-roxr','rp-roxsf','rp-fbg','rp-fbgr','rp-note','rp-proj']; for(var j=0;j<ids.length;j++){ var e2=document.getElementById(ids[j]); if(e2) e2.value=''; }
+  if(_wlRepAskPid&&(_wlRepAskPid===pv)){ _wlRepAskPid=''; wlRepAskDraw(); }
+  showToast((off?'Message sent! 📝':'Report sent! 📝')+wlOffNote()); wlRepRender(true);
+}
+// the helper opened the tab: the office's answers are now seen
+function wlRepSeen(){ if(wlIsOffice()) return; for(var i=0;i<_wlRepBase.length;i++){ var r=_wlRepBase[i]; if(r.reply&&r.reply.text&&!r.replySeenAt){ r.replySeenAt=new Date().toISOString(); db.collection('helperReports').doc(r.id).update({replySeenAt:r.replySeenAt}).catch(function(){}); } } wlRepTab(); }
+function wlRepZoom(src){ var o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center'; o.onclick=function(){ if(o.parentNode) o.parentNode.removeChild(o); }; o.innerHTML='<img src="'+src+'" style="max-width:96%;max-height:92%;border-radius:8px"/>'; document.body.appendChild(o); }
+// after clock out: remind (never block) the report of that job
+function wlRepAsk(pid){ if(!pid||!wlRepOn()||!currentHelper) return; var td=localDateStr(), L=wlRepList(); for(var i=0;i<L.length;i++){ if(L[i].projectId===pid&&L[i].date===td&&L[i].helperId===currentHelper.id) return; } _wlRepAskPid=pid; wlRepAskDraw(); }
+function wlRepAskDraw(){ var el=document.getElementById('wl-rep-ask'); if(!el) return; var pj=_wlRepAskPid?projects.filter(function(p){return p.id===_wlRepAskPid;})[0]:null; if(!pj||!wlRepOn()){ el.style.display='none'; return; }
+  el.innerHTML=wlT("📝 Send today's report for ")+'<b>'+wlRepEsc(pj.name)+'</b>?<div style="margin-top:8px;display:flex;gap:8px"><button type="button" class="btn sm" onclick="wlRepAskGo()">'+wlT('Fill now')+'</button><button type="button" class="btn sm ghost" onclick="_wlRepAskPid=\'\';wlRepAskDraw()">'+wlT('Later')+'</button></div>'; el.style.display='block'; }
+function wlRepAskGo(){ var pid=_wlRepAskPid, tb=document.getElementById('wl-rep-tab'); if(!tb) return; hTab('report',tb); var sl=document.getElementById('rp-proj'); if(sl&&pid){ sl.value=pid; wlRepMode(); } }
+window.wlRepSend=wlRepSend; window.wlRepPick=wlRepPick; window.wlRepMode=wlRepMode; window.wlRepZoom=wlRepZoom; window.wlRepAskGo=wlRepAskGo; window.wlRepAskDraw=wlRepAskDraw; window.wlRepPhotoDraw=wlRepPhotoDraw;
+
+// ── office side ──
+function wlRpUnread(){ var n=0; for(var i=0;i<wlReports.length;i++){ if(!wlReports[i].readAt) n++; } return n; }
+function wlRpPill(){
+  var on=window._listenersStarted&&wlLsGet('wl_session')==='admin'&&!!document.querySelector('#screen-admin.active'), n=on?wlRpUnread():0, el=document.getElementById('wl-rp-pill');
+  if(!n||document.getElementById('wl-rp')){ if(el&&el.parentNode) el.parentNode.removeChild(el); }
+  else { if(!el){ el=document.createElement('button'); el.id='wl-rp-pill'; el.type='button'; el.onclick=function(){ wlRpOpen('new'); }; document.body.appendChild(el); } el.textContent='📝 '+n+' new crew report'+(n>1?'s':''); }
+  var list=document.getElementById('projects-list'); if(!list||!list.parentNode) return;
+  var b=document.getElementById('wl-rp-b'); if(!b){ b=document.createElement('div'); b.id='wl-rp-b'; b.style.cssText='margin:0 0 10px;padding:9px 12px;border-radius:12px;font-size:12.5px;background:#eef2ff;border:1px solid #a5b4fc;color:#3730a3;cursor:pointer'; b.onclick=function(){ wlRpOpen(''); }; var aa=document.getElementById('wl-aa'), burn=document.getElementById('wl-burn'), ref=(aa&&aa.parentNode)?aa:((burn&&burn.parentNode)?burn:list); ref.parentNode.insertBefore(b,ref); }
+  if(!on||!wlReports.length){ b.style.display='none'; } else { b.style.display='block'; b.innerHTML='📝 <b>Crew reports</b> · '+wlReports.length+(n?' · <b style="color:#dc2626">'+n+' new</b>':'')+' <span style="float:right;font-weight:700">Open ›</span>'; }
+}
+function wlRpOpen(filter){ _wlRpFilter=filter||''; var o=document.getElementById('wl-rp'); if(!o){ o=document.createElement('div'); o.id='wl-rp'; document.body.appendChild(o); } wlRpDraw(); wlRpPill(); }
+function wlRpClose(){ var o=document.getElementById('wl-rp'); if(o&&o.parentNode) o.parentNode.removeChild(o);
+  var now=new Date().toISOString(); for(var i=0;i<wlReports.length;i++){ var r=wlReports[i]; if(!r.readAt&&r._shown){ r.readAt=now; db.collection('helperReports').doc(r.id).update({readAt:now}).catch(function(){}); } }
+  wlRpPill(); try{ refreshView(); }catch(e){} }
+function wlRpDraw(){
+  var o=document.getElementById('wl-rp'); if(!o) return; var f=_wlRpFilter, L=[], i;
+  for(i=0;i<wlReports.length;i++){ var r=wlReports[i]; if(f==='new'&&r.readAt&&!r._shown) continue; if(f&&f!=='new'&&r.projectId!==f) continue; L.push(r); }
+  var pj=(f&&f!=='new')?projects.filter(function(p){return p.id===f;})[0]:null;
+  var h='<div style="position:sticky;top:0;z-index:2;background:#17522a;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:11px;opacity:.8">CREW REPORTS</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px">'+(pj?wlRepEsc(pj.name):(f==='new'?'New':'All'))+' · '+L.length+'</div></div><button type="button" onclick="wlRpClose()" style="background:transparent;border:1px solid #fff5;color:#fff;border-radius:9px;padding:8px 14px;font-weight:800">✕ Close</button></div><div style="padding:14px;max-width:760px;margin:0 auto">';
+  if(f) h+='<button type="button" class="btn sm ghost" style="margin-bottom:10px" onclick="wlRpOpen(\'\')">Show all reports</button>';
+  if(!L.length) h+='<div style="color:var(--muted);padding:20px 4px">No reports here.</div>';
+  for(i=0;i<L.length;i++){ var r2=L[i], its=wlRepItems(r2.items,false); if(!r2.readAt) r2._shown=true;
+    h+='<div class="wl-rp-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>'+wlRepEsc(r2.helperName||'Helper')+'</b>'+(!r2.readAt?'<span class="wl-rp-new">NEW</span>':'')+'<div style="font-size:12px;color:var(--muted)">'+(r2.projectId?wlRepEsc(r2.projectName||''):'🏢 Office message')+'</div></div><div style="font-size:11px;color:var(--muted);white-space:nowrap;text-align:right">'+new Date(r2.createdAt).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'<br>'+new Date(r2.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</div></div>';
+    if(its.length){ h+='<div style="margin-top:8px;background:#f0f8f0;border-radius:10px;padding:8px 10px;font-size:13.5px;line-height:1.6">'; for(var k=0;k<its.length;k++) h+='• '+wlRepEsc(its[k])+'<br>'; h+='</div>'; }
+    if(r2.note) h+='<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+wlRepEsc(r2.note)+'</div>';
+    if(r2.photo) h+='<img src="'+r2.photo+'" onclick="wlRepZoom(this.src)" style="margin-top:8px;width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer"/>';
+    if(r2.reply&&r2.reply.text) h+='<div class="wl-rp-ans"><b>You answered:</b> '+wlRepEsc(r2.reply.text)+(r2.replySeenAt?' <span style="opacity:.7">· seen ✓</span>':'')+'</div>';
+    h+='<div style="display:flex;gap:8px;margin-top:10px"><input id="rpa-'+r2.id+'" placeholder="'+(r2.reply&&r2.reply.text?'Change your answer…':'Answer the helper…')+'" style="flex:1"/><button type="button" class="btn sm" data-id="'+r2.id+'" onclick="wlRpReply(this.dataset.id)">Send</button><button type="button" class="btn sm ghost" data-id="'+r2.id+'" onclick="wlRpDel(this.dataset.id)" style="color:#dc2626">🗑</button></div></div>'; }
+  o.innerHTML=h+'</div>';
+}
+function wlRpReply(id){ var e=document.getElementById('rpa-'+id), t=e?String(e.value||'').trim():''; if(!t) return showToast('Write the answer first','err'); var now=new Date().toISOString();
+  db.collection('helperReports').doc(id).update({reply:{text:t,at:now},replySeenAt:null,readAt:now}).then(function(){ showToast('Answer sent ✓'); }).catch(function(er){ showToast('Not saved: '+((er&&er.code)||er),'err'); }); }
+function wlRpDel(id){ if(!window.confirm('Delete this report?')) return; db.collection('helperReports').doc(id).delete().catch(function(er){ showToast('Not deleted: '+((er&&er.code)||er),'err'); }); }
+// inside the project card (Photos tab): what the crew reported for this job — information only, nothing is added to the costs
+function wlRpProjHtml(pid){ var L=[], i, tot={}, keys=[]; for(i=0;i<wlReports.length;i++){ if(wlReports[i].projectId===pid) L.push(wlReports[i]); } if(!L.length) return '';
+  for(i=0;i<L.length;i++){ var it=L[i].items||{}; for(var f=0;f<_WL_RP_F.length;f++){ var k=_WL_RP_F[f][0], v=it[k]; if(!(v>0)) continue; var lab=_WL_RP_F[f][1]; if(k==='roxBags'){ lab+=(it.roxR?' R-'+it.roxR:'')+(it.roxSf?' ('+it.roxSf+' sf)':''); } if(k==='fbgBags'&&it.fbgR) lab+=' R-'+it.fbgR; var key=lab+'|'+_WL_RP_F[f][2]; if(tot[key]===undefined){ tot[key]=0; keys.push(key); } tot[key]+=v; } }
+  var nu=0; for(i=0;i<L.length;i++){ if(!L[i].readAt) nu++; }
+  var h='<div style="margin-bottom:12px;background:#eef2ff;border:1px solid #a5b4fc;border-radius:12px;padding:10px 12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:11px;font-weight:800;color:#3730a3">📝 CREW REPORTED · '+L.length+' report'+(L.length>1?'s':'')+(nu?' <span class="wl-rp-new">'+nu+' NEW</span>':'')+'</div><button type="button" class="btn sm ghost" data-pid="'+pid+'" onclick="wlRpOpen(this.dataset.pid)">Open</button></div>';
+  if(keys.length){ h+='<div style="font-size:13px;margin-top:6px;line-height:1.6">'; for(i=0;i<keys.length;i++){ var pp=keys[i].split('|'); h+=wlRepEsc(pp[0])+': <b>'+(Math.round(tot[keys[i]]*100)/100)+'</b> '+pp[1]+'<br>'; } h+='</div><div style="font-size:10.5px;color:var(--muted);margin-top:2px">Information from the crew — not added to the job costs.</div>'; }
+  return h+'</div>'; }
+window.wlRpOpen=wlRpOpen; window.wlRpClose=wlRpClose; window.wlRpReply=wlRpReply; window.wlRpDel=wlRpDel;
 
 // ══════ S1 — helpers load only their own data ══════
 // Admin (signed in with email): everything, as before (startFullListeners).
@@ -1979,6 +2142,11 @@ function wlHelperListen(hid){
         payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.date||'')<String(a.date||'')?-1:1;}); refreshView();
       },function(){}));
       var photoUnsubs=[];
+      _wlHUnsubs.push(db.collection('helperReports').where('helperId','==',hid).onSnapshot(function(s){
+        if(s.metadata&&s.metadata.fromCache&&_wlRepLive!==hid) return;
+        _wlRepBase=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); _wlRepLive=hid; _wlRepErr=''; wlLsSet('wl_rep_ok','1');
+        wlqFlush(); try{ wlRepRender(); wlRepTab(); }catch(_e){}
+      },function(e){ _wlRepErr=String((e&&e.code)||e||'error'); if(/permission/.test(_wlRepErr)) wlLsDel('wl_rep_ok'); try{ wlRepTab(); }catch(_e){} }));
       _wlHUnsubs.push(db.collection('projects').where('helpers','array-contains',hid).onSnapshot(function(s){
         if(s.metadata&&s.metadata.fromCache&&_wlHelperLive!==hid&&!s.docs.length) return;
         window._wlProjErr=''; wlHcSave();
@@ -2002,7 +2170,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15h';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.16a';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2086,6 +2254,7 @@ function startFullListeners(){
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('helperReports').onSnapshot(function(s){ var old={}; for(var _i=0;_i<wlReports.length;_i++){ if(wlReports[_i]._shown) old[wlReports[_i].id]=1; } wlReports=s.docs.map(function(d){ var o=Object.assign({id:d.id},d.data()); if(old[o.id]) o._shown=true; return o; }).sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); try{ if(document.getElementById('wl-rp')) wlRpDraw(); wlRpPill(); refreshView(); }catch(_e){} },function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
 }
@@ -2186,6 +2355,7 @@ function hTab(name,btn){
   if(name==='history') renderHelperHistory();
   else if(name==='jobs') renderHelperJobs();
   else if(name==='mypay') renderHelperPay();
+  else if(name==='report'){ wlRepRender(true); wlRepSeen(); }
 }
 window.hTab=hTab;
 
@@ -2296,7 +2466,7 @@ function updateHelperStats(){
     else { if(open){btn.textContent=wlT('Clock Out'); btn.className='btn clock-btn red';} else {btn.textContent=wlT('Clock In'); btn.className='btn clock-btn green';}
       btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
   }
-  try{ wlI18n(); wlInstCard(); }catch(_e){}
+  try{ wlI18n(); wlInstCard(); wlRepTab(); }catch(_e){}
   try{ wlqBadge(); var _hv=document.getElementById('wl-hver'); if(_hv){ var _nj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;}).length; _hv.textContent='WorkLog v'+WL_BUILD+' · '+_nj+' '+wlT(_nj===1?'active job':'active jobs')+' · '+(window._listenersStarted?'office':(_wlHelperLive===h.id?'online':wlT('offline copy')))+(window._wlProjErr?' · '+wlT('jobs error: ')+window._wlProjErr:''); } }catch(_e){}
   if(!open){ var _cr=document.getElementById('clockout-reminder'); if(_cr&&_cr.parentNode) _cr.parentNode.removeChild(_cr); }
   var tm=totalMin(h.id);
@@ -2342,7 +2512,7 @@ function toggleClock(){
     if(!currentHelper||currentHelper.id!==hid){ return; }
     var open=getOpen(hid);
     if(wasOpen){
-      if(open&&open.id===wasOpen.id){ wlPunchUpd(hid,open.id,{endTime:at,clockOutLocation:loc||null}); showToast((loc?'Clocked out! 📍':'Clocked out! ✅')+wlOffNote()); }
+      if(open&&open.id===wasOpen.id){ wlPunchUpd(hid,open.id,{endTime:at,clockOutLocation:loc||null}); try{ wlRepAsk(open.projectId); }catch(_e){} showToast((loc?'Clocked out! 📍':'Clocked out! ✅')+wlOffNote()); }
     } else if(open){ showToast('Already clocked in','err'); }
     else {
       wlPunchIn(hid,{helperId:hid,startTime:at,endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:_pv.projectId,category:_pv.category});
@@ -4290,7 +4460,7 @@ function exportProjectReport(pid){
 window.exportProjectReport=exportProjectReport;
 
 function renderProjects(filter){
-  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater(); if(window.wlAaBanner) wlAaBanner();
+  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater(); if(window.wlAaBanner) wlAaBanner(); try{ wlRpPill(); }catch(_e){}
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
@@ -4587,6 +4757,7 @@ function renderProjects(filter){
     html+='</div>'+wlTabOpen(p.id,'pho');
     // Assigned helpers
     // Photos
+    html+=wlRpProjHtml(p.id);
     html+='<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
     html+='<select id="phcat-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px"><option>Incident</option><option>Progress</option><option>Material Delivered</option><option>Completion</option></select>';
