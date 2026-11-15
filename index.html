@@ -8,7 +8,7 @@
 <link rel="manifest" href="/Greenideaworklog/manifest.json"/>
 <meta name="theme-color" content="#1a6b2a"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="WorkLog"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -249,6 +249,12 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 
 .wl-ins-st{font-size:12px;border-radius:10px;padding:8px 11px;margin:0 0 10px;background:#f1f5f9;color:#475569}.wl-ins-st.ok{background:#ecfdf5;color:#166534}.wl-ins-st.bad{background:#fef2f2;color:#991b1b}.wl-ins-st small{color:inherit;opacity:.8}
 .pb-bag{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}.pb-bag span{font-size:11px;color:var(--muted);font-weight:700}.pb-bag button{border:1px solid var(--border2);background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--text);font-family:var(--font-d)}
+/* iPhone: fields under 16px make Safari zoom the page on tap */
+@supports (-webkit-touch-callout:none){ input,select,textarea{font-size:16px!important;} }
+.wl-hq{margin:0 0 12px;padding:10px 12px;border-radius:12px;font-size:12.5px;line-height:1.45;font-weight:600;display:none}
+.wl-hq.info{display:block;background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
+.wl-hq.err{display:block;background:#fee2e2;border:1px solid #dc2626;color:#991b1b}
+.wl-hq button{margin-top:6px;background:#fff;border:1px solid currentColor;color:inherit;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -1108,6 +1114,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
     <!-- CLOCK -->
     <div id="hpanel-clock" class="hpanel active">
+      <div id="wl-hq" class="wl-hq"></div>
       <div class="clock-card">
         <div class="clock-status" id="clock-status">NOT CLOCKED IN</div>
         <div class="clock-time idle" id="clock-elapsed">00:00:00</div>
@@ -1727,6 +1734,119 @@ document.addEventListener('click',function(e){ var h=e.target&&e.target.id==='ee
   var a=document.getElementById('ee-amount'); if(a){ a.value=Number(h._pbTotal).toFixed(2); a.setAttribute('data-auto','1'); } pbOnInput({target:document.getElementById('ee-desc')}); });
 document.addEventListener('input', pbOnInput, false);
 
+// ══════ H1 — helper reliability (iPhone + Android) ══════
+// Punches are written to this phone first (outbox) and only removed when the server confirms.
+// A reload, a locked phone or a dead zone no longer loses a clock in / clock out.
+// The helper's own record, recent hours and jobs are cached so the screen opens without signal.
+var _WLQ_KEY='wl_outbox_v1', _wlqBusy={}, _wlBase=[], _wlHelperLive=null, _wlHRetryT=null, _wlHRetryN=0, _wlClockBusy=false, _wlHcT=null, _wlHiddenAt=0;
+function wlLsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function wlLsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } }
+function wlLsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function wlqAll(){ try{ var a=JSON.parse(wlLsGet(_WLQ_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function wlqSave(a){ return wlLsSet(_WLQ_KEY,JSON.stringify(a)); }
+function wlqFind(a,op){ for(var i=0;i<a.length;i++){ if(a[i].id===op.id&&a[i].k===op.k&&a[i].at===op.at) return i; } return -1; }
+function wlqRemove(op){ var a=wlqAll(), i=wlqFind(a,op); if(i>=0){ a.splice(i,1); wlqSave(a); } }
+function wlqMine(){ var a=wlqAll(), out=[]; for(var i=0;i<a.length;i++){ if(a[i].hid===_wlHelperId) out.push(a[i]); } return out; }
+function wlEntSort(a,b){ return String(b.startTime||'')<String(a.startTime||'')?-1:1; }
+// What the helper sees = what the server sent (or the copy saved on the phone) + punches still waiting to be sent
+function wlqOverlay(list,hid){
+  var out=list.slice(), q=wlqAll();
+  for(var i=0;i<q.length;i++){ var op=q[i]; if(op.hid!==hid||op.dropped) continue;
+    var j=-1; for(var k=0;k<out.length;k++){ if(out[k].id===op.id){ j=k; break; } }
+    if(op.k==='add'){ if(j<0) out.push(Object.assign({id:op.id,_pending:true},op.data)); }
+    else if(j>=0){ out[j]=Object.assign({},out[j],op.data,{_pending:true}); }
+  }
+  out.sort(wlEntSort); return out;
+}
+function wlqApply(){ if(window._listenersStarted||!_wlHelperId) return; entries=wlqOverlay(_wlBase,_wlHelperId); }
+function wlqSend(op){
+  var key=op.k+':'+op.id+':'+op.at; if(_wlqBusy[key]) return; _wlqBusy[key]=1;
+  var ref=db.collection('entries').doc(op.id), pr;
+  try{ pr=op.k==='add'?ref.set(op.data):ref.update(op.data); }catch(e){ delete _wlqBusy[key]; return; }
+  pr.then(function(){ delete _wlqBusy[key]; wlqRemove(op); wlqApply(); wlqBadge(); try{ refreshView(); }catch(e){} })
+    .catch(function(e){ delete _wlqBusy[key];
+      var a=wlqAll(), i=wlqFind(a,op), c=String((e&&e.code)||e||'error'); if(i<0) return;
+      a[i].tries=(a[i].tries||0)+1; a[i].err=c;
+      if(a[i].tries>=5&&/permission-denied|not-found|invalid-argument/.test(c)) a[i].dead=true;
+      wlqSave(a); wlqBadge();
+      if(!a[i].dead) setTimeout(wlqFlush,Math.min(60000,3000*a[i].tries));
+    });
+}
+// Called when the server answers, when the phone is back online and when the app returns to the screen
+function wlqFlush(){
+  if(window._listenersStarted||!_wlHelperId) return;
+  var q=wlqAll(); if(!q.length){ wlqBadge(); return; }
+  if(_wlHelperLive!==_wlHelperId) return;            // wait for the server's list (also proves this phone is registered)
+  var byId={}, i; for(i=0;i<_wlBase.length;i++) byId[_wlBase[i].id]=_wlBase[i];
+  for(i=0;i<q.length;i++){ var op=q[i]; if(op.hid!==_wlHelperId||op.dropped) continue;
+    if(_wlqBusy[op.k+':'+op.id+':'+op.at]) continue;
+    if(op.k==='add'){ if(byId[op.id]){ wlqRemove(op); } else wlqSend(op); }
+    else { var e=byId[op.id], addWaiting=false; for(var j=0;j<q.length;j++){ if(q[j].k==='add'&&q[j].id===op.id) addWaiting=true; }
+      if(e){ if(op.data&&op.data.endTime&&e.endTime===op.data.endTime) wlqRemove(op); else wlqSend(op); }
+      else if(addWaiting) wlqSend(op);
+      else wlqRemove(op);                              // the entry no longer exists (removed by the office)
+    }
+  }
+  wlqApply(); wlqBadge();
+}
+function wlqPut(op){ var a=wlqAll(); a.push(op); wlqSave(a); wlqApply(); wlqSend(op); wlqBadge(); }
+function wlqDismiss(){ var a=wlqAll(), out=[]; for(var i=0;i<a.length;i++){ if(!(a[i].hid===_wlHelperId&&a[i].dead)) out.push(a[i]); } wlqSave(out); wlqApply(); wlqBadge(); try{ refreshView(); }catch(e){} }
+window.wlqDismiss=wlqDismiss;
+function wlqBadge(){
+  var el=document.getElementById('wl-hq'); if(!el) return;
+  if(window._listenersStarted||!_wlHelperId){ el.className='wl-hq'; el.innerHTML=''; return; }
+  var q=wlqMine(), pend=0, dead=[], i; for(i=0;i<q.length;i++){ if(q[i].dead) dead.push(q[i]); else pend++; }
+  var off=(navigator.onLine===false)||_wlHelperLive!==_wlHelperId, h='';
+  if(dead.length){
+    h='⚠ '+dead.length+' punch'+(dead.length>1?'es':'')+' could NOT be saved. Show this to the office:';
+    for(i=0;i<dead.length;i++){ var d=dead[i].data||{}, t=d.endTime&&dead[i].k==='upd'?d.endTime:d.startTime;
+      h+='<br>• '+(dead[i].k==='upd'?'Clock out ':(d.endTime?'Hours ':'Clock in '))+(t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(d.endTime&&dead[i].k==='add'?' → '+new Date(d.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''); }
+    h+='<br><button type="button" onclick="wlqDismiss()">OK, I told the office</button>';
+    el.className='wl-hq err'; el.innerHTML=h; return;
+  }
+  if(pend){ el.className='wl-hq info'; el.innerHTML=(off?'📴 No connection. ':'⏳ Sending… ')+pend+' punch'+(pend>1?'es':'')+' saved on this phone'+(off?' — will be sent automatically when the signal is back. Your time is counting normally.':'.'); return; }
+  if(off&&window._wlHelperReady===_wlHelperId){ el.className='wl-hq info'; el.innerHTML='📴 No connection — showing what is saved on this phone. You can clock in and out normally.'; return; }
+  el.className='wl-hq'; el.innerHTML='';
+}
+// Copy of this helper's own data on the phone
+function wlHcLoad(hid){ try{ var o=JSON.parse(wlLsGet('wl_hc_'+hid)||'null'); return (o&&typeof o==='object')?o:null; }catch(e){ return null; } }
+function wlHcSave(){ if(_wlHcT) return; _wlHcT=setTimeout(function(){ _wlHcT=null;
+  if(window._listenersStarted||!_wlHelperId||_wlHelperLive!==_wlHelperId) return;
+  try{ var me=hById(_wlHelperId), pj=[], i;
+    for(i=0;i<projects.length;i++){ var p=projects[i]; pj.push({id:p.id,name:p.name,desc:p.desc||'',status:p.status,helpers:p.helpers||[],start:p.start||'',end:p.end||'',createdAt:p.createdAt||''}); }
+    var o={me:(me&&me.rate!==undefined)?me:null,entries:_wlBase.slice(0,150),projects:pj,at:Date.now()};
+    if(!o.me){ var old=wlHcLoad(_wlHelperId); if(old&&old.me) o.me=old.me; }
+    if(!wlLsSet('wl_hc_'+_wlHelperId,JSON.stringify(o))){ o.entries=_wlBase.slice(0,40); wlLsSet('wl_hc_'+_wlHelperId,JSON.stringify(o)); }
+  }catch(e){} },1200); }
+// A listener failed (no permission yet, sign-in not ready, network): start again, slower each time
+function wlHRetry(hid){ if(_wlHRetryT||window._listenersStarted) return; _wlHRetryN++;
+  _wlHRetryT=setTimeout(function(){ _wlHRetryT=null; if(window._listenersStarted||_wlHelperId!==hid) return; _wlHStop(); _wlHelperId=null; wlHelperListen(hid); },Math.min(30000,2500*_wlHRetryN)); }
+// One place for every punch. Office account: straight to the server, as before, but errors are shown.
+function wlPunchIn(hid,data){
+  if(window._listenersStarted){ db.collection('entries').add(data).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); return; }
+  var id; try{ id=db.collection('entries').doc().id; }catch(e){ id='h'+Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
+  wlqPut({k:'add',id:id,hid:hid,data:data,at:Date.now()});
+}
+function wlPunchUpd(hid,id,data){
+  if(window._listenersStarted){ db.collection('entries').doc(id).update(data).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); return; }
+  wlqPut({k:'upd',id:id,hid:hid,data:data,at:Date.now()});
+}
+window.wlPunchIn=wlPunchIn; window.wlPunchUpd=wlPunchUpd;
+function wlOffNote(){ return (navigator.onLine===false||(!window._listenersStarted&&_wlHelperLive!==_wlHelperId))?' Saved on this phone — sends when online.':''; }
+// Back on the screen / back online: refresh, send what is waiting, wake up the connection
+function wlHResume(){
+  try{ refreshView(); }catch(e){}
+  if(window._listenersStarted) return;
+  var away=_wlHiddenAt?Date.now()-_wlHiddenAt:0; _wlHiddenAt=0;
+  if(away>5*60000&&_wlHelperId){ try{ db.disableNetwork().then(function(){ return db.enableNetwork(); }).catch(function(){ try{ db.enableNetwork(); }catch(e){} }); }catch(e){} }
+  wlqFlush(); wlqBadge();
+  try{ if(currentHelper&&document.querySelector('#screen-helper.active')) startGeofence(); }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){ if(document.hidden){ _wlHiddenAt=Date.now(); } else wlHResume(); });
+window.addEventListener('pageshow',function(ev){ if(ev&&ev.persisted) wlHResume(); });
+window.addEventListener('online',function(){ wlHResume(); });
+window.addEventListener('offline',function(){ wlqBadge(); });
+
 // ══════ S1 — helpers load only their own data ══════
 // Admin (signed in with email): everything, as before (startFullListeners).
 // Anyone else: only the public list of helper names; a helper (link, QR or name
@@ -1734,6 +1854,8 @@ document.addEventListener('input', pbOnInput, false);
 // loads only their own record, hours, payments, assigned projects and those photos.
 var _wlHUnsubs=[], _wlHelperId=null;
 function _wlHStop(){ for(var i=0;i<_wlHUnsubs.length;i++){ try{ _wlHUnsubs[i](); }catch(e){} } _wlHUnsubs=[]; }
+// Anonymous sign-in for helpers: keeps trying (it used to try once — with a weak signal nothing ever loaded)
+function _wlAnonTry(n){ window._wlAnonAsked=true; auth.signInAnonymously().catch(function(){ setTimeout(function(){ if(auth.currentUser) return; _wlAnonTry(n+1); },Math.min(30000,3000*(n+1))); }); }
 function _wlWhenAuth(cb){
   var u=auth.currentUser; if(u){ cb(u); return; }
   // Wait until Firebase has restored the saved sign-in; sign in anonymously only if nobody is
@@ -1741,7 +1863,7 @@ function _wlWhenAuth(cb){
   var done=false, un=auth.onAuthStateChanged(function(x){
     if(done) return;
     if(x){ done=true; try{ un(); }catch(e){} cb(x); }
-    else if(!window._wlAnonAsked){ window._wlAnonAsked=true; auth.signInAnonymously().catch(function(){}); }
+    else if(!window._wlAnonAsked){ _wlAnonTry(0); }
   });
 }
 function wlNamesListen(){
@@ -1753,31 +1875,47 @@ function wlNamesListen(){
       if(own&&own.rate!==undefined&&!out.some(function(h){return h.id===own.id;})) out.push(own);
       helpers=out; setSyncStatus(true); populateHelperSelectDD(); refreshView();
       if(window._pendingQR){ window._pendingQR=false; showQRHelperModal(); }
-    },function(){ setSyncStatus(false); });
+    },function(){ setSyncStatus(false); try{ if(window._wlNamesUnsub) window._wlNamesUnsub(); }catch(e){} window._wlNamesOn=false; setTimeout(function(){ if(!window._listenersStarted) wlNamesListen(); },6000); });
   });
 }
 function wlHelperListen(hid){
   if(!hid||_wlHelperId===hid) return;
-  _wlHStop(); _wlHelperId=hid; window._wlHelperReady=null;
+  _wlHStop(); _wlHelperId=hid; window._wlHelperReady=null; _wlHelperLive=null; _wlBase=[];
+  var _hc=wlHcLoad(hid);
+  if(_hc){
+    if(_hc.me&&_hc.me.id===hid){ var _f=false; for(var _i=0;_i<helpers.length;_i++){ if(helpers[_i].id===hid){ helpers[_i]=_hc.me; _f=true; } } if(!_f) helpers.push(_hc.me); }
+    if(Array.isArray(_hc.entries)) _wlBase=_hc.entries;
+    if(Array.isArray(_hc.projects)&&_hc.projects.length) projects=_hc.projects;
+    window._wlHelperReady=hid;
+  }
+  wlqApply();
+  // no saved copy and no answer yet: after 8 s the clock button is released anyway (the punch stays on the phone)
+  setTimeout(function(){ if(_wlHelperId===hid&&window._wlHelperReady!==hid){ window._wlClockForce=hid; try{ refreshView(); }catch(e){} } },8000);
   _wlWhenAuth(function(u){
     db.collection('helperSessions').doc(u.uid).set({helperId:hid,at:new Date().toISOString()}).catch(function(){}).then(function(){
       var gotEntries=false;
       _wlHUnsubs.push(db.collection('helpers').doc(hid).onSnapshot(function(d){
+        if(d&&!d.exists&&d.metadata&&d.metadata.fromCache===false){ wlLsDel('wl_hc_'+hid); if((wlLsGet('wl_session')||'')==='helper:'+hid){ wlLsDel('wl_session'); _wlHStop(); _wlHelperId=null; try{ goLanding(); showToast('This helper link is no longer active','err'); }catch(e){} } return; }
         if(!d||!d.exists) return; var me=Object.assign({id:d.id},d.data()), found=false;
         for(var i=0;i<helpers.length;i++){ if(helpers[i].id===hid){ helpers[i]=me; found=true; } } if(!found) helpers.push(me);
         if(currentHelper&&currentHelper.id===hid) currentHelper=me;
-        setSyncStatus(true); refreshView();
+        wlHcSave(); setSyncStatus(true); refreshView();
         if(window._pendingHelperSession===hid){ window._pendingHelperSession=null; openHelperView(hid); }
-      },function(){}));
+      },function(){ wlHRetry(hid); }));
       _wlHUnsubs.push(db.collection('entries').where('helperId','==',hid).onSnapshot(function(s){
-        entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.startTime||'')<String(a.startTime||'')?-1:1;});
-        gotEntries=true; window._wlHelperReady=hid; refreshView();
-      },function(){}));
+        var _fc=!!(s.metadata&&s.metadata.fromCache);
+        if(_fc&&_wlHelperLive!==hid) return;            // offline "empty" answer: keep the copy saved on the phone
+        _wlBase=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(wlEntSort);
+        if(!_fc){ _wlHelperLive=hid; _wlHRetryN=0; }
+        wlqApply(); gotEntries=true; window._wlHelperReady=hid; wlHcSave(); wlqFlush(); wlqBadge(); refreshView();
+      },function(){ wlHRetry(hid); }));
       _wlHUnsubs.push(db.collection('payments').where('helperId','==',hid).onSnapshot(function(s){
         payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.date||'')<String(a.date||'')?-1:1;}); refreshView();
       },function(){}));
       var photoUnsubs=[];
       _wlHUnsubs.push(db.collection('projects').where('helpers','array-contains',hid).onSnapshot(function(s){
+        if(s.metadata&&s.metadata.fromCache&&_wlHelperLive!==hid&&!s.docs.length) return;
+        wlHcSave();
         projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.createdAt||'')<String(a.createdAt||'')?-1:1;});
         refreshView();
         for(var k=0;k<photoUnsubs.length;k++){ try{ photoUnsubs[k](); }catch(e){} } photoUnsubs=[];
@@ -1991,7 +2129,7 @@ window.closeModal=closeModal;
 
 // ── HELPER VIEW ────────────────────────────────────────
 function openHelperView(hid){
-  localStorage.setItem('wl_session','helper:'+hid);
+  wlLsSet('wl_session','helper:'+hid);
   if(!window._listenersStarted) wlHelperListen(hid);
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
@@ -2018,7 +2156,9 @@ function updateHelperStats(){
   var wrap=document.getElementById('proj-selector-wrap'), sel=document.getElementById('clock-proj-select');
   if(!open){
     var myProj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;});
+    var _prevSel=sel.value;
     sel.innerHTML='<option value="">No project</option>'+myProj.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'">'+lbl+'</option>';}).join('')+wlCatOpts('');
+    if(_prevSel){ sel.value=_prevSel; if(sel.value!==_prevSel) sel.value=''; }   // a refresh no longer clears the project the helper picked
     wrap.style.display='block';   // the categories (maintenance, warehouse, supplies) are always there
   } else { wrap.style.display='none'; }
   // Status text
@@ -2026,9 +2166,14 @@ function updateHelperStats(){
   if(open){ var pj=wlProjOf(open); if(pj) projName='WORKING ON: '+String(pj.name).toUpperCase(); }
   document.getElementById('clock-status').textContent=open?(projName||'CLOCKED IN SINCE '+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'NOT CLOCKED IN';
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
-  if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red'; tel.className='clock-time'; updateElapsed(open.startTime);}
-  else{btn.textContent='Clock In'; btn.className='btn clock-btn green'; tel.className='clock-time idle'; tel.textContent='00:00:00';}
-  btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title='';
+  if(open){ tel.className='clock-time'; updateElapsed(open.startTime); } else { tel.className='clock-time idle'; tel.textContent='00:00:00'; }
+  if(!_wlClockBusy){
+    var _wait=!window._listenersStarted&&window._wlHelperReady!==h.id&&window._wlClockForce!==h.id;
+    if(_wait){ btn.textContent='Loading your hours…'; btn.className='btn clock-btn green'; btn.disabled=true; btn.style.opacity='.6'; }
+    else { if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red';} else {btn.textContent='Clock In'; btn.className='btn clock-btn green';}
+      btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
+  }
+  try{ wlqBadge(); }catch(_e){}
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
   var wpay=calcCurrentWeekPay(h.id,h.rate);
@@ -2055,23 +2200,30 @@ function updateElapsed(st){var s=Math.floor((Date.now()-new Date(st))/1000); var
 function startLiveClock(){clearInterval(liveInterval); liveInterval=setInterval(function(){if(!currentHelper) return; var open=getOpen(currentHelper.id); if(open) updateElapsed(open.startTime);},1000);}
 function stopLiveClock(){clearInterval(liveInterval); liveInterval=null;}
 
-function getLocation(){return new Promise(function(resolve){if(!navigator.geolocation){resolve(null);return;} navigator.geolocation.getCurrentPosition(function(p){resolve({lat:p.coords.latitude,lng:p.coords.longitude});},function(){resolve(null);},{timeout:6000,enableHighAccuracy:true});});}
+function getLocation(){return new Promise(function(resolve){ var done=false; function fin(v){ if(done) return; done=true; resolve(v); }
+  setTimeout(function(){ fin(null); },8000);   // iPhone sometimes never answers (permission box ignored / location off): never block the punch
+  try{ if(!navigator.geolocation){ fin(null); return; } navigator.geolocation.getCurrentPosition(function(p){ fin({lat:p.coords.latitude,lng:p.coords.longitude}); },function(){ fin(null); },{timeout:6000,enableHighAccuracy:true,maximumAge:30000}); }catch(e){ fin(null); } });}
 
 function toggleClock(){
-  if(!currentHelper) return;
-  var open=getOpen(currentHelper.id);
+  if(!currentHelper||_wlClockBusy) return;
+  var hid=currentHelper.id;
+  if(!window._listenersStarted&&window._wlHelperReady!==hid&&window._wlClockForce!==hid){ showToast('Still loading your hours — wait a few seconds','err'); return; }
+  var wasOpen=getOpen(hid), at=new Date().toISOString();          // the time of the tap, not of the GPS answer
+  var _pv=wlPickVal(document.getElementById('clock-proj-select').value);
   var btn=document.getElementById('clock-btn');
-  btn.textContent='Getting location...'; btn.disabled=true;
+  _wlClockBusy=true; btn.textContent='Getting location...'; btn.disabled=true;
   getLocation().then(function(loc){
-    btn.disabled=false;
-    if(open){
-      db.collection('entries').doc(open.id).update({endTime:new Date().toISOString(),clockOutLocation:loc||null});
-      showToast(loc?'Clocked out! 📍':'Clocked out! ✅');
-    } else {
-      var _pv=wlPickVal(document.getElementById('clock-proj-select').value), projId=_pv.projectId;
-      db.collection('entries').add({helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:projId,category:_pv.category});
-      showToast(loc?'Clocked in! 📍':'Clocked in! ⏱');
+    _wlClockBusy=false; btn.disabled=false;
+    if(!currentHelper||currentHelper.id!==hid){ return; }
+    var open=getOpen(hid);
+    if(wasOpen){
+      if(open&&open.id===wasOpen.id){ wlPunchUpd(hid,open.id,{endTime:at,clockOutLocation:loc||null}); showToast((loc?'Clocked out! 📍':'Clocked out! ✅')+wlOffNote()); }
+    } else if(open){ showToast('Already clocked in','err'); }
+    else {
+      wlPunchIn(hid,{helperId:hid,startTime:at,endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:_pv.projectId,category:_pv.category});
+      showToast((loc?'Clocked in! 📍':'Clocked in! ⏱')+wlOffNote());
     }
+    updateHelperStats();
   });
 }
 window.toggleClock=toggleClock;
@@ -2080,11 +2232,15 @@ function addManualEntry(){
   if(!currentHelper) return;
   var date=document.getElementById('m-date').value, start=document.getElementById('m-start').value, end=document.getElementById('m-end').value, note=document.getElementById('m-note').value;
   if(!date||!start||!end) return showToast('Fill in all fields','err');
-  var s=new Date(date+'T'+start), e=new Date(date+'T'+end);
+  var _dp=date.split('-'), _sp=start.split(':'), _ep=end.split(':');
+  var s=new Date(+_dp[0],+_dp[1]-1,+_dp[2],+_sp[0],+_sp[1]||0), e=new Date(+_dp[0],+_dp[1]-1,+_dp[2],+_ep[0],+_ep[1]||0);
+  if(isNaN(s.getTime())||isNaN(e.getTime())) return showToast('Check the date and times','err');
   if(e<=s) return showToast('End must be after start','err');
-  db.collection('entries').add({helperId:currentHelper.id,startTime:s.toISOString(),endTime:e.toISOString(),note:note,type:'manual'});
+  var _si=s.toISOString(), _ei=e.toISOString(), _hid=currentHelper.id;
+  if(entries.some(function(x){ return x.helperId===_hid&&x.startTime===_si&&x.endTime===_ei; })) return showToast('This entry was already added','err');
+  wlPunchIn(_hid,{helperId:_hid,startTime:_si,endTime:_ei,note:note,type:'manual'});
   document.getElementById('m-note').value='';
-  showToast('Entry added!');
+  showToast('Entry added!'+wlOffNote()); try{ refreshView(); }catch(_e){}
 }
 window.addManualEntry=addManualEntry;
 
@@ -2119,8 +2275,8 @@ function renderHelperHistory(){
     var regPay = (regMins/60)*rate;
     var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
     var totalPay = regPay + otPay;
-    var weEnd = new Date(ws); weEnd.setDate(weEnd.getDate()+6);
-    var wLabel = new Date(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var weEnd = parseLocalDate(ws); weEnd.setDate(weEnd.getDate()+6);
+    var wLabel = parseLocalDate(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
     var rows = wEnts.map(function(e){
       var mins = gMin(e);
@@ -4552,28 +4708,39 @@ window.assignEntryProj=assignEntryProj;
 
 // ── PHOTOS ─────────────────────────────────────────────
 function addPhoto(projId,isHelper){
-  var input=document.createElement('input'); input.type='file'; input.accept='image/*';
+  var old=document.getElementById('wl-ph-input'); if(old&&old.parentNode) old.parentNode.removeChild(old);
+  var input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.id='wl-ph-input';
+  input.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px';
+  document.body.appendChild(input);                 // iPhone: an input that is not on the page may never report the photo
   input.onchange=function(){
-    var file=input.files[0]; if(!file) return;
-    if(file.size>2*1024*1024) return showToast('Max 2MB','err');
+    var file=input.files&&input.files[0]; if(!file) return;
+    if(file.size>40*1024*1024) return showToast('Photo too large','err');
     var cat=isHelper?(document.getElementById('hphcat-'+projId)?document.getElementById('hphcat-'+projId).value:'Progress'):(document.getElementById('phcat-'+projId)?document.getElementById('phcat-'+projId).value:'Progress');
     var note=isHelper?(document.getElementById('hphnote-'+projId)?document.getElementById('hphnote-'+projId).value:''):(document.getElementById('phnote-'+projId)?document.getElementById('phnote-'+projId).value:'');
-    showToast('Uploading...');
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      var img=new Image();
-      img.onload=function(){
-        var c=document.createElement('canvas'), maxW=800, scale=img.width>maxW?maxW/img.width:1;
-        c.width=img.width*scale; c.height=img.height*scale;
+    var by=isHelper?(currentHelper?currentHelper.name:'Helper'):'Admin';
+    showToast('Preparing photo...');
+    function fail(m){ showToast(m||'Could not read this photo — try again','err'); }
+    function draw(img,revoke){
+      try{
+        var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height; if(!w||!h){ fail(); return; }
+        var maxW=800, scale=w>maxW?maxW/w:1, c=document.createElement('canvas');
+        c.width=Math.round(w*scale); c.height=Math.round(h*scale);
         c.getContext('2d').drawImage(img,0,0,c.width,c.height);
         var b64=c.toDataURL('image/jpeg',0.7);
-        var by=isHelper?(currentHelper?currentHelper.name:'Helper'):'Admin';
-        db.collection('projectPhotos').add({projectId:projId,base64:b64,category:cat,note:note,uploadedBy:by,createdAt:new Date().toISOString()});
-        showToast('Photo saved! 📸');
-      };
-      img.src=ev.target.result;
-    };
-    reader.readAsDataURL(file);
+        if(!b64||b64.length<200||b64.indexOf('data:image/jpeg')!==0){ fail(); return; }
+        if(navigator.onLine===false) showToast('No connection — keep the app open, the photo is sent when the signal is back');
+        else showToast('Uploading...');
+        db.collection('projectPhotos').add({projectId:projId,base64:b64,category:cat,note:note,uploadedBy:by,createdAt:new Date().toISOString()})
+          .then(function(){ showToast('Photo saved! 📸'); })
+          .catch(function(e){ showToast('Photo NOT saved: '+((e&&e.code)||e),'err'); });
+      }catch(e){ fail(); }
+      if(revoke){ try{ URL.revokeObjectURL(revoke); }catch(e){} }
+    }
+    var img=new Image(), url=null;
+    img.onload=function(){ draw(img,url); };
+    img.onerror=function(){ if(url){ try{ URL.revokeObjectURL(url); }catch(e){} } fail('This photo format is not supported — take the photo with the camera'); };
+    try{ url=URL.createObjectURL(file); img.src=url; }
+    catch(e){ var reader=new FileReader(); reader.onload=function(ev){ img.src=ev.target.result; }; reader.onerror=function(){ fail(); }; reader.readAsDataURL(file); }
   };
   input.click();
 }
@@ -5036,7 +5203,7 @@ function checkRoute(){
         if(!done){ done=true; var h=hById(hid); if(h) openHelperView(hid); else showScreen('landing'); }
       }
     },300);
-    setTimeout(function(){clearInterval(wait); if(!done){done=true; showScreen('landing');}},10000);
+    setTimeout(function(){clearInterval(wait); if(!done){done=true; window._pendingHelperSession=hid; showScreen('landing'); showToast('Slow connection — your screen opens as soon as it loads');}},10000);
     return true;
   }
   return false;
@@ -5067,9 +5234,11 @@ function showQRHelperModal(){
         } else if(open){
           showToast('Already clocked in!','err');
         } else {
+          var _qrAt=new Date().toISOString();
           getLocation().then(function(loc){
-            db.collection('entries').add({helperId:id,startTime:new Date().toISOString(),endTime:null,note:'Clock in via QR Code',type:'qrcode',clockInLocation:loc||null,projectId:null});
-            showToast('📷 Clocked in! ✅');
+            if(getOpen(id)){ showToast('Already clocked in!','err'); return; }
+            wlPunchIn(id,{helperId:id,startTime:_qrAt,endTime:null,note:'Clock in via QR Code',type:'qrcode',clockInLocation:loc||null,projectId:null});
+            showToast('📷 Clocked in! ✅'+wlOffNote()); try{ refreshView(); }catch(_e){}
           });
         }
       }
@@ -5092,6 +5261,7 @@ function startGeofence(){
   if(!navigator.geolocation||!currentHelper) return;
   if(geofenceWatcher) navigator.geolocation.clearWatch(geofenceWatcher);
   geofenceWatcher = navigator.geolocation.watchPosition(function(pos){
+    if(!currentHelper) return;
     var dist=calcDistance(pos.coords.latitude,pos.coords.longitude,DEPOT_LAT,DEPOT_LNG);
     var open=getOpen(currentHelper.id);
     var today=new Date().toDateString();
@@ -5104,21 +5274,12 @@ function startGeofence(){
         showClockOutReminder();
       }
       // Case 2: Not clocked in, not clocked out today — auto clock in
-      if(!open&&!clockedOutToday&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
+      if(!open&&!clockedOutToday&&!_wlClockBusy&&(window._listenersStarted||_wlHelperLive===currentHelper.id)&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
         sessionStorage.setItem('geo_clocked_'+currentHelper.id,'1');
         var loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
         var _pv2=wlPickVal(document.getElementById('clock-proj-select').value), projId=_pv2.projectId;
-        db.collection('entries').add({
-          helperId:currentHelper.id,
-          startTime:new Date().toISOString(),
-          endTime:null,
-          note:'Auto clock in via geofence',
-          type:'geofence',
-          clockInLocation:loc,
-          projectId:projId,
-          category:_pv2.category
-        });
-        showToast('📍 Auto clocked in at depot!');
+        wlPunchIn(currentHelper.id,{helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'Auto clock in via geofence',type:'geofence',clockInLocation:loc,projectId:projId,category:_pv2.category});
+        showToast('📍 Auto clocked in at depot!'); try{ refreshView(); }catch(_e){}
       }
     }
     // Clear flags when far from depot
@@ -5723,12 +5884,7 @@ if(!checkRoute()){
     } else {
       window._pendingHelperSession=_hid;
       showScreen('landing');
-      setTimeout(function(){
-        if(window._pendingHelperSession){
-          window._pendingHelperSession=null;
-          localStorage.removeItem('wl_session');
-        }
-      },15000);
+      // slow connection: keep the session — the screen opens by itself as soon as the helper's record arrives
     }
   } else {
     showScreen('landing');
