@@ -1128,6 +1128,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label">TODAY</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label">THIS WEEK</div></div>
       </div>
+      <div id="wl-hver" style="text-align:center;font-size:10.5px;color:var(--muted);margin:12px 0 0"></div>
       <!-- Advance Balance - only shows if owed -->
       <div id="helper-advance-badge" style="display:none;background:#fff5f5;border:1px solid #dc2626;border-radius:10px;padding:10px 14px;margin:10px 16px 0;display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -1916,7 +1917,7 @@ function wlHelperListen(hid){
       var photoUnsubs=[];
       _wlHUnsubs.push(db.collection('projects').where('helpers','array-contains',hid).onSnapshot(function(s){
         if(s.metadata&&s.metadata.fromCache&&_wlHelperLive!==hid&&!s.docs.length) return;
-        wlHcSave();
+        window._wlProjErr=''; wlHcSave();
         projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.createdAt||'')<String(a.createdAt||'')?-1:1;});
         refreshView();
         for(var k=0;k<photoUnsubs.length;k++){ try{ photoUnsubs[k](); }catch(e){} } photoUnsubs=[];
@@ -1928,7 +1929,7 @@ function wlHelperListen(hid){
             var all=[]; for(var q in chunks){ all=all.concat(chunks[q]); } all.sort(function(a,b){return String(b.createdAt||'')<String(a.createdAt||'')?-1:1;});
             projectPhotos=all; refreshView(); },function(){}));
         })(ids.slice(c,c+10),'c'+c); }
-      },function(){}));
+      },function(e){ window._wlProjErr=String((e&&e.code)||e||'error'); try{ refreshView(); }catch(_e){} wlHRetry(hid); }));
       _wlHUnsubs.push(function(){ for(var k=0;k<photoUnsubs.length;k++){ try{ photoUnsubs[k](); }catch(e){} } });
     });
   });
@@ -1937,22 +1938,41 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={};
-function wlAutoAssign(){
-  if(_wlAaT) return; _wlAaT=setTimeout(function(){ _wlAaT=null;
-    try{
-      if(!window._listenersStarted||wlLsGet('wl_session')!=='admin'||!helpers.length||!projects.length) return;
-      var u=auth.currentUser; if(!u||u.isAnonymous) return;
-      var ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
-      for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
-        var cur=Array.isArray(p.helpers)?p.helpers:[], add=[];
-        for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
-        if(!add.length) continue;
-        var sig=p.id+'|'+add.join(','); if(_wlAaDone[sig]) continue; _wlAaDone[sig]=1;
-        db.collection('projects').doc(p.id).update({helpers:cur.concat(add)}).catch(function(){});
-      }
-    }catch(e){}
-  },2500); }
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15c';
+function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
+  for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
+    var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
+    if(add.length) out.push({p:p,cur:cur,add:add}); }
+  return out; }
+function wlAaRun(force){
+  try{
+    if(!window._listenersStarted||!helpers.length||!projects.length) return;
+    var u=auth.currentUser; if(!u||u.isAnonymous){ window._wlAaErr='not signed in with the office account'; wlAaBanner(); return; }
+    var M=wlAaMissing(); if(force){ _wlAaDone={}; window._wlAaErr=''; }
+    for(var i=0;i<M.length;i++){ (function(m){
+      var sig=m.p.id+'|'+m.add.join(','); if(_wlAaDone[sig]) return; _wlAaDone[sig]=1;
+      db.collection('projects').doc(m.p.id).update({helpers:m.cur.concat(m.add)}).then(function(){ window._wlAaErr=''; wlAaBanner(); }).catch(function(e){ window._wlAaErr=String((e&&e.code)||e||'error'); wlAaBanner(); });
+    })(M[i]); }
+    wlAaBanner();
+  }catch(e){ window._wlAaErr=String(e&&e.message||e); wlAaBanner(); }
+}
+function wlAutoAssign(force){
+  if(force){ if(_wlAaT){ clearTimeout(_wlAaT); _wlAaT=null; } wlAaRun(true); return; }
+  if(_wlAaT) return; _wlAaT=setTimeout(function(){ _wlAaT=null; wlAaRun(false); },2500); }
+// Visible on the Projects tab: are the helpers seeing the active jobs?
+function wlAaBanner(){
+  try{
+    var list=document.getElementById('projects-list'); if(!list||!list.parentNode) return;
+    var el=document.getElementById('wl-aa'); if(!el){ el=document.createElement('div'); el.id='wl-aa'; el.style.cssText='margin:0 0 10px;padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.45'; var burn=document.getElementById('wl-burn'); var ref=(burn&&burn.parentNode)?burn:list; ref.parentNode.insertBefore(el,ref); }
+    var n=0, i; for(i=0;i<projects.length;i++){ if((projects[i].status||'active')==='active') n++; }
+    if(!n||!helpers.length){ el.style.display='none'; return; }
+    var M=wlAaMissing(); el.style.display='block';
+    if(!M.length){ el.style.background='#ecfdf5'; el.style.border='1px solid #6ee7b7'; el.style.color='#065f46'; el.innerHTML='👥 Helpers see all '+n+' active job'+(n>1?'s':'')+' ✓ <span style="opacity:.55;font-size:10.5px">· v'+WL_BUILD+'</span>'; }
+    else { el.style.background='#fef3c7'; el.style.border='1px solid #f59e0b'; el.style.color='#92400e';
+      el.innerHTML='👥 Helpers do not see '+M.length+' of '+n+' active job'+(n>1?'s':'')+(window._wlAaErr?' — <b>error: '+window._wlAaErr+'</b>':' — fixing…')+' <button type="button" onclick="wlAutoAssign(true)" style="margin-left:6px;background:#fff;border:1px solid #92400e;color:#92400e;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700">Fix now</button> <span style="opacity:.55;font-size:10.5px">· v'+WL_BUILD+'</span>'; }
+  }catch(e){}
+}
+window.wlAaBanner=wlAaBanner;
 window.wlAutoAssign=wlAutoAssign;
 // Admin keeps the public list of names (id + name only) up to date.
 function wlPublishHelperNames(){
@@ -2194,7 +2214,7 @@ function updateHelperStats(){
     else { if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red';} else {btn.textContent='Clock In'; btn.className='btn clock-btn green';}
       btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
   }
-  try{ wlqBadge(); }catch(_e){}
+  try{ wlqBadge(); var _hv=document.getElementById('wl-hver'); if(_hv){ var _nj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;}).length; _hv.textContent='WorkLog v'+WL_BUILD+' · '+_nj+' active job'+(_nj===1?'':'s')+' · '+(window._listenersStarted?'office':(_wlHelperLive===h.id?'online':'offline copy'))+(window._wlProjErr?' · jobs error: '+window._wlProjErr:''); } }catch(_e){}
   if(!open){ var _cr=document.getElementById('clockout-reminder'); if(_cr&&_cr.parentNode) _cr.parentNode.removeChild(_cr); }
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
@@ -4187,7 +4207,7 @@ function exportProjectReport(pid){
 window.exportProjectReport=exportProjectReport;
 
 function renderProjects(filter){
-  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater();
+  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater(); if(window.wlAaBanner) wlAaBanner();
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
