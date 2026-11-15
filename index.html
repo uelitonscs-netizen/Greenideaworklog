@@ -10,7 +10,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="WorkLog"/>
-<link rel="apple-touch-icon" href="/icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<script>
+// A helper's phone always carries its own link in the address, so a shortcut / "Add to Home Screen" made from
+// any moment opens that helper. iPhone: the installed icon has its own separate storage and, with a manifest,
+// would open the plain start page (no helper) — without the manifest it saves this exact address instead.
+(function(){ try{
+  var q=location.search, m=q.match(/[?&]helper=([^&]+)/), hid=m?decodeURIComponent(m[1]):'';
+  if(!hid&&!/[?&]action=/.test(q)){ var ss=''; try{ ss=localStorage.getItem('wl_session')||''; hid=ss==='admin'?'':(localStorage.getItem('wl_helper_dev')||''); }catch(e){}
+    if(hid&&window.history&&history.replaceState) history.replaceState(null,'',location.pathname+'?helper='+encodeURIComponent(hid)); }
+  var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(ios&&hid){ var l=document.querySelector('link[rel="manifest"]'); if(l&&l.parentNode) l.parentNode.removeChild(l); }
+}catch(e){} })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1128,6 +1140,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label">TODAY</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label">THIS WEEK</div></div>
       </div>
+      <div id="wl-inst" style="display:none;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-size:13px;line-height:1.5"></div>
       <div id="wl-hver" style="text-align:center;font-size:10.5px;color:var(--muted);margin:12px 0 0"></div>
       <!-- Advance Balance - only shows if owed -->
       <div id="helper-advance-badge" style="display:none;background:#fff5f5;border:1px solid #dc2626;border-radius:10px;padding:10px 14px;margin:10px 16px 0;display:flex;align-items:center;justify-content:space-between">
@@ -1849,6 +1862,25 @@ window.addEventListener('pageshow',function(ev){ if(ev&&ev.persisted) wlHResume(
 window.addEventListener('online',function(){ wlHResume(); });
 window.addEventListener('offline',function(){ wlqBadge(); });
 
+// "Put WorkLog on your home screen" — shown to the helper until the app is opened from the icon
+function wlInstCard(){
+  var el=document.getElementById('wl-inst'); if(!el) return;
+  var standalone=false; try{ standalone=(navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }catch(e){}
+  if(window._listenersStarted||standalone||wlLsGet('wl_inst_ok')==='1'){ el.style.display='none'; return; }
+  var ua=navigator.userAgent||'', ios=/iP(hone|ad|od)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1), h='<b>📲 Put WorkLog on your home screen</b><br>';
+  if(ios){
+    if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\//.test(ua)||!/Safari/.test(ua)) h+='1. Open this page in <b>Safari</b> (tap ⋯ or the compass and choose "Open in Safari").<br>2. Tap the Share button <b>⬆</b> → <b>Add to Home Screen</b>.';
+    else h+='1. Tap the Share button <b>⬆</b>.<br>2. Choose <b>Add to Home Screen</b> → Add.<br>3. From now on open WorkLog by the icon.';
+  } else {
+    h+=(window.deferredPrompt?'Tap <b>Install</b> below.':'Tap the menu <b>⋮</b> of the browser → <b>Add to Home screen</b> (or Install app).')+'<br>From now on open WorkLog by the icon.';
+    if(window.deferredPrompt) h+='<br><button type="button" onclick="wlInstGo()" style="margin-top:8px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px">Install</button>';
+  }
+  h+=' <button type="button" onclick="wlLsSet(\'wl_inst_ok\',\'1\');wlInstCard()" style="margin-top:8px;background:transparent;border:1px solid #93c5fd;color:#1e3a8a;border-radius:9px;padding:7px 12px;font-size:12px">Already done</button>';
+  el.innerHTML=h; el.style.display='block';
+}
+function wlInstGo(){ try{ var d=window.deferredPrompt; if(!d) return; d.prompt(); d.userChoice.then(function(){ window.deferredPrompt=null; wlInstCard(); }); }catch(e){} }
+window.wlInstCard=wlInstCard; window.wlInstGo=wlInstGo;
+
 // ══════ S1 — helpers load only their own data ══════
 // Admin (signed in with email): everything, as before (startFullListeners).
 // Anyone else: only the public list of helper names; a helper (link, QR or name
@@ -1938,7 +1970,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15c';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15e';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -1976,7 +2008,7 @@ window.wlAaBanner=wlAaBanner;
 window.wlAutoAssign=wlAutoAssign;
 // Admin keeps the public list of names (id + name only) up to date.
 function wlPublishHelperNames(){
-  try{ var list=helpers.map(function(h){return {id:h.id,name:h.name||''};}).sort(function(a,b){return a.name<b.name?-1:1;}), js=JSON.stringify(list);
+  try{ var list=[], js='[]#'+helpers.length;
     if(js===window._wlPubNames) return; window._wlPubNames=js;
     db.collection('wl_public').doc('helpers').set({list:list,at:new Date().toISOString()}).catch(function(){});
   }catch(e){}
@@ -2125,7 +2157,22 @@ function hTab(name,btn){
 window.hTab=hTab;
 
 // ── HELPER SELECT ──────────────────────────────────────
+function wlIsOffice(){ try{ var u=auth.currentUser; return !!(window._listenersStarted&&u&&!u.isAnonymous); }catch(e){ return false; } }
+function wlNeedLink(){
+  var o=document.getElementById('wl-needlink'); if(o&&o.parentNode) o.parentNode.removeChild(o);
+  o=document.createElement('div'); o.id='wl-needlink'; o.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px';
+  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center"><div style="font-size:34px">🔗</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">Open your personal link</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">This phone is not linked to a helper yet. Open the link the office sent you (WhatsApp). After that, this button opens your screen.</div><button type="button" class="btn" style="margin-top:16px;width:100%" onclick="var x=document.getElementById(\'wl-needlink\'); if(x) x.parentNode.removeChild(x);">OK</button></div>';
+  document.body.appendChild(o);
+}
 function showHelperModal(){
+  if(!wlIsOffice()){
+    // A helper never picks a name: the phone opens only the helper it was linked to by the personal link.
+    var dv=wlLsGet('wl_helper_dev');
+    if(!dv){ wlNeedLink(); return; }
+    if(hById(dv)){ openHelperView(dv); return; }
+    window._pendingHelperSession=dv; wlHelperListen(dv); if(hById(dv)){ window._pendingHelperSession=null; openHelperView(dv); } else showToast('Opening your screen…');
+    return;
+  }
   // Reset to loading state in case helpers not loaded yet
   var loading = document.getElementById('helper-sel-loading');
   var content = document.getElementById('helper-sel-content');
@@ -2160,6 +2207,7 @@ function populateHelperSelectDD(){
 window.populateHelperSelectDD = populateHelperSelectDD;
 
 function selectHelper(){
+  if(!wlIsOffice()) return;
   var id=document.getElementById('helper-sel-dd').value;
   if(!id) return showToast('Please select your name','err');
   closeModal('modal-helper-select');
@@ -2170,7 +2218,7 @@ window.closeModal=closeModal;
 
 // ── HELPER VIEW ────────────────────────────────────────
 function openHelperView(hid){
-  wlLsSet('wl_session','helper:'+hid);
+  wlLsSet('wl_session','helper:'+hid); wlLsSet('wl_helper_dev',hid);   // this phone now belongs to this helper (only a personal link changes it)
   if(!window._listenersStarted) wlHelperListen(hid);
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
   currentHelper=h;
@@ -2214,6 +2262,7 @@ function updateHelperStats(){
     else { if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red';} else {btn.textContent='Clock In'; btn.className='btn clock-btn green';}
       btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
   }
+  try{ wlInstCard(); }catch(_e){}
   try{ wlqBadge(); var _hv=document.getElementById('wl-hver'); if(_hv){ var _nj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;}).length; _hv.textContent='WorkLog v'+WL_BUILD+' · '+_nj+' active job'+(_nj===1?'':'s')+' · '+(window._listenersStarted?'office':(_wlHelperLive===h.id?'online':'offline copy'))+(window._wlProjErr?' · jobs error: '+window._wlProjErr:''); } }catch(_e){}
   if(!open){ var _cr=document.getElementById('clockout-reminder'); if(_cr&&_cr.parentNode) _cr.parentNode.removeChild(_cr); }
   var tm=totalMin(h.id);
@@ -5213,6 +5262,14 @@ function checkRoute(){
   var hid=params.get('helper');
   var action=params.get('action');
   // QR Code scan - no helper yet, show modal to select name then clock in
+  if(action==='clockin'&&!hid&&wlLsGet('wl_session')!=='admin'){
+    var _dv=wlLsGet('wl_helper_dev');
+    showScreen('landing');
+    if(!_dv){ startListeners(); wlNeedLink(); return true; }
+    window._wlLinkHid=_dv; startListeners();
+    var _qn=0, _qw=setInterval(function(){ _qn++; if(hById(_dv)){ clearInterval(_qw); wlQrClockIn(_dv); } else if(_qn>40){ clearInterval(_qw); window._pendingHelperSession=_dv; showToast('Slow connection — your screen opens as soon as it loads'); } },300);
+    return true;
+  }
   if(action==='clockin'&&!hid){
     startListeners();
     showScreen('landing');
@@ -5251,18 +5308,7 @@ function checkRoute(){
   return false;
 }
 
-function showQRHelperModal(){
-  var sel=document.getElementById('helper-sel-dd');
-  sel.innerHTML='<option value="">-- Select your name --</option>';
-  helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
-  // Override select button to do QR clock in
-  var btn=document.querySelector('#modal-helper-select .btn');
-  if(btn){
-    btn.textContent='📷 Clock In';
-    btn.onclick=function(){
-      var id=document.getElementById('helper-sel-dd').value;
-      if(!id) return showToast('Select your name','err');
-      closeModal('modal-helper-select');
+function wlQrClockIn(id){
       openHelperView(id);
       // Clock in after this helper's hours have loaded (avoids a double clock-in)
       var _qrTries=0;
@@ -5284,6 +5330,22 @@ function showQRHelperModal(){
           });
         }
       }
+}
+window.wlQrClockIn=wlQrClockIn;
+
+function showQRHelperModal(){
+  var sel=document.getElementById('helper-sel-dd');
+  sel.innerHTML='<option value="">-- Select your name --</option>';
+  helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
+  // Override select button to do QR clock in
+  var btn=document.querySelector('#modal-helper-select .btn');
+  if(btn){
+    btn.textContent='📷 Clock In';
+    btn.onclick=function(){
+      var id=document.getElementById('helper-sel-dd').value;
+      if(!id) return showToast('Select your name','err');
+      closeModal('modal-helper-select');
+      wlQrClockIn(id);
     };
   }
   document.getElementById('modal-helper-select').classList.add('open');
