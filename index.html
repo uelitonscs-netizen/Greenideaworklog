@@ -3194,6 +3194,12 @@ document.addEventListener('click',function(ev){
 function wlBagSf(desc){ var d=String(desc||'').toLowerCase(); var m=d.match(/(\d{2,3}(?:\.\d+)?)\s*(?:sq\.?\s*ft|sqft|sf)\s*(?:\/|per|a)?\s*(?:bag)?/); if(m){ var v=parseFloat(m[1]); if(v>=20&&v<=200) return v; } if(/\b24\s*(?:\"|in|inch|oc|o\.c\.)/.test(d)) return 80; if(/\b16\s*(?:\"|in|inch|oc|o\.c\.)/.test(d)) return 59.7; return 0; }
 function wlBagNorm(desc,qty,plannedSf){ var bs=wlBagSf(desc); if(!bs||!(plannedSf>0)) return {q:qty,note:''}; var eq=Math.round(qty*bs/plannedSf*10)/10; return {q:eq,note:qty+' × '+bs+' sf = '+eq+' bags of '+plannedSf+' sf'}; }
 window.wlBagSf=wlBagSf;
+// Factory coverage per bag when the job was sent before FieldBid started sending sfBag (same defaults FieldBid uses)
+var _WL_SFBAG={mw:{13:59,15:49,21:39,23:34,30:29.86},fg:{11:162,13:113,15:60,19:55,21:49,25:65,30:58,38:32,49:24}};
+function wlFactorySfBag(kind,r){ var t=_WL_SFBAG[kind==='mw'?'mw':'fg']; return (r&&t[r])||0; }
+// A loose expense line (no per-SKU detail): read the R from the description and convert to quoted-size bags
+function wlBagNormLoose(kind,desc,qty){ var d=String(desc||'').toLowerCase(); var rm=d.match(/\br[\s-]?(\d{2})\b/), r=rm?parseInt(rm[1],10):0; var planned=wlFactorySfBag(kind,r); var nb=wlBagNorm(d,qty,planned); if(nb.note) nb.note='R-'+r+': '+nb.note+' (factory)'; return nb; }
+window.wlFactorySfBag=wlFactorySfBag; window.wlBagNormLoose=wlBagNormLoose;
 function wlSkuUsage(pid,skus,kind){
   var kw=kind==='mw'?['roxul','mineral wool','mineralwool','rockwool','rock wool','stone wool','comfortbatt']:['fiberglass','fiber glass','fibre glass','fibreglass','batt'];
   var byR={}, other=0, otherRs={}, notes=[];
@@ -3204,7 +3210,7 @@ function wlSkuUsage(pid,skus,kind){
     if(kind!=='mw'&&(d.indexOf('roxul')>=0||d.indexOf('mineral')>=0||d.indexOf('rockwool')>=0)) continue;
     var q=parseFloat((d.match(/^\s*([\d.]+)/)||[0,0])[1])||0; if(!q) continue;
     var rm=d.match(/\br[\s-]?(\d{2})\b/), r=rm?parseInt(rm[1],10):0, matched=false;
-    for(var s=0;s<skus.length;s++){ var sr=parseInt(String(skus[s].key||'').replace(/\D/g,''),10); if(r&&sr===r){ var nb=wlBagNorm(d,q,skus[s].sfBag||0); if(nb.note) notes.push('R-'+sr+': '+nb.note); byR[sr]=(byR[sr]||0)+nb.q; matched=true; break; } }
+    for(var s=0;s<skus.length;s++){ var sr=parseInt(String(skus[s].key||'').replace(/\D/g,''),10); if(r&&sr===r){ var _pl=skus[s].sfBag||0, _fac=false; if(!_pl){ _pl=wlFactorySfBag(kind,sr); _fac=!!_pl; } var nb=wlBagNorm(d,q,_pl); if(nb.note) notes.push('R-'+sr+': '+nb.note+(_fac?' (factory)':'')); byR[sr]=(byR[sr]||0)+nb.q; matched=true; break; } }
     if(!matched){ other+=q; if(r) otherRs['R-'+r]=1; }
   }
   return {byR:byR, other:other, otherRs:Object.keys(otherRs), notes:notes};
@@ -3787,8 +3793,8 @@ function exportProjectReport(pid){
       if(matchMat(d,['closed cell','closedcell','close cell','closed-cell','c.c.'])||/\bcc\b/.test(d)) ccGal+=qty;
       else if(matchMat(d,['open cell','opencell','open-cell','o.c.'])||/\boc\b/.test(d)) ocGal+=qty;
       else if(matchMat(d,['cellulose','celulose','open blown','dense pack','densepack'])) celU+=qty;
-      else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=qty;
-      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=qty;
+      else if(matchMat(d,['roxul','roxull','mineral wool','mineralwool','rockwool','rock wool','stone wool'])) roxU+=wlBagNormLoose('mw',d,qty).q;
+      else if(matchMat(d,['fiberglass','fiber glass','fibreglass','kraft','unfaced'])||/\bfg\b/.test(d)||matchMat(d,['batt','r-13','r-19','r-21','r-30','r-38','r-49'])) fbgU+=wlBagNormLoose('fg',d,qty).q;
       else if(matchMat(d,['rigid board 2','rigid 2','rigidboard 2','rb2','rigid foam 2'])) rb2U+=qty;
       else if(matchMat(d,['rigid board 1','rigid 1','rigidboard 1','rb1','rigid foam 1'])) rb1U+=qty;
       else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=(d.indexOf('bucket')>=0?qty*800:qty);
@@ -4137,7 +4143,7 @@ function renderProjects(filter){
       var ocBF=Math.round((mb.oc.sqft||0)*(mb.oc.inch||0)); // board feet quoted OC
       // Calculate gallons used from expenses (match keywords)
       var exps=projectExpenses.filter(function(e){return e.projectId===p.id;});
-      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0,ignUsed=0,fbkUsed=0;
+      var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0,ignUsed=0,fbkUsed=0,roxNotes=[],fbgNotes=[];
       exps.forEach(function(e){
         var desc=(e.desc||'').toLowerCase();
         var qty=parseFloat(e.desc&&e.desc.match(/^[\d.]+/)?e.desc.match(/^[\d.]+/)[0]:0)||0;
@@ -4149,9 +4155,9 @@ function renderProjects(filter){
         // Cellulose: cellulose, celulose, celulose, cellolose, blow-in cel, blown cel
         else if(matchMat(desc,['cellulose','celulose','cellulos','cellolose','cellulose open','open blown','open blow','dense pack','densepack','dense-pack','blown-in cel','blow cel','blown cel','cellulose blown','cellulose blow','cellulose dense','cel dense','cel open','cel blown','celulose blown','r-30 cel','r-49 cel','r-60 cel','r60 cel','r30 cel','r49 cel'])) celUsed+=qty;
         // Roxul: roxul, roxull, roxol, mineral wool, mineralwool, mineral-wool, minwool, rockwool, rock wool, rock-wool, mineral fiber, stone wool
-        else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])) roxUsed+=qty;
+        else if(matchMat(desc,['roxul','roxull','roxol','rox ul','mineral wool','mineralwool','mineral-wool','minwool','rockwool','rock wool','rock-wool','mineral fiber','stone wool','stonewool','mineral bat','rockfib'])){ var _nr=wlBagNormLoose('mw',desc,qty); roxUsed+=_nr.q; if(_nr.note) roxNotes.push(_nr.note); }
         // Fiberglass: fiberglass, fiber glass, fibre glass, fibreglass, fg, f.g., fbg, batt, batts, r-13, r-19, r-21, r-38, r-49
-        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])) fbgUsed+=qty;
+        else if(matchMat(desc,['fiberglass','fiber glass','fibre glass','fibreglass','f.g.','fbg','fiberg','fibergl','kraft','unfaced','un-faced','kraft faced','kraft batt','unfaced batt'])||/\bfg\b/.test(desc)||matchMat(desc,['batt ','batts','r-13','r-19','r-21','r-30','r-38','r-49','r13','r19','r21','r30','r38','r49'])){ var _nf=wlBagNormLoose('fg',desc,qty); fbgUsed+=_nf.q; if(_nf.note) fbgNotes.push(_nf.note); }
         else if(matchMat(desc,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ig barrier','ign barrier','ignbarrier'])) ignUsed+=(desc.indexOf('bucket')>=0?qty*800:qty);
         else if(matchMat(desc,['fire blocking','fireblocking','fire-blocking','fire block','fireblock','fire blk'])) fbkUsed+=qty;
       });
@@ -4174,7 +4180,7 @@ function renderProjects(filter){
           var diffR=parseFloat(diff.toFixed(1)); var absDiffR=parseFloat(Math.abs(diff).toFixed(1));
           var chip=over?'<span class="wl-chip red">+'+diffR+' '+unit+' over</span>':(diff<0?'<span class="wl-chip '+(pct>=80?'amber':'green')+'">'+absDiffR+' '+unit+' left</span>':(used>0?'<span class="wl-chip green">on target</span>':''));
           html2+='<div class="wl-mr-top"><span class="wl-mr-lbl">'+label+'</span>'+chip+'</div>';
-          html2+='<div class="wl-mr-num">'+used+' / '+quoted+' '+unit+'</div>';
+          html2+='<div class="wl-mr-num">'+(Math.round(used*10)/10)+' / '+quoted+' '+unit+'</div>';
           if(quoted>0){
             html2+='<div class="wl-mr-bar"><i style="width:'+Math.min(100,pct)+'%;background:'+barColor+'"></i></div>';
           }
@@ -4239,6 +4245,7 @@ function renderProjects(filter){
           if(_detFg.length>1&&_ufg.other>0) html+=matRow('🧶 Fiberglass (other R / no R)'+(_ufg.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_ufg.otherRs.join(', ')+'</span>':''),0,_ufg.other,'bags');
         } else if(mb.fbgBags>0||fbgUsed>0){
           html+=matRow('🧶 Fiberglass',mb.fbgBags,fbgUsed,'bags');
+          if(fbgNotes.length) html+='<div style="font-size:10.5px;color:var(--muted);margin:-4px 0 8px">🧶 bag size noted: '+fbgNotes.join(' · ')+'</div>';
         }
         if(_detMw.length){
           var _umw=wlSkuUsage(p.id,_detMw,'mw');
@@ -4248,7 +4255,7 @@ function renderProjects(filter){
           if(_umw.notes&&_umw.notes.length) html+='<div style="font-size:10.5px;color:var(--muted);margin:-4px 0 8px">🪨 bag size noted: '+_umw.notes.join(' · ')+'</div>';
           if(_detMw.length>1&&_umw.other>0) html+=matRow('🪨 Roxul (other R / no R)'+(_umw.otherRs.length?' <span style="color:#b45309;font-size:11px">'+_umw.otherRs.join(', ')+'</span>':''),0,_umw.other,'bags');
         }
-        else if(mb.roxBags>0||roxUsed>0){ html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags'); }
+        else if(mb.roxBags>0||roxUsed>0){ html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags'); if(roxNotes.length) html+='<div style="font-size:10.5px;color:var(--muted);margin:-4px 0 8px">🪨 bag size noted: '+roxNotes.join(' · ')+'</div>'; }
   if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
           var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
