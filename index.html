@@ -267,6 +267,9 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .wl-hq.info{display:block;background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .wl-hq.err{display:block;background:#fee2e2;border:1px solid #dc2626;color:#991b1b}
 .wl-hq button{margin-top:6px;background:#fff;border:1px solid currentColor;color:inherit;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700}
+/* helper: the Clock / History / Jobs tabs stay on screen while the page scrolls */
+.helper-body{overflow:visible;}
+.helper-tabs{position:-webkit-sticky;position:sticky;top:8px;z-index:60;box-shadow:0 0 0 10px var(--bg),var(--shadow-sm);}
 </style>
 <style id="novo-theme">
 /* ═══ NOVO · Stage 2 theme (CSS only, overrides the original styles above) ═══ */
@@ -1109,19 +1112,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   </div>
   <div class="helper-header">
     <div>
-      <div class="helper-sub">LOGGED IN AS</div>
+      <div class="helper-sub" data-t="LOGGED IN AS">LOGGED IN AS</div>
       <div class="helper-name" id="helper-name-display"></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <div id="helper-live-badge"></div>
+      <div id="wl-lang" style="display:flex;border:1px solid #fff5;border-radius:9px;overflow:hidden"><button type="button" data-l="pt" onclick="wlSetLang('pt')" style="border:none;background:transparent;color:#fff;font-weight:800;font-size:12px;padding:7px 9px">PT</button><button type="button" data-l="en" onclick="wlSetLang('en')" style="border:none;background:transparent;color:#fff;font-weight:800;font-size:12px;padding:7px 9px">EN</button></div>
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="goLanding()">✕</button>
     </div>
   </div>
   <div class="helper-body">
     <div class="helper-tabs">
-      <button class="htab active" onclick="hTab('clock',this)">⏱ Clock</button>
-      <button class="htab" onclick="hTab('history',this)">📋 History</button>
-      <button class="htab" onclick="hTab('jobs',this)">📁 Jobs</button>
+      <button class="htab active" onclick="hTab('clock',this)" data-t="⏱ Clock">⏱ Clock</button>
+      <button class="htab" onclick="hTab('history',this)" data-t="📋 History">📋 History</button>
+      <button class="htab" onclick="hTab('jobs',this)" data-t="📁 Jobs">📁 Jobs</button>
     </div>
 
     <!-- CLOCK -->
@@ -1131,21 +1135,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="clock-status" id="clock-status">NOT CLOCKED IN</div>
         <div class="clock-time idle" id="clock-elapsed">00:00:00</div>
         <div id="proj-selector-wrap" style="display:none;margin-bottom:14px">
-          <label>Select Project (optional)</label>
+          <label data-t="Select Project (optional)">Select Project (optional)</label>
           <select id="clock-proj-select"></select>
         </div>
         <button class="btn clock-btn green" id="clock-btn" onclick="toggleClock()">Clock In</button>
       </div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label">TODAY</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label">THIS WEEK</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-today">0h 00m</div><div class="stat-label" data-t="TODAY">TODAY</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-week">0h 00m</div><div class="stat-label" data-t="THIS WEEK">THIS WEEK</div></div>
       </div>
       <div id="wl-inst" style="display:none;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-size:13px;line-height:1.5"></div>
       <div id="wl-hver" style="text-align:center;font-size:10.5px;color:var(--muted);margin:12px 0 0"></div>
       <!-- Advance Balance - only shows if owed -->
       <div id="helper-advance-badge" style="display:none;background:#fff5f5;border:1px solid #dc2626;border-radius:10px;padding:10px 14px;margin:10px 16px 0;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-size:10px;font-weight:700;color:#dc2626;letter-spacing:.06em">ADVANCE OWED</div>
+          <div style="font-size:10px;font-weight:700;color:#dc2626;letter-spacing:.06em" data-t="ADVANCE OWED">ADVANCE OWED</div>
           <div id="helper-advance-amount" style="font-size:20px;font-weight:800;color:#dc2626">$0.00</div>
         </div>
         <div style="font-size:24px">💳</div>
@@ -1537,7 +1541,7 @@ function calcPeriodPay(hid, rate, startDate, endDate){
 }
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
 function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
-function showToast(msg,type){var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
+function showToast(msg,type){try{ msg=wlTmsg(msg); }catch(_e){} var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function setSyncStatus(ok){
@@ -1812,14 +1816,14 @@ function wlqBadge(){
   var q=wlqMine(), pend=0, dead=[], i; for(i=0;i<q.length;i++){ if(q[i].dead) dead.push(q[i]); else pend++; }
   var off=(navigator.onLine===false)||_wlHelperLive!==_wlHelperId, h='';
   if(dead.length){
-    h='⚠ '+dead.length+' punch'+(dead.length>1?'es':'')+' could NOT be saved. Show this to the office:';
+    h=wlPt()?('⚠ '+dead.length+' ponto'+(dead.length>1?'s':'')+' NÃO '+(dead.length>1?'foram salvos':'foi salvo')+'. Mostre isto ao escritório:'):('⚠ '+dead.length+' punch'+(dead.length>1?'es':'')+' could NOT be saved. Show this to the office:');
     for(i=0;i<dead.length;i++){ var d=dead[i].data||{}, t=d.endTime&&dead[i].k==='upd'?d.endTime:d.startTime;
-      h+='<br>• '+(dead[i].k==='upd'?'Clock out ':(d.endTime?'Hours ':'Clock in '))+(t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(d.endTime&&dead[i].k==='add'?' → '+new Date(d.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''); }
-    h+='<br><button type="button" onclick="wlqDismiss()">OK, I told the office</button>';
+      h+='<br>• '+(dead[i].k==='upd'?(wlPt()?'Saída ':'Clock out '):(d.endTime?(wlPt()?'Horas ':'Hours '):(wlPt()?'Entrada ':'Clock in ')))+(t?new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(d.endTime&&dead[i].k==='add'?' → '+new Date(d.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''); }
+    h+='<br><button type="button" onclick="wlqDismiss()">'+(wlPt()?'OK, já avisei o escritório':'OK, I told the office')+'</button>';
     el.className='wl-hq err'; el.innerHTML=h; return;
   }
-  if(pend){ el.className='wl-hq info'; el.innerHTML=(off?'📴 No connection. ':'⏳ Sending… ')+pend+' punch'+(pend>1?'es':'')+' saved on this phone'+(off?' — will be sent automatically when the signal is back. Your time is counting normally.':'.'); return; }
-  if(off&&window._wlHelperReady===_wlHelperId){ el.className='wl-hq info'; el.innerHTML='📴 No connection — showing what is saved on this phone. You can clock in and out normally.'; return; }
+  if(pend){ el.className='wl-hq info'; el.innerHTML=wlPt()?((off?'📴 Sem sinal. ':'⏳ Enviando… ')+pend+' ponto'+(pend>1?'s':'')+' salvo'+(pend>1?'s':'')+' neste celular'+(off?' — '+(pend>1?'serão enviados':'será enviado')+' sozinho quando o sinal voltar. Seu tempo está contando normalmente.':'.')):((off?'📴 No connection. ':'⏳ Sending… ')+pend+' punch'+(pend>1?'es':'')+' saved on this phone'+(off?' — will be sent automatically when the signal is back. Your time is counting normally.':'.')); return; }
+  if(off&&window._wlHelperReady===_wlHelperId){ el.className='wl-hq info'; el.innerHTML=wlPt()?'📴 Sem sinal — mostrando o que está salvo neste celular. Você pode bater entrada e saída normalmente.':'📴 No connection — showing what is saved on this phone. You can clock in and out normally.'; return; }
   el.className='wl-hq'; el.innerHTML='';
 }
 // Copy of this helper's own data on the phone
@@ -1862,20 +1866,48 @@ window.addEventListener('pageshow',function(ev){ if(ev&&ev.persisted) wlHResume(
 window.addEventListener('online',function(){ wlHResume(); });
 window.addEventListener('offline',function(){ wlqBadge(); });
 
+
+// ══════ H2 — helper screen in Portuguese / English ══════
+// The helper picks PT or EN on his own screen (default: the phone's language). The office screens stay in English.
+var _WL_PT={"LOGGED IN AS": "CONECTADO COMO", "⏱ Clock": "⏱ Ponto", "📋 History": "📋 Histórico", "📁 Jobs": "📁 Trabalhos", "Select Project (optional)": "Escolha o projeto (opcional)", "TODAY": "HOJE", "THIS WEEK": "ESTA SEMANA", "ADVANCE OWED": "ADIANTAMENTO A DESCONTAR", "No project": "Sem projeto", "NOT CLOCKED IN": "PONTO FECHADO", "WORKING ON: ": "TRABALHANDO EM: ", "CLOCKED IN SINCE ": "PONTO ABERTO DESDE ", "Clock In": "Bater entrada", "Clock Out": "Bater saída", "Loading your hours…": "Carregando suas horas…", "Getting location...": "Pegando a localização...", "● LIVE": "● ABERTO", "Still loading your hours — wait a few seconds": "Ainda carregando suas horas — espere alguns segundos", "Clocked out! 📍": "Saída registrada! 📍", "Clocked out! ✅": "Saída registrada! ✅", "Clocked in! 📍": "Entrada registrada! 📍", "Clocked in! ⏱": "Entrada registrada! ⏱", "Already clocked in": "O ponto já está aberto", "Already clocked in!": "O ponto já está aberto!", "Already clocked out today!": "Você já bateu a saída hoje!", "📷 Clocked in! ✅": "📷 Entrada registrada! ✅", "📍 Auto clocked in at depot!": "📍 Entrada automática no depósito!", " Saved on this phone — sends when online.": " Salvo neste celular — envia quando voltar o sinal.", "No entries yet.": "Nenhum registro ainda.", "WEEK TOTAL": "TOTAL DA SEMANA", "entry": "registro", "entries": "registros", " reg + ": " normal + ", " OT": " extra", "No projects assigned.": "Nenhum projeto atribuído.", "MY HOURS": "MINHAS HORAS", "📸 PHOTOS": "📸 FOTOS", "Note": "Observação", "No photos yet.": "Nenhuma foto ainda.", "Incident": "Incidente", "Progress": "Andamento", "Material Delivered": "Material entregue", "Completion": "Conclusão", "active": "ativo", "completed": "concluído", "paused": "pausado", "Preparing photo...": "Preparando a foto...", "Uploading...": "Enviando...", "Photo saved! 📸": "Foto salva! 📸", "Photo too large": "Foto grande demais", "Could not read this photo — try again": "Não consegui ler esta foto — tente de novo", "This photo format is not supported — take the photo with the camera": "Formato de foto não aceito — tire a foto com a câmera", "No connection — keep the app open, the photo is sent when the signal is back": "Sem sinal — deixe o app aberto, a foto é enviada quando o sinal voltar", "Dont forget to clock out!": "Não esqueça de bater a saída!", "You are back at the depot with time still running.": "Você voltou ao depósito e o ponto continua aberto.", "Slow connection — your screen opens as soon as it loads": "Conexão lenta — sua tela abre assim que carregar", "Opening your screen…": "Abrindo a sua tela…", "This helper link is no longer active": "Este link de helper não está mais ativo", "Helper not found": "Helper não encontrado", "🔧 Maintenance · equipment / rig": "🔧 Manutenção · equipamento / rig", "🧹 Warehouse · cleaning / organizing": "🧹 Depósito · limpeza / organização", "🚚 Supplies run / pickup": "🚚 Buscar material / compras", "🔧 Maintenance": "🔧 Manutenção", "🧹 Warehouse": "🧹 Depósito", "🚚 Supplies": "🚚 Compras", "active job": "projeto ativo", "active jobs": "projetos ativos", "offline copy": "cópia sem sinal", "jobs error: ": "erro nos projetos: ", "Added by admin":"Adicionado pelo escritório","Clock in via QR Code":"Entrada pelo QR Code","Auto clock in via geofence":"Entrada automática no depósito","Entry added!": "Registro adicionado!", "This entry was already added": "Este registro já foi adicionado"};
+function wlPt(){ try{ return !wlIsOffice()&&wlLang()==='pt'; }catch(e){ return false; } }
+function wlT(x){ if(!wlPt()) return x; var v=_WL_PT[x]; return v===undefined?x:v; }
+function wlLoc(){ return wlPt()?'pt-BR':'en-US'; }
+// toasts: exact text, or text + the "saved on this phone" note, or "Not saved: code"
+function wlTmsg(m){ if(!wlPt()||typeof m!=='string') return m; if(_WL_PT[m]!==undefined) return _WL_PT[m];
+  var sfx=' Saved on this phone — sends when online.'; if(m.length>sfx.length&&m.slice(-sfx.length)===sfx){ var hd=m.slice(0,-sfx.length); return (_WL_PT[hd]!==undefined?_WL_PT[hd]:hd)+_WL_PT[sfx]; }
+  if(m.indexOf('Photo NOT saved: ')===0) return 'Foto NÃO salva: '+m.slice(17);
+  if(m.indexOf('Not saved: ')===0) return 'Não salvo: '+m.slice(11);
+  return m; }
+function wlI18n(){ try{
+  var els=document.querySelectorAll('#screen-helper [data-t]'); for(var i=0;i<els.length;i++){ var k=els[i].getAttribute('data-t'), v=wlT(k); if(els[i].textContent!==v) els[i].textContent=v; }
+  var bx=document.getElementById('wl-lang'); if(bx){ if(wlIsOffice()){ bx.style.display='none'; } else { bx.style.display='flex'; var L=wlLang(), bs=bx.querySelectorAll('button'); for(var j=0;j<bs.length;j++){ var on=bs[j].getAttribute('data-l')===L; bs[j].style.background=on?'#fff':'transparent'; bs[j].style.color=on?'#17522a':'#fff'; } } }
+}catch(e){} }
+function wlLangRefresh(){ try{ wlI18n(); updateHelperStats(); var a=document.querySelector('.hpanel.active'); if(a){ if(a.id==='hpanel-history') renderHelperHistory(); else if(a.id==='hpanel-jobs') renderHelperJobs(); }
+  var cr=document.getElementById('clockout-reminder'); if(cr&&cr.parentNode){ cr.parentNode.removeChild(cr); showClockOutReminder(); } }catch(e){} }
+window.wlT=wlT; window.wlI18n=wlI18n;
+
 // "Put WorkLog on your home screen" — shown to the helper until the app is opened from the icon
+function wlLang(){ var l=wlLsGet('wl_lang'); if(l==='pt'||l==='en') return l; try{ return /^pt/i.test(navigator.language||(navigator.languages&&navigator.languages[0])||'')?'pt':'en'; }catch(e){ return 'en'; } }
+function wlSetLang(l){ wlLsSet('wl_lang',l); try{ wlInstCard(); }catch(e){} try{ wlLangRefresh(); }catch(e){} }
+window.wlSetLang=wlSetLang;
 function wlInstCard(){
   var el=document.getElementById('wl-inst'); if(!el) return;
   var standalone=false; try{ standalone=(navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }catch(e){}
   if(window._listenersStarted||standalone||wlLsGet('wl_inst_ok')==='1'){ el.style.display='none'; return; }
-  var ua=navigator.userAgent||'', ios=/iP(hone|ad|od)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1), h='<b>📲 Put WorkLog on your home screen</b><br>';
+  var pt=wlLang()==='pt', ua=navigator.userAgent||'', ios=/iP(hone|ad|od)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function lb(l,t){ var on=(wlLang()===l); return '<button type="button" onclick="wlSetLang(\''+l+'\')" style="background:'+(on?'#1d4ed8':'transparent')+';color:'+(on?'#fff':'#1e3a8a')+';border:1px solid #93c5fd;border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700;margin-left:4px">'+t+'</button>'; }
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px"><b>📲 '+(pt?'Coloque o WorkLog na tela inicial':'Put WorkLog on your home screen')+'</b><span style="white-space:nowrap">'+lb('pt','PT')+lb('en','EN')+'</span></div>';
   if(ios){
-    if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\//.test(ua)||!/Safari/.test(ua)) h+='1. Open this page in <b>Safari</b> (tap ⋯ or the compass and choose "Open in Safari").<br>2. Tap the Share button <b>⬆</b> → <b>Add to Home Screen</b>.';
-    else h+='1. Tap the Share button <b>⬆</b>.<br>2. Choose <b>Add to Home Screen</b> → Add.<br>3. From now on open WorkLog by the icon.';
+    if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\//.test(ua)||!/Safari/.test(ua)) h+=pt?'1. Abra esta página no <b>Safari</b> (toque em ⋯ ou na bússola e escolha "Abrir no Safari").<br>2. Toque no botão Compartilhar <b>⬆</b> → <b>Adicionar à Tela de Início</b>.':'1. Open this page in <b>Safari</b> (tap ⋯ or the compass and choose "Open in Safari").<br>2. Tap the Share button <b>⬆</b> → <b>Add to Home Screen</b>.';
+    else h+=pt?'1. Toque no botão Compartilhar <b>⬆</b>.<br>2. Escolha <b>Adicionar à Tela de Início</b> → Adicionar.<br>3. Daqui em diante abra o WorkLog pelo ícone.':'1. Tap the Share button <b>⬆</b>.<br>2. Choose <b>Add to Home Screen</b> → Add.<br>3. From now on open WorkLog by the icon.';
   } else {
-    h+=(window.deferredPrompt?'Tap <b>Install</b> below.':'Tap the menu <b>⋮</b> of the browser → <b>Add to Home screen</b> (or Install app).')+'<br>From now on open WorkLog by the icon.';
-    if(window.deferredPrompt) h+='<br><button type="button" onclick="wlInstGo()" style="margin-top:8px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px">Install</button>';
+    if(window.deferredPrompt) h+=pt?'Toque em <b>Instalar</b> abaixo.':'Tap <b>Install</b> below.';
+    else h+=pt?'Toque no menu <b>⋮</b> do navegador → <b>Adicionar à tela inicial</b> (ou Instalar app).':'Tap the menu <b>⋮</b> of the browser → <b>Add to Home screen</b> (or Install app).';
+    h+='<br>'+(pt?'Daqui em diante abra o WorkLog pelo ícone.':'From now on open WorkLog by the icon.');
+    if(window.deferredPrompt) h+='<br><button type="button" onclick="wlInstGo()" style="margin-top:8px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px">'+(pt?'Instalar':'Install')+'</button>';
   }
-  h+=' <button type="button" onclick="wlLsSet(\'wl_inst_ok\',\'1\');wlInstCard()" style="margin-top:8px;background:transparent;border:1px solid #93c5fd;color:#1e3a8a;border-radius:9px;padding:7px 12px;font-size:12px">Already done</button>';
+  h+='<br><button type="button" onclick="wlLsSet(\'wl_inst_ok\',\'1\');wlInstCard()" style="margin-top:8px;background:transparent;border:1px solid #93c5fd;color:#1e3a8a;border-radius:9px;padding:7px 12px;font-size:12px">'+(pt?'Já fiz':'Already done')+'</button>';
   el.innerHTML=h; el.style.display='block';
 }
 function wlInstGo(){ try{ var d=window.deferredPrompt; if(!d) return; d.prompt(); d.userChoice.then(function(){ window.deferredPrompt=null; wlInstCard(); }); }catch(e){} }
@@ -1970,7 +2002,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15e';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.15h';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2150,6 +2182,7 @@ function hTab(name,btn){
   document.querySelectorAll('.hpanel').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
   document.getElementById('hpanel-'+name).classList.add('active');
+  try{ window.scrollTo(0,0); document.documentElement.scrollTop=0; document.body.scrollTop=0; }catch(_e){}   // a new tab always starts at the top
   if(name==='history') renderHelperHistory();
   else if(name==='jobs') renderHelperJobs();
   else if(name==='mypay') renderHelperPay();
@@ -2160,8 +2193,9 @@ window.hTab=hTab;
 function wlIsOffice(){ try{ var u=auth.currentUser; return !!(window._listenersStarted&&u&&!u.isAnonymous); }catch(e){ return false; } }
 function wlNeedLink(){
   var o=document.getElementById('wl-needlink'); if(o&&o.parentNode) o.parentNode.removeChild(o);
+  var _pt=false; try{ _pt=wlLang()==='pt'; }catch(e){}
   o=document.createElement('div'); o.id='wl-needlink'; o.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px';
-  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center"><div style="font-size:34px">🔗</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">Open your personal link</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">This phone is not linked to a helper yet. Open the link the office sent you (WhatsApp). After that, this button opens your screen.</div><button type="button" class="btn" style="margin-top:16px;width:100%" onclick="var x=document.getElementById(\'wl-needlink\'); if(x) x.parentNode.removeChild(x);">OK</button></div>';
+  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center"><div style="font-size:34px">🔗</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">'+(_pt?'Abra o seu link pessoal':'Open your personal link')+'</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+(_pt?'Este celular ainda não está ligado a um helper. Abra o link que o escritório te mandou (WhatsApp). Depois disso, este botão abre a sua tela.':'This phone is not linked to a helper yet. Open the link the office sent you (WhatsApp). After that, this button opens your screen.')+'</div><button type="button" class="btn" style="margin-top:16px;width:100%" onclick="var x=document.getElementById(\'wl-needlink\'); if(x) x.parentNode.removeChild(x);">OK</button></div>';
   document.body.appendChild(o);
 }
 function showHelperModal(){
@@ -2240,30 +2274,30 @@ function updateHelperStats(){
   if(!currentHelper) return;
   var h=hById(currentHelper.id)||currentHelper; currentHelper=h;
   var open=getOpen(h.id);
-  document.getElementById('helper-live-badge').innerHTML=open?'<span style="background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite">● LIVE</span>':'';
+  document.getElementById('helper-live-badge').innerHTML=open?'<span style="background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite">'+wlT('● LIVE')+'</span>':'';
   // Project selector
   var wrap=document.getElementById('proj-selector-wrap'), sel=document.getElementById('clock-proj-select');
   if(!open){
     var myProj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;});
     var _prevSel=sel.value;
-    sel.innerHTML='<option value="">No project</option>'+myProj.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'">'+lbl+'</option>';}).join('')+wlCatOpts('');
+    sel.innerHTML='<option value="">'+wlT('No project')+'</option>'+myProj.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'');return '<option value="'+p.id+'">'+lbl+'</option>';}).join('')+wlCatOpts('').replace(/>([^<]+)<\/option>/g,function(m,t){ return '>'+wlT(t)+'</option>'; });
     if(_prevSel){ sel.value=_prevSel; if(sel.value!==_prevSel) sel.value=''; }   // a refresh no longer clears the project the helper picked
     wrap.style.display='block';   // the categories (maintenance, warehouse, supplies) are always there
   } else { wrap.style.display='none'; }
   // Status text
   var projName='';
-  if(open){ var pj=wlProjOf(open); if(pj) projName='WORKING ON: '+String(pj.name).toUpperCase(); }
-  document.getElementById('clock-status').textContent=open?(projName||'CLOCKED IN SINCE '+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'NOT CLOCKED IN';
+  if(open){ var pj=wlProjOf(open); if(pj) projName=wlT('WORKING ON: ')+String(wlT(pj.name)).toUpperCase(); }
+  document.getElementById('clock-status').textContent=open?(projName||wlT('CLOCKED IN SINCE ')+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):wlT('NOT CLOCKED IN');
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
   if(open){ tel.className='clock-time'; updateElapsed(open.startTime); } else { tel.className='clock-time idle'; tel.textContent='00:00:00'; }
   if(!_wlClockBusy){
     var _wait=!window._listenersStarted&&window._wlHelperReady!==h.id&&window._wlClockForce!==h.id;
-    if(_wait){ btn.textContent='Loading your hours…'; btn.className='btn clock-btn green'; btn.disabled=true; btn.style.opacity='.6'; }
-    else { if(open){btn.textContent='Clock Out'; btn.className='btn clock-btn red';} else {btn.textContent='Clock In'; btn.className='btn clock-btn green';}
+    if(_wait){ btn.textContent=wlT('Loading your hours…'); btn.className='btn clock-btn green'; btn.disabled=true; btn.style.opacity='.6'; }
+    else { if(open){btn.textContent=wlT('Clock Out'); btn.className='btn clock-btn red';} else {btn.textContent=wlT('Clock In'); btn.className='btn clock-btn green';}
       btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
   }
-  try{ wlInstCard(); }catch(_e){}
-  try{ wlqBadge(); var _hv=document.getElementById('wl-hver'); if(_hv){ var _nj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;}).length; _hv.textContent='WorkLog v'+WL_BUILD+' · '+_nj+' active job'+(_nj===1?'':'s')+' · '+(window._listenersStarted?'office':(_wlHelperLive===h.id?'online':'offline copy'))+(window._wlProjErr?' · jobs error: '+window._wlProjErr:''); } }catch(_e){}
+  try{ wlI18n(); wlInstCard(); }catch(_e){}
+  try{ wlqBadge(); var _hv=document.getElementById('wl-hver'); if(_hv){ var _nj=projects.filter(function(p){return p.status==='active'&&(p.helpers||[]).indexOf(h.id)>=0;}).length; _hv.textContent='WorkLog v'+WL_BUILD+' · '+_nj+' '+wlT(_nj===1?'active job':'active jobs')+' · '+(window._listenersStarted?'office':(_wlHelperLive===h.id?'online':wlT('offline copy')))+(window._wlProjErr?' · '+wlT('jobs error: ')+window._wlProjErr:''); } }catch(_e){}
   if(!open){ var _cr=document.getElementById('clockout-reminder'); if(_cr&&_cr.parentNode) _cr.parentNode.removeChild(_cr); }
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
@@ -2302,7 +2336,7 @@ function toggleClock(){
   var wasOpen=getOpen(hid), at=new Date().toISOString();          // the time of the tap, not of the GPS answer
   var _pv=wlPickVal(document.getElementById('clock-proj-select').value);
   var btn=document.getElementById('clock-btn');
-  _wlClockBusy=true; btn.textContent='Getting location...'; btn.disabled=true;
+  _wlClockBusy=true; btn.textContent=wlT('Getting location...'); btn.disabled=true;
   getLocation().then(function(loc){
     _wlClockBusy=false; btn.disabled=false;
     if(!currentHelper||currentHelper.id!==hid){ return; }
@@ -2340,7 +2374,7 @@ function renderHelperHistory(){
   var list = document.getElementById('helper-history-list');
   var rate = currentHelper.rate || 0;
   var ents = entries.filter(function(e){ return e.helperId===currentHelper.id && e.endTime; });
-  if(!ents.length){ list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No entries yet.</div>'; return; }
+  if(!ents.length){ list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">'+wlT('No entries yet.')+'</div>'; return; }
 
   // Group by week (Monday-based)
   function getWeekStart(d){
@@ -2367,7 +2401,7 @@ function renderHelperHistory(){
     var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
     var totalPay = regPay + otPay;
     var weEnd = parseLocalDate(ws); weEnd.setDate(weEnd.getDate()+6);
-    var wLabel = parseLocalDate(ws).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var wLabel = parseLocalDate(ws).toLocaleDateString(wlLoc(),{month:'short',day:'numeric'})+' – '+weEnd.toLocaleDateString(wlLoc(),{month:'short',day:'numeric'});
 
     var rows = wEnts.map(function(e){
       var mins = gMin(e);
@@ -2375,11 +2409,11 @@ function renderHelperHistory(){
       var proj = wlProjOf(e);
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border);font-size:12px">'+
         '<div>'+
-          '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+          '<div style="font-weight:600">'+new Date(e.startTime).toLocaleDateString(wlLoc(),{weekday:'short',month:'short',day:'numeric'})+'</div>'+
           '<div style="color:var(--muted);margin-top:1px">'+
             new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
             ' → '+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+
-            (proj?' · <span style="color:var(--green);font-weight:600">'+proj.name+'</span>':'')+(e.note?' · '+e.note:'')+
+            (proj?' · <span style="color:var(--green);font-weight:600">'+wlT(proj.name)+'</span>':'')+(e.note?' · '+wlT(e.note):'')+
           '</div>'+
         '</div>'+
         '<div style="text-align:right;flex-shrink:0;margin-left:10px">'+
@@ -2394,19 +2428,19 @@ function renderHelperHistory(){
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#f8fdf9">'+
         '<div>'+
           '<div style="font-weight:800;font-size:13px">📅 '+wLabel+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+wEnts.length+' entr'+(wEnts.length===1?'y':'ies')+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+wEnts.length+' '+wlT(wEnts.length===1?'entry':'entries')+'</div>'+
         '</div>'+
         '<div style="text-align:right">'+
           '<div style="font-family:var(--font-d);font-weight:800;font-size:16px;color:var(--green)">'+fmtD(totalMins)+'</div>'+
           (otMins>0?
-            '<div style="font-size:11px;color:var(--muted)">'+fmtC(regPay)+' reg + <span style="color:#d97706;font-weight:700">'+fmtC(otPay)+' OT</span></div>':
+            '<div style="font-size:11px;color:var(--muted)">'+fmtC(regPay)+wlT(' reg + ')+'<span style="color:#d97706;font-weight:700">'+fmtC(otPay)+wlT(' OT')+'</span></div>':
             '<div style="font-size:11px;color:var(--muted)">'+fmtC(totalPay)+'</div>')+
         '</div>'+
       '</div>'+
       rows+
       // Week total footer
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdf4;border-top:1px solid var(--border)">'+
-        '<span style="font-size:12px;font-weight:700;color:var(--muted)">WEEK TOTAL</span>'+
+        '<span style="font-size:12px;font-weight:700;color:var(--muted)">'+wlT('WEEK TOTAL')+'</span>'+
         '<span style="font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--green2)">'+fmtC(totalPay)+'</span>'+
       '</div>'+
     '</div>';
@@ -2417,21 +2451,21 @@ function renderHelperJobs(){
   if(!currentHelper) return;
   var list=document.getElementById('helper-jobs-list');
   var myP=projects.filter(function(p){return (p.helpers||[]).indexOf(currentHelper.id)>=0;});
-  if(!myP.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No projects assigned.</div>'; return;}
+  if(!myP.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">'+wlT('No projects assigned.')+'</div>'; return;}
   list.innerHTML=myP.map(function(p){
     var myMin=entries.filter(function(e){return e.helperId===currentHelper.id&&e.endTime&&e.projectId===p.id;}).reduce(function(s,e){return s+gMin(e);},0);
     var stCol=p.status==='active'?'var(--green)':p.status==='completed'?'var(--amber)':'var(--muted)';
-    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+p.status+'</span></div>';
-    html+='<div style="background:#f0f8f0;border-radius:8px;padding:10px;text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(myMin)+'</div><div style="font-size:10px;color:var(--muted)">MY HOURS</div></div>';
+    var html='<div class="proj-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+p.name+'</div>'+(p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+p.desc+'</div>':'')+'<div style="font-size:11px;color:var(--muted);margin-top:3px">📅 '+parseLocalDate(p.start).toLocaleDateString()+(p.end?' → '+parseLocalDate(p.end).toLocaleDateString():'')+'</div></div><span style="font-size:11px;font-weight:700;color:'+stCol+'">'+wlT(p.status)+'</span></div>';
+    html+='<div style="background:#f0f8f0;border-radius:8px;padding:10px;text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(myMin)+'</div><div style="font-size:10px;color:var(--muted)">'+wlT('MY HOURS')+'</div></div>';
     // Photo section
     var projPhotos=projectPhotos.filter(function(ph){return ph.projectId===p.id;});
-    html+='<div style="margin-top:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">📸 PHOTOS</div>';
+    html+='<div style="margin-top:12px"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">'+wlT('📸 PHOTOS')+'</div>';
     html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">';
-    html+='<select id="hphcat-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"><option>Incident</option><option>Progress</option><option>Material Delivered</option><option>Completion</option></select>';
-    html+='<input id="hphnote-'+p.id+'" placeholder="Note" style="flex:1;min-width:80px;background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"/>';
+    html+='<select id="hphcat-'+p.id+'" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"><option value="Incident">'+wlT('Incident')+'</option><option value="Progress">'+wlT('Progress')+'</option><option value="Material Delivered">'+wlT('Material Delivered')+'</option><option value="Completion">'+wlT('Completion')+'</option></select>';
+    html+='<input id="hphnote-'+p.id+'" placeholder="'+wlT('Note')+'" style="flex:1;min-width:80px;background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:5px 8px;font-size:12px;"/>';
     html+='<button onclick="addPhoto(\''+p.id+'\',true)" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer">📷</button></div>';
-    if(projPhotos.length){html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+projPhotos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="openPhoto(\''+ph.id+'\')"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+ph.category+'</div></div>';}).join('')+'</div>';}
-    else{html+='<div style="color:var(--muted);font-size:12px">No photos yet.</div>';}
+    if(projPhotos.length){html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px">'+projPhotos.map(function(ph){return '<div style="position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer" onclick="openPhoto(\''+ph.id+'\')"><img src="'+ph.base64+'" style="width:100%;height:100%;object-fit:cover"/><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:2px 4px;font-size:9px;color:#fff">'+wlT(ph.category)+'</div></div>';}).join('')+'</div>';}
+    else{html+='<div style="color:var(--muted);font-size:12px">'+wlT('No photos yet.')+'</div>';}
     html+='</div></div>';
     return html;
   }).join('');
@@ -5400,14 +5434,14 @@ function showClockOutReminder(){
   if(existing) return;
   var banner=document.createElement('div');
   banner.id='clockout-reminder';
-  banner.style.cssText='position:sticky;top:0;left:0;right:0;background:#d97706;color:#fff;padding:14px 18px;z-index:9998;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);';
+  banner.style.cssText='position:relative;background:#d97706;color:#fff;padding:14px 18px;z-index:9998;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);';
   var msg=document.createElement('div');
   var t1=document.createElement('div');
   t1.style.cssText='font-family:var(--font-d);font-weight:800;font-size:14px';
-  t1.textContent='Dont forget to clock out!';
+  t1.textContent=wlT('Dont forget to clock out!');
   var t2=document.createElement('div');
   t2.style.cssText='font-size:11px;opacity:.9;margin-top:2px';
-  t2.textContent='You are back at the depot with time still running.';
+  t2.textContent=wlT('You are back at the depot with time still running.');
   msg.appendChild(t1);
   msg.appendChild(t2);
   var btnClose=document.createElement('button');
