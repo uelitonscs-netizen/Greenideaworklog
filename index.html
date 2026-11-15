@@ -1782,7 +1782,7 @@ function wlqFlush(){
     if(_wlqBusy[op.k+':'+op.id+':'+op.at]) continue;
     if(op.k==='add'){ if(byId[op.id]){ wlqRemove(op); } else wlqSend(op); }
     else { var e=byId[op.id], addWaiting=false; for(var j=0;j<q.length;j++){ if(q[j].k==='add'&&q[j].id===op.id) addWaiting=true; }
-      if(e){ if(op.data&&op.data.endTime&&e.endTime===op.data.endTime) wlqRemove(op); else wlqSend(op); }
+      if(e){ if(op.data&&op.data.endTime&&e.endTime) wlqRemove(op); else wlqSend(op); }   // already closed on the server (same punch confirmed, or closed by the office): never overwrite
       else if(addWaiting) wlqSend(op);
       else wlqRemove(op);                              // the entry no longer exists (removed by the office)
     }
@@ -1810,14 +1810,15 @@ function wlqBadge(){
 }
 // Copy of this helper's own data on the phone
 function wlHcLoad(hid){ try{ var o=JSON.parse(wlLsGet('wl_hc_'+hid)||'null'); return (o&&typeof o==='object')?o:null; }catch(e){ return null; } }
-function wlHcSave(){ if(_wlHcT) return; _wlHcT=setTimeout(function(){ _wlHcT=null;
+function wlHcSave(now){ if(now){ wlHcWrite(); return; } if(_wlHcT) return; _wlHcT=setTimeout(function(){ _wlHcT=null; wlHcWrite(); },1200); }
+function wlHcWrite(){
   if(window._listenersStarted||!_wlHelperId||_wlHelperLive!==_wlHelperId) return;
   try{ var me=hById(_wlHelperId), pj=[], i;
     for(i=0;i<projects.length;i++){ var p=projects[i]; pj.push({id:p.id,name:p.name,desc:p.desc||'',status:p.status,helpers:p.helpers||[],start:p.start||'',end:p.end||'',createdAt:p.createdAt||''}); }
     var o={me:(me&&me.rate!==undefined)?me:null,entries:_wlBase.slice(0,150),projects:pj,at:Date.now()};
     if(!o.me){ var old=wlHcLoad(_wlHelperId); if(old&&old.me) o.me=old.me; }
     if(!wlLsSet('wl_hc_'+_wlHelperId,JSON.stringify(o))){ o.entries=_wlBase.slice(0,40); wlLsSet('wl_hc_'+_wlHelperId,JSON.stringify(o)); }
-  }catch(e){} },1200); }
+  }catch(e){} }
 // A listener failed (no permission yet, sign-in not ready, network): start again, slower each time
 function wlHRetry(hid){ if(_wlHRetryT||window._listenersStarted) return; _wlHRetryN++;
   _wlHRetryT=setTimeout(function(){ _wlHRetryT=null; if(window._listenersStarted||_wlHelperId!==hid) return; _wlHStop(); _wlHelperId=null; wlHelperListen(hid); },Math.min(30000,2500*_wlHRetryN)); }
@@ -1907,7 +1908,7 @@ function wlHelperListen(hid){
         if(_fc&&_wlHelperLive!==hid) return;            // offline "empty" answer: keep the copy saved on the phone
         _wlBase=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(wlEntSort);
         if(!_fc){ _wlHelperLive=hid; _wlHRetryN=0; }
-        wlqApply(); gotEntries=true; window._wlHelperReady=hid; wlHcSave(); wlqFlush(); wlqBadge(); refreshView();
+        wlqApply(); gotEntries=true; window._wlHelperReady=hid; wlHcSave(true); wlqFlush(); wlqBadge(); refreshView();
       },function(){ wlHRetry(hid); }));
       _wlHUnsubs.push(db.collection('payments').where('helperId','==',hid).onSnapshot(function(s){
         payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){return String(b.date||'')<String(a.date||'')?-1:1;}); refreshView();
@@ -1933,6 +1934,26 @@ function wlHelperListen(hid){
   });
 }
 window.wlHelperListen=wlHelperListen;
+// Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
+// no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
+// (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
+var _wlAaT=null, _wlAaDone={};
+function wlAutoAssign(){
+  if(_wlAaT) return; _wlAaT=setTimeout(function(){ _wlAaT=null;
+    try{
+      if(!window._listenersStarted||wlLsGet('wl_session')!=='admin'||!helpers.length||!projects.length) return;
+      var u=auth.currentUser; if(!u||u.isAnonymous) return;
+      var ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
+      for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
+        var cur=Array.isArray(p.helpers)?p.helpers:[], add=[];
+        for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
+        if(!add.length) continue;
+        var sig=p.id+'|'+add.join(','); if(_wlAaDone[sig]) continue; _wlAaDone[sig]=1;
+        db.collection('projects').doc(p.id).update({helpers:cur.concat(add)}).catch(function(){});
+      }
+    }catch(e){}
+  },2500); }
+window.wlAutoAssign=wlAutoAssign;
 // Admin keeps the public list of names (id + name only) up to date.
 function wlPublishHelperNames(){
   try{ var list=helpers.map(function(h){return {id:h.id,name:h.name||''};}).sort(function(a,b){return a.name<b.name?-1:1;}), js=JSON.stringify(list);
@@ -1963,7 +1984,7 @@ function startFullListeners(){
   }
   db.collection('helpers').onSnapshot(function(s){
     helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    wlPublishHelperNames();
+    wlPublishHelperNames(); wlAutoAssign();
     setSyncStatus(true);
     refreshView();
     populateHelperSelectDD();
@@ -1979,7 +2000,7 @@ function startFullListeners(){
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); updateClientSuggestions();},function(){});
+  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -2174,6 +2195,7 @@ function updateHelperStats(){
       btn.disabled=false; btn.style.opacity=''; btn.style.cursor=''; btn.title=''; }
   }
   try{ wlqBadge(); }catch(_e){}
+  if(!open){ var _cr=document.getElementById('clockout-reminder'); if(_cr&&_cr.parentNode) _cr.parentNode.removeChild(_cr); }
   var tm=totalMin(h.id);
   var wm=weekMin(h.id);
   var wpay=calcCurrentWeekPay(h.id,h.rate);
@@ -4499,7 +4521,7 @@ function addProject(){
     rb2Boards:parseFloat(document.getElementById('proj-rb2-boards').value)||0,
     rb1Boards:parseFloat(document.getElementById('proj-rb1-boards').value)||0
   };
-  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:[],matBudget:matBudget,createdAt:new Date().toISOString()});
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:helpers.map(function(h){return h.id;}),matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
   document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
   document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
@@ -5296,7 +5318,7 @@ function showClockOutReminder(){
   if(existing) return;
   var banner=document.createElement('div');
   banner.id='clockout-reminder';
-  banner.style.cssText='position:fixed;top:0;left:0;right:0;background:#d97706;color:#fff;padding:14px 18px;z-index:9998;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);';
+  banner.style.cssText='position:sticky;top:0;left:0;right:0;background:#d97706;color:#fff;padding:14px 18px;z-index:9998;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);';
   var msg=document.createElement('div');
   var t1=document.createElement('div');
   t1.style.cssText='font-family:var(--font-d);font-weight:800;font-size:14px';
@@ -5312,7 +5334,7 @@ function showClockOutReminder(){
   btnClose.onclick=function(){ banner.remove(); };
   banner.appendChild(msg);
   banner.appendChild(btnClose);
-  document.body.appendChild(banner);
+  var _hs=document.getElementById('screen-helper'); if(_hs&&_hs.firstChild) _hs.insertBefore(banner,_hs.firstChild); else document.body.appendChild(banner);
 }
 
 function stopGeofence(){
