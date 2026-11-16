@@ -1636,6 +1636,7 @@ function pbStart(){
   }catch(e){}
 }
 function pbRefreshFocused(){
+  try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(e){}
   try{ var el=document.activeElement; if(el&&el.id&&(el.id.indexOf('exd-')===0||el.id==='ee-desc')) pbOnInput({target:el}); }catch(e){}
   try{ var ee=document.getElementById('modal-edit-expense'); if(ee&&ee.classList.contains('open')) pbOnInput({target:document.getElementById('ee-desc')}); }catch(e){}
 }
@@ -2044,7 +2045,7 @@ function wlRpPill(){
   var b=document.getElementById('wl-rp-b'); if(!b){ b=document.createElement('div'); b.id='wl-rp-b'; b.style.cssText='margin:0 0 10px;padding:9px 12px;border-radius:12px;font-size:12.5px;background:#eef2ff;border:1px solid #a5b4fc;color:#3730a3;cursor:pointer'; b.onclick=function(){ wlRpOpen(''); }; var aa=document.getElementById('wl-aa'), burn=document.getElementById('wl-burn'), ref=(aa&&aa.parentNode)?aa:((burn&&burn.parentNode)?burn:list); ref.parentNode.insertBefore(b,ref); }
   if(!on||!wlReports.length){ b.style.display='none'; } else { b.style.display='block'; b.innerHTML='📝 <b>Crew reports</b> · '+wlReports.length+(n?' · <b style="color:#dc2626">'+n+' new</b>':'')+' <span style="float:right;font-weight:700">Open ›</span>'; }
 }
-function wlRpOpen(filter){ _wlRpFilter=filter||''; var o=document.getElementById('wl-rp'); if(!o){ o=document.createElement('div'); o.id='wl-rp'; document.body.appendChild(o); } wlRpDraw(); wlRpPill(); }
+function wlRpOpen(filter){ try{ pbStart(); }catch(_e){} _wlRpFilter=filter||''; var o=document.getElementById('wl-rp'); if(!o){ o=document.createElement('div'); o.id='wl-rp'; document.body.appendChild(o); } wlRpDraw(); wlRpPill(); }
 function wlRpClose(){ var o=document.getElementById('wl-rp'); if(o&&o.parentNode) o.parentNode.removeChild(o);
   var now=new Date().toISOString(); for(var i=0;i<wlReports.length;i++){ var r=wlReports[i]; if(!r.readAt&&r._shown){ r.readAt=now; db.collection('helperReports').doc(r.id).update({readAt:now}).catch(function(){}); } }
   wlRpPill(); try{ refreshView(); }catch(e){} }
@@ -2061,12 +2062,56 @@ function wlRpDraw(){
     if(r2.note) h+='<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+wlRepEsc(r2.note)+'</div>';
     if(r2.photo) h+='<img src="'+r2.photo+'" onclick="wlRepZoom(this.src)" style="margin-top:8px;width:120px;height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer"/>';
     if(r2.reply&&r2.reply.text) h+='<div class="wl-rp-ans"><b>You answered:</b> '+wlRepEsc(r2.reply.text)+(r2.replySeenAt?' <span style="opacity:.7">· seen ✓</span>':'')+'</div>';
+    h+=wlRpExpHtml(r2);
     h+='<div style="display:flex;gap:8px;margin-top:10px"><input id="rpa-'+r2.id+'" placeholder="'+(r2.reply&&r2.reply.text?'Change your answer…':'Answer the helper…')+'" style="flex:1"/><button type="button" class="btn sm" data-id="'+r2.id+'" onclick="wlRpReply(this.dataset.id)">Send</button><button type="button" class="btn sm ghost" data-id="'+r2.id+'" onclick="wlRpDel(this.dataset.id)" style="color:#dc2626">🗑</button></div></div>'; }
   o.innerHTML=h+'</div>';
 }
 function wlRpReply(id){ var e=document.getElementById('rpa-'+id), t=e?String(e.value||'').trim():''; if(!t) return showToast('Write the answer first','err'); var now=new Date().toISOString();
   db.collection('helperReports').doc(id).update({reply:{text:t,at:now},replySeenAt:null,readAt:now}).then(function(){ showToast('Answer sent ✓'); }).catch(function(er){ showToast('Not saved: '+((er&&er.code)||er),'err'); }); }
 function wlRpDel(id){ if(!window.confirm('Delete this report?')) return; db.collection('helperReports').doc(id).delete().catch(function(er){ showToast('Not deleted: '+((er&&er.code)||er),'err'); }); }
+// ── one tap: what the crew reported becomes expenses of the job (same lines the office would type: "110 gal closed cell") ──
+function wlRpExpLines(r){ var it=r.items||{}, L=[], d;
+  if(it.ccGal>0) L.push(it.ccGal+' gal closed cell');
+  if(it.ocGal>0) L.push(it.ocGal+' gal open cell');
+  if(it.celBags>0) L.push(it.celBags+' bags cellulose');
+  if(it.roxBags>0){ d=it.roxBags+' bags Roxul'+(it.roxR?' R'+it.roxR:'')+(it.roxSf?' · '+it.roxSf+' sf/bag':''); L.push(d); }
+  if(it.fbgBags>0){ d=it.fbgBags+' bags fiberglass'+(it.fbgR?' R'+it.fbgR:'')+(it.fbgSf?' · '+it.fbgSf+' sf/bag':''); L.push(d); }
+  var out=[]; for(var i=0;i<L.length;i++){ var m=null; try{ m=pbMatch(L[i],r.projectId); }catch(e){} out.push({desc:L[i],amount:(m&&m.key&&m.total>0)?m.total:0,hint:(m&&m.key&&m.label)?m.label:((m&&m.msg)?m.msg:'no price in the price book')}); }
+  return out; }
+function wlRpExpHtml(r){
+  if(!r.projectId) return ''; var lines=wlRpExpLines(r); if(!lines.length) return '';
+  if(r.expensedAt){ var tot=0, n=0, ids=r.expenseIds||[]; for(var i=0;i<projectExpenses.length;i++){ if(ids.indexOf(projectExpenses[i].id)>=0){ tot+=Number(projectExpenses[i].amount)||0; n++; } }
+    return '<div style="margin-top:10px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:8px 10px;font-size:13px;color:#065f46;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>✓ Logged as expense · '+n+' line'+(n===1?'':'s')+' · <b>'+fmtC(tot)+'</b></span><button type="button" class="btn sm ghost" data-id="'+r.id+'" onclick="wlRpExpUndo(this.dataset.id)">Undo</button></div>'; }
+  var open=window._wlRpExpOpen===r.id, h='<div style="margin-top:10px">';
+  if(!open) return h+'<button type="button" class="btn sm" style="width:100%;background:#1d4ed8" data-id="'+r.id+'" onclick="wlRpExp(this.dataset.id)">➕ Log as expense in '+wlRepEsc(r.projectName||'the job')+'</button></div>';
+  h+='<div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:10px;padding:10px"><div style="font-size:12px;font-weight:700;color:#1e3a8a;margin-bottom:6px">Check the values, then save:</div>';
+  for(var k=0;k<lines.length;k++) h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="flex:1;font-size:13px">'+wlRepEsc(lines[k].desc)+'<div style="font-size:10.5px;color:var(--muted)">'+wlRepEsc(lines[k].hint)+'</div></div><span style="font-size:13px">$</span><input type="number" inputmode="decimal" step="any" min="0" id="rpx-'+r.id+'-'+k+'" data-rid="'+r.id+'" oninput="wlRpExpSum(this.dataset.rid)" value="'+(lines[k].amount>0?lines[k].amount.toFixed(2):'')+'" placeholder="0.00" style="width:122px;text-align:right'+(lines[k].amount>0?'':';border-color:#dc2626')+'"/></div>';
+  var _t=0, _miss=0; for(var q=0;q<lines.length;q++){ if(lines[q].amount>0) _t+=lines[q].amount; else _miss++; }
+  h+='<div style="font-size:13px;font-weight:700;color:#1e3a8a;margin:2px 0 8px;text-align:right">Total: <span id="rpxt-'+r.id+'">'+fmtC(_t)+'</span>'+(_miss?' <span style="color:#dc2626;font-weight:600">+ '+_miss+' without price</span>':'')+'</div>';
+  return h+'<div style="display:flex;gap:8px"><button type="button" class="btn sm" data-id="'+r.id+'" onclick="wlRpExpSave(this.dataset.id)">Save to the job</button><button type="button" class="btn sm ghost" onclick="window._wlRpExpOpen=null;wlRpDraw()">Cancel</button></div></div></div>'; }
+function wlRpExpSum(id){ var t=0, i=0, e; while((e=document.getElementById('rpx-'+id+'-'+i))){ var v=parseFloat(String(e.value).replace(',','.')); if(v>0) t+=v; e.style.borderColor=(v>0)?'':'#dc2626'; i++; } var o=document.getElementById('rpxt-'+id); if(o) o.textContent=fmtC(t); }
+window.wlRpExpSum=wlRpExpSum;
+function wlRpById(id){ for(var i=0;i<wlReports.length;i++){ if(wlReports[i].id===id) return wlReports[i]; } return null; }
+// the office always sees (and can change) the values before anything is saved
+function wlRpExp(id){ var r=wlRpById(id); if(!r||r.expensedAt) return;
+  if(!PB.ready&&window._wlRpPbWait!==id){ window._wlRpPbWait=id; try{ pbStart(); }catch(_e){} showToast('Loading prices…'); setTimeout(function(){ wlRpExp(id); },1200); return; }   // the price book loads on first use
+  window._wlRpExpOpen=id; wlRpDraw(); }   // always show the values first — nothing is saved until "Save to the job"
+function wlRpExpSave(id){ var r=wlRpById(id); if(!r||r.expensedAt) return; var lines=wlRpExpLines(r);
+  for(var i=0;i<lines.length;i++){ var e=document.getElementById('rpx-'+id+'-'+i), v=e?parseFloat(String(e.value).replace(',','.')):NaN; if(!(v>0)) return showToast('Enter the value of: '+lines[i].desc,'err'); lines[i].amount=Math.round(v*100)/100; }
+  window._wlRpExpOpen=null; wlRpExpWrite(r,lines); }
+function wlRpExpWrite(r,lines){
+  if(window._wlRpExpBusy) return; window._wlRpExpBusy=true; var ids=[], ps=[], now=new Date().toISOString(), tot=0;
+  for(var i=0;i<lines.length;i++){ var ref=db.collection('projectExpenses').doc(); ids.push(ref.id); tot+=lines[i].amount;
+    ps.push(ref.set({projectId:r.projectId,desc:lines[i].desc,amount:lines[i].amount,type:'🧱 Materials',date:r.date||localDateStr(),createdAt:now,reportId:r.id,reportBy:r.helperName||''})); }
+  r.expensedAt=now; r.expenseIds=ids;
+  Promise.all(ps).then(function(){ return db.collection('helperReports').doc(r.id).update({expensedAt:now,expenseIds:ids,readAt:r.readAt||now}); })
+    .then(function(){ window._wlRpExpBusy=false; showToast(lines.length+' expense'+(lines.length===1?'':'s')+' added · '+fmtC(tot)); wlRpDraw(); })
+    .catch(function(e){ window._wlRpExpBusy=false; r.expensedAt=null; r.expenseIds=[]; for(var j=0;j<ids.length;j++){ db.collection('projectExpenses').doc(ids[j]).delete().catch(function(){}); } showToast('Not saved: '+((e&&e.code)||e),'err'); wlRpDraw(); });
+}
+function wlRpExpUndo(id){ var r=wlRpById(id); if(!r||!r.expensedAt) return; if(!window.confirm('Remove these expenses from the job?')) return; var ids=(r.expenseIds||[]).slice(), ps=[];
+  for(var i=0;i<ids.length;i++) ps.push(db.collection('projectExpenses').doc(ids[i]).delete());
+  Promise.all(ps).then(function(){ return db.collection('helperReports').doc(id).update({expensedAt:null,expenseIds:[]}); }).then(function(){ showToast('Expenses removed'); }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); }); }
+window.wlRpExp=wlRpExp; window.wlRpExpSave=wlRpExpSave; window.wlRpExpUndo=wlRpExpUndo;
 // inside the project card (Photos tab): what the crew reported for this job — information only, nothing is added to the costs
 function wlRpProjHtml(pid){ var L=[], i, tot={}, keys=[]; for(i=0;i<wlReports.length;i++){ if(wlReports[i].projectId===pid) L.push(wlReports[i]); } if(!L.length) return '';
   for(i=0;i<L.length;i++){ var it=L[i].items||{}; for(var f=0;f<_WL_RP_F.length;f++){ var k=_WL_RP_F[f][0], v=it[k]; if(!(v>0)) continue; var lab=_WL_RP_F[f][1]; if(k==='roxBags'){ lab+=(it.roxR?' R-'+it.roxR:'')+(it.roxSf?' ('+it.roxSf+' sf)':''); } if(k==='fbgBags'&&it.fbgR) lab+=' R-'+it.fbgR; var key=lab+'|'+_WL_RP_F[f][2]; if(tot[key]===undefined){ tot[key]=0; keys.push(key); } tot[key]+=v; } }
@@ -2170,7 +2215,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.16a';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.16c';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2253,8 +2298,8 @@ function startFullListeners(){
   db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); refreshView(); updateClientSuggestions();},function(){});
-  db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('helperReports').onSnapshot(function(s){ var old={}; for(var _i=0;_i<wlReports.length;_i++){ if(wlReports[_i]._shown) old[wlReports[_i].id]=1; } wlReports=s.docs.map(function(d){ var o=Object.assign({id:d.id},d.data()); if(old[o.id]) o._shown=true; return o; }).sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); try{ if(document.getElementById('wl-rp')) wlRpDraw(); wlRpPill(); refreshView(); }catch(_e){} },function(){});
+  db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(_e){} },function(){});
+  db.collection('helperReports').onSnapshot(function(s){ var old={}; for(var _i=0;_i<wlReports.length;_i++){ if(wlReports[_i]._shown) old[wlReports[_i].id]=1; } wlReports=s.docs.map(function(d){ var o=Object.assign({id:d.id},d.data()); if(old[o.id]) o._shown=true; return o; }).sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); wlRpPill(); refreshView(); }catch(_e){} },function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
 }
