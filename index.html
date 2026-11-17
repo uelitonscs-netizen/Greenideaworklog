@@ -17,7 +17,7 @@
 // would open the plain start page (no helper) — without the manifest it saves this exact address instead.
 (function(){ try{
   var q=location.search, m=q.match(/[?&]helper=([^&]+)/), hid=m?decodeURIComponent(m[1]):'';
-  if(!hid&&!/[?&]action=/.test(q)){ var ss=''; try{ ss=localStorage.getItem('wl_session')||''; hid=ss==='admin'?'':(localStorage.getItem('wl_helper_dev')||''); }catch(e){}
+  if(!hid&&!/[?&]action=/.test(q)){ var ss=''; try{ ss=localStorage.getItem('wl_session')||''; hid=(ss==='admin'||ss==='manager')?'':(localStorage.getItem('wl_helper_dev')||''); }catch(e){}
     if(hid&&window.history&&history.replaceState) history.replaceState(null,'',location.pathname+'?helper='+encodeURIComponent(hid)); }
   var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   if(ios&&hid){ var l=document.querySelector('link[rel="manifest"]'); if(l&&l.parentNode) l.parentNode.removeChild(l); }
@@ -650,6 +650,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <div id="toast-el" class="toast" style="display:none"></div>
 
 <!-- LOGIN -->
+<div id="screen-manager" class="screen">
+  <div class="helper-header">
+    <div><div class="helper-sub" id="mg-sub">HOURS</div><div class="helper-name" id="mg-name"></div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;border:1px solid #fff5;border-radius:9px;overflow:hidden"><button type="button" id="mg-l-pt" onclick="wlMgLang('pt')" style="border:none;background:transparent;color:#fff;font-weight:800;font-size:12px;padding:7px 9px">PT</button><button type="button" id="mg-l-en" onclick="wlMgLang('en')" style="border:none;background:transparent;color:#fff;font-weight:800;font-size:12px;padding:7px 9px">EN</button></div>
+      <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="wlMgLogout()" id="mg-out">Logout</button>
+    </div>
+  </div>
+  <div class="helper-body" id="mg-body"></div>
+</div>
+<div id="modal-mg" class="modal-overlay"><div class="modal" id="mg-modal"></div></div>
 <div id="screen-login" class="screen" style="align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#1a6b2a15 0%,transparent 60%),var(--bg)">
   <div style="width:100%;max-width:380px;padding:32px 24px;text-align:center">
     <div style="margin-bottom:14px"><img src="icon-192.png" style="width:72px;height:72px;border-radius:14px;object-fit:cover"/></div>
@@ -2121,6 +2132,161 @@ function wlRpProjHtml(pid){ var L=[], i, tot={}, keys=[]; for(i=0;i<wlReports.le
   return h+'</div>'; }
 window.wlRpOpen=wlRpOpen; window.wlRpClose=wlRpClose; window.wlRpReply=wlRpReply; window.wlRpDel=wlRpDel;
 
+
+// ══════ M1 — partner access: hours only ══════
+// A second login (the partner) sees and changes ONLY the helpers' hours: no projects, expenses, payments or FieldBid.
+// The office approves the login once; the server rules enforce the limit, the screen just follows them.
+var WL_ADMIN_UID='G7Tp4TUmYEYM0f8NaqfEg3Jm4OG2';
+var _wlMg={on:false,ok:false,uid:'',email:'',name:'',unsubs:[],week:'',open:{},err:'',status:'',perms:{}};
+var wlMgList=[], wlMgLog=[];
+// What a partner may do. Today only the hours exist; each new function becomes one more switch here and in the server rules.
+var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours']];
+function mT(en,pt){ return wlLang()==='pt'?pt:en; }
+function wlMgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function wlMgMonday(d){ var dt=new Date(d), day=dt.getDay(), diff=(day===0)?-6:1-day; dt.setDate(dt.getDate()+diff); dt.setHours(0,0,0,0); return dt; }
+function wlMgStop(){ for(var i=0;i<_wlMg.unsubs.length;i++){ try{ _wlMg.unsubs[i](); }catch(e){} } _wlMg.unsubs=[]; }
+function wlMgLang(l){ wlLsSet('wl_lang',l); wlMgDraw(); }
+function wlMgEnter(u){
+  wlMgStop(); try{ _wlHStop(); _wlHelperId=null; window._wlLinkHid=null; }catch(e){}
+  _wlMg.on=true; _wlMg.ok=false; _wlMg.err=''; _wlMg.status=''; _wlMg.perms={}; _wlMg.uid=u.uid; _wlMg.email=String(u.email||'').toLowerCase(); _wlMg.name=u.displayName||_wlMg.email.split('@')[0]; _wlMg.week=localDateStr(wlMgMonday(new Date())); _wlMg.open={};
+  wlLsSet('wl_session','manager'); helpers=[]; entries=[]; projects=[]; payments=[]; projectPhotos=[];
+  showScreen('manager'); wlMgDraw();
+  var dataOn=false;
+  if(!_wlMg.email){ _wlMg.err='permission-denied'; wlMgDraw(); return; }
+  _wlMg.unsubs.push(db.collection('managers').doc(_wlMg.email).onSnapshot(function(d){
+    if(d.exists){ _wlMg.err=''; var dd=d.data()||{}; if(dd.name) _wlMg.name=dd.name; _wlMg.perms=dd.perms||{};
+      if(_wlMg.perms.hours===true){ if(!_wlMg.ok){ _wlMg.ok=true; if(!dataOn){ dataOn=true; wlMgListen(); } } }
+      else if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
+    else { if(d.metadata&&d.metadata.fromCache) return; _wlMg.status='none'; if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
+    wlMgDraw();
+  },function(e){ _wlMg.err=String((e&&e.code)||e||'error'); wlMgDraw(); }));
+}
+function wlMgListen(){
+  _wlMg.unsubs.push(db.collection('helpers').onSnapshot(function(s){ helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlMgDraw(); },function(e){ _wlMg.err=String((e&&e.code)||e); wlMgDraw(); }));
+  _wlMg.unsubs.push(db.collection('entries').onSnapshot(function(s){ entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlMgDraw(); },function(e){ _wlMg.err=String((e&&e.code)||e); wlMgDraw(); }));
+  _wlMg.unsubs.push(db.collection('wl_manager').doc('projects').onSnapshot(function(d){ if(d.exists){ var l=(d.data()||{}).list; if(Array.isArray(l)) projects=l; } wlMgDraw(); },function(){}));
+}
+function wlMgLogout(){ wlMgStop(); _wlMg.on=false; _wlMg.ok=false; closeModal('modal-mg'); helpers=[]; entries=[]; projects=[];
+  auth.signOut().then(function(){ wlLsDel('wl_session'); showScreen('login'); wlNamesListen(); },function(){ wlLsDel('wl_session'); showScreen('login'); }); }
+function wlMgWeekShift(n){ var d=parseLocalDate(_wlMg.week); d.setDate(d.getDate()+7*n); _wlMg.week=localDateStr(d); wlMgDraw(); }
+function wlMgWeekNow(){ _wlMg.week=localDateStr(wlMgMonday(new Date())); wlMgDraw(); }
+function wlMgToggle(hid){ _wlMg.open[hid]=!_wlMg.open[hid]; wlMgDraw(); }
+function wlMgWeekEntries(hid){ var a=parseLocalDate(_wlMg.week), b=new Date(a); b.setDate(b.getDate()+7); var out=[];
+  for(var i=0;i<entries.length;i++){ var e=entries[i]; if(e.helperId!==hid||!e.startTime) continue; var t=new Date(e.startTime); if(t>=a&&t<b) out.push(e); }
+  out.sort(function(x,y){ return new Date(x.startTime)-new Date(y.startTime); }); return out; }
+function wlMgDraw(){
+  if(!_wlMg.on) return; var body=document.getElementById('mg-body'); if(!body) return; var L=wlLoc();
+  document.getElementById('mg-sub').textContent=mT('HOURS · PARTNER ACCESS','HORAS · ACESSO DO SÓCIO'); document.getElementById('mg-name').textContent=_wlMg.name||_wlMg.email; document.getElementById('mg-out').textContent=mT('Logout','Sair');
+  var lp=document.getElementById('mg-l-pt'), le=document.getElementById('mg-l-en'), pt=wlLang()==='pt'; lp.style.background=pt?'#fff':'transparent'; lp.style.color=pt?'#17522a':'#fff'; le.style.background=pt?'transparent':'#fff'; le.style.color=pt?'#fff':'#17522a';
+  if(!_wlMg.ok){
+    var has=(_wlMg.status==='none')||/permission/.test(_wlMg.err);
+    if(!has){ body.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 10px">'+mT('Loading…','Carregando…')+'</div>'; return; }
+    body.innerHTML='<div class="card" style="text-align:center;padding:28px 18px"><div style="font-size:38px">🔒</div><div style="font-weight:700;margin:10px 0 6px">'+wlMgEsc(_wlMg.email)+'</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+mT('This login has no access to WorkLog.','Este login não tem acesso ao WorkLog.')+'</div></div>'; return;
+  }
+  var ws=parseLocalDate(_wlMg.week), we=new Date(ws); we.setDate(we.getDate()+6); var isNow=_wlMg.week===localDateStr(wlMgMonday(new Date()));
+  var hs=helpers.slice().sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; }), totM=0, totP=0, cards='';
+  for(var i=0;i<hs.length;i++){ var h=hs[i], rate=Number(h.rate)||0, es=wlMgWeekEntries(h.id), mins=0, run=null, k;
+    for(k=0;k<es.length;k++){ if(es[k].endTime) mins+=gMin(es[k]); else run=es[k]; }
+    var reg=Math.min(mins,OT_THRESHOLD_MINS), ot=Math.max(0,mins-OT_THRESHOLD_MINS), pay=(reg/60)*rate+(ot/60)*(rate*OT_MULTIPLIER); totM+=mins; totP+=pay;
+    var open=!!_wlMg.open[h.id];
+    cards+='<div class="wl-rp-card" style="padding:0;overflow:hidden"><div data-h="'+h.id+'" onclick="wlMgToggle(this.dataset.h)" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+wlMgEsc(h.name||'')+(run?' <span style="font-size:10px;font-weight:800;color:#16a34a">● '+mT('WORKING','TRABALHANDO')+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--muted)">'+es.length+' '+mT(es.length===1?'entry':'entries',es.length===1?'registro':'registros')+' · '+fmtC(rate)+'/h'+(ot>0?' · <span style="color:#d97706;font-weight:700">'+fmtD(ot)+' '+mT('OT','extra')+'</span>':'')+'</div></div><div style="text-align:right"><div style="font-family:var(--font-d);font-weight:800;font-size:16px;color:var(--green)">'+fmtD(mins)+'</div><div style="font-size:12px;color:var(--muted)">'+fmtC(pay)+' '+(open?'▴':'▾')+'</div></div></div>';
+    if(open){
+      for(k=0;k<es.length;k++){ var e=es[k], pj=wlProjOf(e), em=gMin(e);
+        cards+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--border);font-size:12.5px"><div style="min-width:0"><div style="font-weight:700">'+new Date(e.startTime).toLocaleDateString(L,{weekday:'short',month:'short',day:'numeric'})+'</div><div style="color:var(--muted)">'+wlMgT(e.startTime)+' → '+(e.endTime?wlMgT(e.endTime):'<b style="color:#16a34a">'+mT('running','aberto')+'</b>')+(pj?' · <span style="color:var(--green);font-weight:600">'+wlMgEsc(wlT(pj.name))+'</span>':' · <span style="color:#b45309">'+mT('no project','sem projeto')+'</span>')+(e.note?' · '+wlMgEsc(wlT(e.note)):'')+(e.editedBy?' · <i>'+mT('edited by ','alterado por ')+wlMgEsc(e.editedBy)+'</i>':'')+'</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="text-align:right;margin-right:2px"><div style="font-weight:700">'+(e.endTime?fmtD(em):'—')+'</div><div style="font-size:11px;color:var(--muted)">'+(e.endTime?fmtC((em/60)*rate):'')+'</div></div><button type="button" class="btn sm ghost" data-id="'+e.id+'" onclick="wlMgEdit(this.dataset.id)">✏️</button><button type="button" class="btn sm ghost" style="color:#dc2626" data-id="'+e.id+'" onclick="wlMgDel(this.dataset.id)">🗑</button></div></div>'; }
+      cards+='<div style="padding:10px 14px;border-top:1px solid var(--border)"><button type="button" class="btn sm" data-h="'+h.id+'" onclick="wlMgEdit(\'\',this.dataset.h)">+ '+mT('Add hours','Adicionar horas')+'</button></div>';
+    }
+    cards+='</div>';
+  }
+  var top='<div class="card" style="padding:12px 14px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(-1)">‹</button><div style="text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">📅 '+ws.toLocaleDateString(L,{month:'short',day:'numeric'})+' – '+we.toLocaleDateString(L,{month:'short',day:'numeric'})+'</div>'+(isNow?'<div style="font-size:11px;color:var(--muted)">'+mT('this week','esta semana')+'</div>':'<a href="#" onclick="wlMgWeekNow();return false" style="font-size:11.5px;color:var(--green);font-weight:700">'+mT('go to this week','ir para esta semana')+'</a>')+'</div><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(1)">›</button></div><div style="display:flex;justify-content:space-around;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);text-align:center"><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(totM)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL HOURS','TOTAL DE HORAS')+'</div></div><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px">'+fmtC(totP)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL PAY','TOTAL A PAGAR')+'</div></div></div></div>';
+  body.innerHTML=top+(hs.length?cards:'<div style="color:var(--muted);padding:20px;text-align:center">'+mT('Loading…','Carregando…')+'</div>')+'<div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:6px">WorkLog v'+WL_BUILD+'</div>';
+}
+function wlMgT(iso){ return new Date(iso).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+function wlMgHM(iso){ var d=new Date(iso); return p2(d.getHours())+':'+p2(d.getMinutes()); }
+function wlMgEdit(id,hid){
+  var e=null, i; if(id){ for(i=0;i<entries.length;i++){ if(entries[i].id===id) e=entries[i]; } if(!e) return; hid=e.helperId; }
+  var h=hById(hid); if(!h) return; _wlMg.edit={id:id||'',hid:hid};
+  var d0=e?localDateStr(new Date(e.startTime)):(function(){ var a=parseLocalDate(_wlMg.week), t=new Date(); var b=new Date(a); b.setDate(b.getDate()+7); return (t>=a&&t<b)?localDateStr(t):_wlMg.week; })();
+  var cur=e?(e.projectId||(e.category?'__cat:'+e.category:'')):'', opts='<option value="">'+mT('No project','Sem projeto')+'</option>', seen=false;
+  for(i=0;i<projects.length;i++){ var p=projects[i]; if(p.status!=='active'&&p.id!==cur) continue; if(p.id===cur) seen=true; opts+='<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+wlMgEsc(p.name)+(p.status!=='active'?' ('+wlMgEsc(p.status)+')':'')+'</option>'; }
+  if(e&&e.projectId&&!seen) opts+='<option value="'+e.projectId+'" selected>'+mT('(project not in the list)','(projeto fora da lista)')+'</option>';
+  opts+=wlCatOpts(e&&e.category?e.category:'').replace(/>([^<]+)<\/option>/g,function(m,t){ return '>'+wlT(t)+'</option>'; });
+  var x='<div class="modal-title">'+(e?mT('Edit hours','Alterar horas'):mT('Add hours','Adicionar horas'))+' · '+wlMgEsc(h.name||'')+'</div>';
+  x+='<div class="fg"><label>'+mT('Date','Data')+'</label><input type="date" id="mg-d" value="'+d0+'"/></div>';
+  x+='<div style="display:flex;gap:10px"><div class="fg" style="flex:1"><label>'+mT('Start','Entrada')+'</label><input type="time" id="mg-s" value="'+(e?wlMgHM(e.startTime):'')+'"/></div><div class="fg" style="flex:1"><label>'+mT('End','Saída')+'</label><input type="time" id="mg-e" value="'+(e&&e.endTime?wlMgHM(e.endTime):'')+'"/></div></div>';
+  if(e&&!e.endTime) x+='<div style="font-size:11.5px;color:#16a34a;margin:-6px 0 8px">'+mT('This punch is still running. Fill in End to close it, or leave it empty.','Este ponto ainda está aberto. Preencha a Saída para fechar, ou deixe vazio.')+'</div>';
+  x+='<div class="fg"><label>'+mT('Project','Projeto')+'</label><select id="mg-p">'+opts+'</select></div>';
+  x+='<div class="fg"><label>'+mT('Note','Observação')+'</label><input id="mg-n" value="'+wlMgEsc(e&&e.note?e.note:'')+'"/></div>';
+  x+='<div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn" style="flex:1" onclick="wlMgSave()">'+mT('Save','Salvar')+'</button><button type="button" class="btn ghost" onclick="closeModal(\'modal-mg\')">'+mT('Cancel','Cancelar')+'</button></div>';
+  document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open');
+}
+function wlMgSnap(e){ return e?{startTime:e.startTime||null,endTime:e.endTime||null,projectId:e.projectId||null,category:e.category||null,note:e.note||''}:null; }
+function wlMgLogAdd(action,eid,hid,before,after){ var h=hById(hid)||{}; db.collection('hoursLog').add({action:action,entryId:eid,helperId:hid,helperName:h.name||'',by:_wlMg.name||_wlMg.email,byUid:_wlMg.uid,at:new Date().toISOString(),before:before,after:after}).catch(function(){}); }
+function wlMgSave(){
+  var ed=_wlMg.edit; if(!ed) return; var g=function(i){ return document.getElementById(i).value; }, d=g('mg-d'), st=g('mg-s'), en=g('mg-e');
+  if(!d||!st) return showToast(mT('Fill in the date and the start time','Preencha a data e a entrada'),'err');
+  var dp=d.split('-'), sp=st.split(':'), s0=new Date(+dp[0],+dp[1]-1,+dp[2],+sp[0],+sp[1]||0), e0=null;
+  if(en){ var ep=en.split(':'); e0=new Date(+dp[0],+dp[1]-1,+dp[2],+ep[0],+ep[1]||0); if(e0<=s0) return showToast(mT('End must be after start','A saída precisa ser depois da entrada'),'err'); }
+  if(isNaN(s0.getTime())) return showToast(mT('Check the date and times','Confira a data e os horários'),'err');
+  var old=null, i; if(ed.id){ for(i=0;i<entries.length;i++){ if(entries[i].id===ed.id) old=entries[i]; } if(!old) return; }
+  if(!ed.id&&!e0) return showToast(mT('Fill in the end time','Preencha a saída'),'err');
+  var pv=wlPickVal(g('mg-p')), note=String(g('mg-n')||'').trim(), now=new Date().toISOString(), who=_wlMg.name||_wlMg.email;
+  var data={startTime:s0.toISOString(),endTime:e0?e0.toISOString():null,projectId:pv.projectId,category:pv.category,note:note};
+  var pr;
+  if(ed.id){ var upd=Object.assign({},data,{editedBy:who,editedAt:now}); pr=db.collection('entries').doc(ed.id).update(upd).then(function(){ wlMgLogAdd('edit',ed.id,ed.hid,wlMgSnap(old),wlMgSnap(data)); }); }
+  else { var ref=db.collection('entries').doc(); var nd=Object.assign({helperId:ed.hid,type:'manual',addedBy:who,createdAt:now},data); if(!nd.note) nd.note=mT('Added by ','Added by ')+who; pr=ref.set(nd).then(function(){ wlMgLogAdd('add',ref.id,ed.hid,null,wlMgSnap(nd)); }); }
+  closeModal('modal-mg');
+  pr.then(function(){ showToast(mT('Saved ✓','Salvo ✓')); }).catch(function(er){ showToast(mT('Not saved: ','Não salvo: ')+((er&&er.code)||er),'err'); });
+}
+function wlMgDel(id){ var e=null; for(var i=0;i<entries.length;i++){ if(entries[i].id===id) e=entries[i]; } if(!e) return; var h=hById(e.helperId)||{};
+  if(!window.confirm(mT('Delete this entry of ','Apagar este registro de ')+(h.name||'')+'?\n'+new Date(e.startTime).toLocaleString())) return;
+  db.collection('entries').doc(id).delete().then(function(){ wlMgLogAdd('delete',id,e.helperId,wlMgSnap(e),null); showToast(mT('Entry deleted','Registro apagado')); }).catch(function(er){ showToast(mT('Not deleted: ','Não apagado: ')+((er&&er.code)||er),'err'); }); }
+window.wlMgEnter=wlMgEnter; window.wlMgLogout=wlMgLogout; window.wlMgLang=wlMgLang; window.wlMgWeekShift=wlMgWeekShift; window.wlMgWeekNow=wlMgWeekNow; window.wlMgToggle=wlMgToggle; window.wlMgEdit=wlMgEdit; window.wlMgSave=wlMgSave; window.wlMgDel=wlMgDel;
+
+// ── office side: approve / remove the partner, see what was changed ──
+function wlMgPublish(){ if(window._wlMgPubT) return; window._wlMgPubT=setTimeout(function(){ window._wlMgPubT=null;
+  try{ if(!window._listenersStarted||!auth.currentUser||auth.currentUser.uid!==WL_ADMIN_UID||!wlMgList.length) return;
+    var list=[], i; for(i=0;i<projects.length;i++){ var p=projects[i]; list.push({id:p.id,name:p.name||'',status:p.status||'active'}); }
+    var js=JSON.stringify(list); if(js===window._wlMgPubJs) return; window._wlMgPubJs=js;
+    db.collection('wl_manager').doc('projects').set({list:list,at:new Date().toISOString()}).catch(function(){ window._wlMgPubJs=''; });
+  }catch(e){} },2000); }
+function wlMgBanner(){
+  var on=window._listenersStarted&&wlLsGet('wl_session')==='admin';
+  var list=document.getElementById('projects-list'); if(!list||!list.parentNode) return;
+  var b=document.getElementById('wl-mg-b'); if(!b){ b=document.createElement('div'); b.id='wl-mg-b'; b.style.cssText='margin:0 0 10px;padding:9px 12px;border-radius:12px;font-size:12.5px;background:#fdf4ff;border:1px solid #d8b4fe;color:#6b21a8;cursor:pointer'; b.onclick=function(){ wlMgxOpen(); }; var rp=document.getElementById('wl-rp-b'), aa=document.getElementById('wl-aa'), ref=(rp&&rp.parentNode)?rp:((aa&&aa.parentNode)?aa:list); ref.parentNode.insertBefore(b,ref); }
+  if(!on){ b.style.display='none'; } else { b.style.display='block'; b.innerHTML='🔑 <b>Partner access</b> · '+(wlMgList.length?wlMgList.length+' partner'+(wlMgList.length>1?'s':''):'nobody yet')+' <span style="float:right;font-weight:700">'+(wlMgList.length?'Manage':'Add')+' ›</span>'; }
+}
+function wlMgxOpen(){ var o=document.getElementById('wl-mgx'); if(!o){ o=document.createElement('div'); o.id='wl-mgx'; o.style.cssText='position:fixed;inset:0;z-index:9500;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch'; document.body.appendChild(o); } wlMgxDraw(); wlMgBanner(); }
+function wlMgxClose(){ var o=document.getElementById('wl-mgx'); if(o&&o.parentNode) o.parentNode.removeChild(o); wlMgBanner(); }
+function wlMgxWhen(iso){ try{ return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+new Date(iso).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function wlMgxSpan(sn){ if(!sn||!sn.startTime) return '—'; var pj=wlProjOf(sn); return new Date(sn.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' '+wlMgT(sn.startTime)+'–'+(sn.endTime?wlMgT(sn.endTime):'running')+(pj?' · '+pj.name:''); }
+function wlMgxDraw(){
+  var o=document.getElementById('wl-mgx'); if(!o) return; var i;
+  var h='<div style="position:sticky;top:0;z-index:2;background:#17522a;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:11px;opacity:.8">PARTNER ACCESS</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px">What your partner can do</div></div><button type="button" onclick="wlMgxClose()" style="background:transparent;border:1px solid #fff5;color:#fff;border-radius:9px;padding:8px 14px;font-weight:800">✕ Close</button></div><div style="padding:14px;max-width:760px;margin:0 auto">';
+  h+='<div style="font-size:12.5px;color:#4b5563;line-height:1.5;margin-bottom:12px">A partner signs in on the WorkLog login screen with his own email and password and sees only what is switched on for him below.</div>';
+  h+='<div class="wl-rp-card"><div style="font-size:11px;font-weight:800;color:#6b21a8;margin-bottom:8px">ADD A PARTNER</div><div class="fg"><input id="mgx-new-email" type="email" autocapitalize="none" placeholder="His login email (same as in Firebase)"/></div><div style="display:flex;gap:8px"><input id="mgx-new-name" placeholder="Name to show" style="flex:1"/><button type="button" class="btn sm" onclick="wlMgxAdd()">Give access</button></div><div style="font-size:11px;color:var(--muted);margin-top:6px">He goes straight to his screen on the first login — no approval step.</div></div>';
+  h+='<div style="font-size:11px;font-weight:800;color:var(--muted);margin:12px 2px 6px">PARTNERS WITH ACCESS</div>';
+  if(!wlMgList.length) h+='<div style="color:var(--muted);font-size:13px;padding:4px 2px">Nobody yet.</div>';
+  for(i=0;i<wlMgList.length;i++){ var mg=wlMgList[i], pm=mg.perms||{};
+    h+='<div class="wl-rp-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b>'+wlMgEsc(mg.name||mg.email||mg.id)+'</b><div style="font-size:11.5px;color:var(--muted)">'+wlMgEsc(mg.email||mg.id)+' · since '+wlMgxWhen(mg.approvedAt)+'</div></div><button type="button" class="btn sm ghost" style="color:#dc2626" data-id="'+wlMgEsc(mg.id)+'" onclick="wlMgxRemove(this.dataset.id)">Remove access</button></div><div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">';
+    for(var q=0;q<WL_MG_PERMS.length;q++){ var pk=WL_MG_PERMS[q][0], onp=pm[pk]===true;
+      h+='<label style="display:flex;align-items:center;gap:10px;font-size:13px;padding:3px 0"><input type="checkbox" style="width:20px;height:20px" data-id="'+wlMgEsc(mg.id)+'" data-p="'+pk+'" '+(onp?'checked':'')+' onchange="wlMgxPerm(this.dataset.id,this.dataset.p,this.checked)"/><span><b>'+WL_MG_PERMS[q][1]+'</b> <span style="color:var(--muted)">— '+WL_MG_PERMS[q][2]+'</span></span></label>'; }
+    h+='</div></div>'; }
+  h+='<div style="font-size:11px;font-weight:800;color:var(--muted);margin:14px 2px 6px">WHAT WAS CHANGED (LAST '+wlMgLog.length+')</div>';
+  if(!wlMgLog.length) h+='<div style="color:var(--muted);font-size:13px;padding:4px 2px">No changes yet.</div>';
+  for(i=0;i<wlMgLog.length;i++){ var l=wlMgLog[i], act=l.action==='add'?'added':l.action==='delete'?'deleted':'changed', col=l.action==='delete'?'#dc2626':l.action==='add'?'#16a34a':'#b45309';
+    h+='<div class="wl-rp-card" style="padding:9px 12px;font-size:12.5px"><div style="display:flex;justify-content:space-between;gap:8px"><span><b>'+wlMgEsc(l.by||'')+'</b> <b style="color:'+col+'">'+act+'</b> · '+wlMgEsc(l.helperName||'')+'</span><span style="color:var(--muted);white-space:nowrap">'+wlMgxWhen(l.at)+'</span></div>';
+    if(l.action==='edit') h+='<div style="color:var(--muted);margin-top:3px">'+wlMgEsc(wlMgxSpan(l.before))+'</div><div style="margin-top:1px">→ '+wlMgEsc(wlMgxSpan(l.after))+'</div>';
+    else h+='<div style="margin-top:3px">'+wlMgEsc(wlMgxSpan(l.action==='add'?l.after:l.before))+'</div>';
+    h+='</div>'; }
+  o.innerHTML=h+'</div>';
+}
+function wlMgxAdd(){ var em=String(document.getElementById('mgx-new-email').value||'').trim().toLowerCase(), nm=String(document.getElementById('mgx-new-name').value||'').trim();
+  if(!/^[^@\s\/]+@[^@\s\/]+\.[^@\s\/]+$/.test(em)) return showToast('Enter his login email','err'); if(em==='greenideainsulation@gmail.com') return showToast('That is your own account','err'); if(!nm) nm=em.split('@')[0];
+  db.collection('managers').doc(em).set({email:em,name:nm,perms:{hours:true},approvedAt:new Date().toISOString()}).then(function(){ showToast('Access given ✓'); wlMgPublish(); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+function wlMgxPerm(id,pk,on){ var u={}; u['perms.'+pk]=!!on; db.collection('managers').doc(id).update(u).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+function wlMgxRemove(id){ if(!window.confirm('Remove this partner\'s access to the hours?')) return; db.collection('managers').doc(id).delete().then(function(){ showToast('Access removed'); }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); }); }
+window.wlMgxOpen=wlMgxOpen; window.wlMgxClose=wlMgxClose; window.wlMgxAdd=wlMgxAdd; window.wlMgxPerm=wlMgxPerm; window.wlMgxRemove=wlMgxRemove;
+
 // ══════ S1 — helpers load only their own data ══════
 // Admin (signed in with email): everything, as before (startFullListeners).
 // Anyone else: only the public list of helper names; a helper (link, QR or name
@@ -2215,7 +2381,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.16c';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17b';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2260,7 +2426,8 @@ function wlPublishHelperNames(){
 }
 function startListeners(){
   var sess=localStorage.getItem('wl_session')||'', u=auth.currentUser;
-  if(sess==='admin'&&u&&!u.isAnonymous){ return startFullListeners(); }
+  if(sess==='admin'&&u&&!u.isAnonymous&&u.uid===WL_ADMIN_UID){ return startFullListeners(); }
+  if(sess==='manager') return;
   wlNamesListen();
   var hid=window._wlLinkHid||(sess.indexOf('helper:')===0?sess.replace('helper:',''):null);
   if(hid) wlHelperListen(hid);
@@ -2297,8 +2464,10 @@ function startFullListeners(){
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); refreshView(); updateClientSuggestions();},function(){});
+  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); try{ wlMgPublish(); }catch(_e){} refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(_e){} },function(){});
+  db.collection('managers').onSnapshot(function(s){ wlMgList=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); wlMgBanner(); wlMgPublish(); }catch(_e){} },function(){});
+  db.collection('hoursLog').orderBy('at','desc').limit(40).onSnapshot(function(s){ wlMgLog=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){ return String(b.at||'')<String(a.at||'')?-1:1; }).slice(0,40); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); }catch(_e){} },function(){});
   db.collection('helperReports').onSnapshot(function(s){ var old={}; for(var _i=0;_i<wlReports.length;_i++){ if(wlReports[_i]._shown) old[wlReports[_i].id]=1; } wlReports=s.docs.map(function(d){ var o=Object.assign({id:d.id},d.data()); if(old[o.id]) o._shown=true; return o; }).sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); wlRpPill(); refreshView(); }catch(_e){} },function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
@@ -4505,7 +4674,7 @@ function exportProjectReport(pid){
 window.exportProjectReport=exportProjectReport;
 
 function renderProjects(filter){
-  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater(); if(window.wlAaBanner) wlAaBanner(); try{ wlRpPill(); }catch(_e){}
+  if(window.wlOhBanner) wlOhBanner(); if(window.wlBurnBanner) wlBurnBanner(); if(window.wlInsightsLater) wlInsightsLater(); if(window.wlAaBanner) wlAaBanner(); try{ wlRpPill(); wlMgBanner(); }catch(_e){}
   var ps=document.getElementById('proj-start'); if(ps&&!ps.value) ps.value=localDateStr();
   var el=document.getElementById('projects-list');
   if(!projects.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No projects yet.</div>'; return;}
@@ -6152,6 +6321,7 @@ function doLogin(){
     .then(function(cred){
       var u=(cred&&cred.user)||auth.currentUser||{};
       var em=String(u.email||email).toLowerCase();
+      if(u.uid&&u.uid!==WL_ADMIN_UID){ btn.disabled=false; btn.textContent='Sign In'; document.getElementById('login-password').value=''; wlMgEnter(u); return; }
       var profile=(em==='greenideainsulation@gmail.com')?{name:'Ueliton Silva',initials:'US'}:{name:(u.displayName||em),initials:String(u.displayName||em).slice(0,2).toUpperCase()};
       btn.disabled=false; btn.textContent='Sign In';
       document.getElementById('login-password').value='';
@@ -6214,6 +6384,7 @@ if(!checkRoute()){
   if(_session==='admin'){
     // Verify still authenticated
     auth.onAuthStateChanged(function(user){
+      if(user&&!user.isAnonymous&&user.uid!==WL_ADMIN_UID){ if(!_wlMg.on) wlMgEnter(user); return; }
       if(user&&!user.isAnonymous){
         currentAdminProfile = JSON.parse(localStorage.getItem('wl_admin_profile')||'null');
         startListeners();
@@ -6226,6 +6397,12 @@ if(!checkRoute()){
         showScreen('login');
         startListeners();
       }
+    });
+  } else if(_session==='manager'){
+    var _mgSeen=false;
+    auth.onAuthStateChanged(function(user){ if(_mgSeen) return; _mgSeen=true;
+      if(user&&!user.isAnonymous&&user.uid!==WL_ADMIN_UID){ wlMgEnter(user); }
+      else { localStorage.removeItem('wl_session'); showScreen('login'); startListeners(); }
     });
   } else if(_session&&_session.indexOf('helper:')===0){
     var _hid=_session.replace('helper:','');
