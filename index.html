@@ -1283,7 +1283,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="modal">
     <div class="modal-title" id="ehr-title">Edit Rate</div>
     <div id="ehr-current" style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
-    <div class="fg"><label>New Rate ($/hr)</label><input id="ehr-rate" type="number" min="0" step="0.25"/></div>
+    <div class="fg" id="ehr-rate-box"><label>New Rate ($/hr)</label><input id="ehr-rate" type="number" min="0" step="0.25"/></div>
+    <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4;margin:2px 0 14px;text-align:left"><input type="checkbox" id="ehr-sal" style="width:22px;height:22px;flex-shrink:0;margin-top:1px" onchange="wlSalUi()"/><span><b>Salaried (owner / partner)</b><br><span style="color:var(--muted)">Hours count in the jobs, but no hourly cost — the salary is already in the overhead.</span></span></label>
     <div class="modal-actions">
       <button class="btn" onclick="saveHelperRate()">✓ Save</button>
       <button class="btn ghost" onclick="closeModal('modal-edit-helper-rate')">Cancel</button>
@@ -2377,7 +2378,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17c';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17d';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3245,6 +3246,9 @@ function wlEvaHtml(p,laborMin,laborCost,exps){
   var mat=0, other=0;
   for(var i=0;i<exps.length;i++){ var x=exps[i], a=Number(x.amount)||0; if(/material/i.test(String(x.type||''))) mat+=a; else other+=a; }
   var oh=Number(p.overhead)||0, days=wlEvaDays(p.id), hrs=Math.round(laborMin/60*10)/10;
+  // hours of salaried people (owner / partner): they count as work done, their cost is in the overhead
+  var salMin=0; for(var si=0;si<entries.length;si++){ var se=entries[si]; if(se.projectId!==p.id||!se.endTime) continue; var sh=hById(se.helperId); if(sh&&sh.salaried){ var sm=gMin(se); if(sm>0) salMin+=sm; } }
+  var salH=Math.round(salMin/60*10)/10, paidH=Math.round((laborMin-salMin)/60*10)/10;
   var budget=Number(p.budget)||0, estBudget=Number(p.fieldbidTotal)||budget;
   var estCost=(e.laborCost||0)+(e.materialCost||0)+(e.ohCost||0), actCost=laborCost+mat+other+oh;
   var estProfit=estBudget-estCost, actProfit=budget-actCost;
@@ -3256,12 +3260,14 @@ function wlEvaHtml(p,laborMin,laborCost,exps){
   if((p.status||'active')!=='completed') h+='<div class="wl-eva-note">Job in progress — actual numbers are still growing.</div>';
   h+='<table class="wl-eva-t"><tr><th></th><th>Est.</th><th>Actual</th><th>Diff</th></tr>';
   var hasL=(e.laborCost||0)>0, hasO=(e.ohCost||0)>0, hasM=(e.materialCost||0)>0, full=hasL&&hasO&&hasM;
-  h+=wlEvaRow('Labor',hasL?e.laborCost:null,laborCost,(hasL?(e.manHours||0)+' h est · ':'')+hrs+' h actual',true);
+  h+=wlEvaRow('Labor',hasL?e.laborCost:null,laborCost,(hasL?(e.manHours||0)+' h est · ':'')+hrs+' h actual'+(salH>0?' ('+paidH+' paid + '+salH+' salaried)':''),true);
   h+=wlEvaRow('Materials',hasM?e.materialCost:null,mat,'',true);
   if(other>0) h+=wlEvaRow('Other expenses',0,other,'not in the estimate',true);
   h+=wlEvaRow('Overhead',hasO?e.ohCost:null,oh,(hasO?(e.ohDays||0)+' days est · ':'')+days+' worked',true);
   h+=wlEvaRow('<b>Profit</b>',full?estProfit:null,actProfit,full?'':'estimate incomplete',false);
   h+='</table>';
+  if(salH>0){ var er=(hasL&&e.manHours>0)?(e.laborCost/e.manHours):0;
+    h+='<div class="wl-eva-note">👔 '+salH+' h were worked by salaried owner / partner: no labor cost here, the salary is in the overhead.'+(er>0?' With hired help those hours would cost about <b>'+fmtC(salH*er)+'</b> (labor '+fmtC(laborCost+salH*er)+' vs '+fmtC(e.laborCost)+' estimated).':'')+'</div>'; }
   if(!full) h+='<div class="wl-eva-note">'+(!hasL?'Labor':'')+(!hasL&&!hasO?' and overhead':(!hasO?'Overhead':''))+(!hasM?((!hasL||!hasO)?' and materials':'Materials'):'')+' not in the estimate — fill them in FieldBid (Quote tab), then ⋯ → Update from FieldBid.</div>';
   var sq=Number(e.totalSqft)||0;
   if(sq>0){
@@ -3900,7 +3906,7 @@ function renderHelpersList(){
   if(!helpers.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No helpers yet.</div>'; return;}
   el.innerHTML=helpers.map(function(h){
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">'+
-      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">$'+h.rate+'/hr</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy helper link</div></div>'+
+      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">'+wlRateTxt(h)+'</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy helper link</div></div>'+
       '<button class="btn sm ghost" onclick="openHelperViewAdmin(\''+h.id+'\')">Preview</button>'+
       '<button class="btn sm ghost" style="color:var(--red);border-color:#fcc" onclick="promptDeleteHelper(\''+h.id+'\')">Remove</button>'+
       '</div>';
@@ -6200,7 +6206,7 @@ function renderSettingsTeam(){
       '<div style="width:40px;height:40px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-top:1px">$'+h.rate+'/hr · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:1px">'+wlRateTxt(h)+' · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
       '</div>' +
       '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Rate</button>' +
       '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
@@ -6214,21 +6220,33 @@ function openEditHelperRate(hid){
   var h = hById(hid); if(!h) return;
   editingHelperId = hid;
   document.getElementById('ehr-title').textContent = h.name;
-  document.getElementById('ehr-current').textContent = 'Current rate: $'+h.rate+'/hr';
-  document.getElementById('ehr-rate').value = h.rate;
+  document.getElementById('ehr-current').textContent = h.salaried?'Salaried — no hourly cost':'Current rate: $'+h.rate+'/hr';
+  document.getElementById('ehr-rate').value = h.salaried?(h.rateBefore||''):h.rate;
+  document.getElementById('ehr-sal').checked = !!h.salaried; wlSalUi();
   document.getElementById('modal-edit-helper-rate').classList.add('open');
 }
 window.openEditHelperRate = openEditHelperRate;
 
 function saveHelperRate(){
   if(!editingHelperId) return;
-  var rate = parseFloat(document.getElementById('ehr-rate').value);
+  var rate = parseFloat(document.getElementById('ehr-rate').value), sal = document.getElementById('ehr-sal').checked, h0 = hById(editingHelperId)||{};
+  if(sal){
+    // salaried: the hourly cost is zero everywhere (pay, labor cost, overtime); the old rate is kept in case it is switched back
+    var keep = h0.salaried?(Number(h0.rateBefore)||0):(Number(h0.rate)||0);
+    db.collection('helpers').doc(editingHelperId).update({salaried:true,rate:0,rateBefore:keep}).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
+    closeModal('modal-edit-helper-rate'); showToast('Saved — salaried ✅'); return;
+  }
   if(isNaN(rate)||rate<0) return showToast('Enter a valid rate','err');
-  db.collection('helpers').doc(editingHelperId).update({rate:rate});
+  db.collection('helpers').doc(editingHelperId).update({rate:rate,salaried:false}).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
   closeModal('modal-edit-helper-rate');
   showToast('Rate updated! ✅');
 }
 window.saveHelperRate = saveHelperRate;
+function wlSalUi(){ var c=document.getElementById('ehr-sal'), b=document.getElementById('ehr-rate-box'); if(c&&b) b.style.display=c.checked?'none':''; }
+window.wlSalUi=wlSalUi;
+// "$24/hr" or "Salaried" — one place for every list
+function wlRateTxt(h){ return (h&&h.salaried)?'Salaried':'$'+(h?h.rate:0)+'/hr'; }
+window.wlRateTxt=wlRateTxt;
 
 function settingsAddHelper(){
   var name = document.getElementById('set-nh-name').value.trim();
