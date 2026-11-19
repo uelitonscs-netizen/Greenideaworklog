@@ -2378,7 +2378,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17d';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17e';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3885,6 +3885,19 @@ function wlSkuUsage(pid,skus,kind){
 }
 window.wlSkuUsage=wlSkuUsage;
 
+// Quoted spray foam: the sets FieldBid calculated (same number its Estimator shows) win over
+// sq ft x average thickness, which loses precision. A budget edited by hand here (manual) keeps its own numbers.
+function wlFoamQ(mb,k){
+  var o=(mb&&mb[k])||{}, bfSet=Number(o.bfPerSet)||(k==='cc'?4500:17000), galSet=Number(o.galPerSet)||55;
+  var bf=Math.round((Number(o.sqft)||0)*(Number(o.inch)||0)), sets=0, key=k==='cc'?'ccSet':'ocSet';
+  if(!o.manual&&mb&&Array.isArray(mb.detail)){ for(var i=0;i<mb.detail.length;i++){ var d=mb.detail[i]; if(d&&d.key===key&&Number(d.qty)>0){ sets=Number(d.qty); break; } } }
+  if(sets>0) bf=Math.round(sets*bfSet); else sets=bf>0?Math.round(bf/bfSet*100)/100:0;
+  return {bf:bf, sets:sets, gal:Math.round(sets*galSet*10)/10};
+}
+function wlIgnQ(mb){ var sf=Number(mb&&mb.ignSqft)||0, q=0;
+  if(mb&&Array.isArray(mb.detail)){ for(var i=0;i<mb.detail.length;i++){ var d=mb.detail[i]; if(d&&d.key==='ignBucket'&&Number(d.qty)>0){ q=Number(d.qty); break; } } }
+  return q>0?q:Math.ceil(sf/800*100)/100; }
+window.wlFoamQ=wlFoamQ; window.wlIgnQ=wlIgnQ;
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 
@@ -4468,8 +4481,8 @@ function exportProjectReport(pid){
       else if(matchMat(d,['ignition barrier','ignition bar','intumescent','ignition paint','fire paint','ign barrier'])) ignU+=(d.indexOf('bucket')>=0?qty*800:qty);
       else if(matchMat(d,['fire blocking','fireblocking','fire-blocking','fire block','fireblock'])) fbkU+=qty;
     });
-    var ccBFq=(mb.cc.sqft||0)*(mb.cc.inch||0);
-    var ocBFq=(mb.oc.sqft||0)*(mb.oc.inch||0);
+    var ccBFq=wlFoamQ(mb,'cc').bf;
+    var ocBFq=wlFoamQ(mb,'oc').bf;
     var ccBFu=mb.cc.galPerSet>0?Math.round(ccGal/mb.cc.galPerSet*mb.cc.bfPerSet):0;
     var ocBFu=mb.oc.galPerSet>0?Math.round(ocGal/mb.oc.galPerSet*mb.oc.bfPerSet):0;
     function mbRow(label,quoted,used,unit){
@@ -4807,8 +4820,9 @@ function renderProjects(filter){
     // Material Budget Section
     var mb=p.matBudget;
     if(mb){
-      var ccBF=Math.round((mb.cc.sqft||0)*(mb.cc.inch||0)); // board feet quoted CC
-      var ocBF=Math.round((mb.oc.sqft||0)*(mb.oc.inch||0)); // board feet quoted OC
+      var _fqC=wlFoamQ(mb,'cc'), _fqO=wlFoamQ(mb,'oc');
+      var ccBF=_fqC.bf; // board feet quoted CC
+      var ocBF=_fqO.bf; // board feet quoted OC
       // Calculate gallons used from expenses (match keywords)
       var exps=projectExpenses.filter(function(e){return e.projectId===p.id;});
       var ccGalUsed=0,ocGalUsed=0,celUsed=0,roxUsed=0,fbgUsed=0,ignUsed=0,fbkUsed=0,roxNotes=[],fbgNotes=[];
@@ -4845,10 +4859,10 @@ function renderProjects(filter){
           var over=diff>0;
           var barColor=pct>=100?'var(--red)':pct>=80?'var(--amber)':'var(--green)';
           var html2='<div class="wl-mr">';
-          var diffR=parseFloat(diff.toFixed(1)); var absDiffR=parseFloat(Math.abs(diff).toFixed(1));
+          var _dp=unit==='bkt'?2:1; var diffR=parseFloat(diff.toFixed(_dp)); var absDiffR=parseFloat(Math.abs(diff).toFixed(_dp));
           var chip=over?'<span class="wl-chip red">+'+diffR+' '+unit+' over</span>':(diff<0?'<span class="wl-chip '+(pct>=80?'amber':'green')+'">'+absDiffR+' '+unit+' left</span>':(used>0?'<span class="wl-chip green">on target</span>':''));
           html2+='<div class="wl-mr-top"><span class="wl-mr-lbl">'+label+'</span>'+chip+'</div>';
-          html2+='<div class="wl-mr-num">'+(Math.round(used*10)/10)+' / '+quoted+' '+unit+'</div>';
+          html2+='<div class="wl-mr-num">'+(unit==='bkt'?Math.round(used*100)/100:Math.round(used*10)/10)+' / '+quoted+' '+unit+'</div>';
           if(quoted>0){
             html2+='<div class="wl-mr-bar"><i style="width:'+Math.min(100,pct)+'%;background:'+barColor+'"></i></div>';
           }
@@ -4861,8 +4875,8 @@ function renderProjects(filter){
           html+=ccLabel;
           var ccGalPerSet=mb.cc.galPerSet||55;
           var ccBFPerSet=mb.cc.bfPerSet||4500;
-          var ccGalQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*ccGalPerSet*10)/10:0;
-          var ccSetsQuoted=ccBF>0?Math.round(ccBF/ccBFPerSet*100)/100:0;
+          var ccGalQuoted=_fqC.gal;
+          var ccSetsQuoted=_fqC.sets;
           var ccSetsUsed=ccGalUsed>0?Math.round(ccGalUsed/ccGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
           if(ccGalQuoted>0) html+='📋 Quoted: '+ccSetsQuoted+' sets · '+ccGalQuoted+' gal<br>';
@@ -4875,8 +4889,8 @@ function renderProjects(filter){
           html+=ocLabel;
           var ocGalPerSet=mb.oc.galPerSet||55;
           var ocBFPerSet=mb.oc.bfPerSet||17000;
-          var ocGalQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*ocGalPerSet*10)/10:0;
-          var ocSetsQuoted=ocBF>0?Math.round(ocBF/ocBFPerSet*100)/100:0;
+          var ocGalQuoted=_fqO.gal;
+          var ocSetsQuoted=_fqO.sets;
           var ocSetsUsed=ocGalUsed>0?Math.round(ocGalUsed/ocGalPerSet*100)/100:0;
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
           if(ocGalQuoted>0) html+='📋 Quoted: '+ocSetsQuoted+' sets · '+ocGalQuoted+' gal<br>';
@@ -4926,7 +4940,7 @@ function renderProjects(filter){
         else if(mb.roxBags>0||roxUsed>0){ html+=matRow('🪨 Roxul',mb.roxBags,roxUsed,'bags'); if(roxNotes.length) html+='<div style="font-size:10.5px;color:var(--muted);margin:-4px 0 8px">🪨 bag size noted: '+roxNotes.join(' · ')+'</div>'; }
   if(mb.ignSqft>0||ignUsed>0){
           var ibQ=mb.ignSqft||0; var ibU=ignUsed;
-          var qBkt=parseFloat((ibQ/800).toFixed(1)); var uBkt=parseFloat((ibU/800).toFixed(1));
+          var qBkt=wlIgnQ(mb); var uBkt=Math.round(ibU/800*100)/100;
           html+=matRow('🔥 Ignition Barrier',qBkt,uBkt,'bkt');
           html+='<div style="font-size:10px;color:var(--muted);margin-top:-5px;margin-bottom:8px;line-height:1.7">';
           if(ibQ>0) html+='📋 Quoted: '+qBkt+' bkt · '+ibQ.toLocaleString()+' sq ft<br>';
@@ -5194,6 +5208,7 @@ function saveEditProject(){
   var _dup=wlOhDupes(ohDays); if(_dup.length){ return showToast('Same day twice in Overhead days ('+_dup.map(wlOhFmtDate).join(', ')+') — remove the duplicate','err'); }
   var overhead=calcOHTotal(ohDays);
   if(!name) return showToast('Enter a name','err');
+  var _pm=(function(){ try{ var _p0=projects.filter(function(x){return x.id===editingProjId;})[0]; return (_p0&&_p0.matBudget)||{}; }catch(e){ return {}; } })();
   var matBudget={
     cc:{sqft:parseFloat(document.getElementById('ep-cc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-cc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-cc-bf').value)||4500, galPerSet:parseFloat(document.getElementById('ep-cc-gal').value)||55},
     oc:{sqft:parseFloat(document.getElementById('ep-oc-sqft').value)||0, inch:parseFloat(document.getElementById('ep-oc-inch').value)||0, bfPerSet:parseFloat(document.getElementById('ep-oc-bf').value)||17000, galPerSet:parseFloat(document.getElementById('ep-oc-gal').value)||55},
@@ -5210,6 +5225,7 @@ function saveEditProject(){
     ignSqft:parseFloat(document.getElementById('ep-ign-sqft').value)||0,
     fbSqft:parseFloat(document.getElementById('ep-fb-sqft').value)||0
   };
+  var _fk=['cc','oc']; for(var _fi=0;_fi<2;_fi++){ var _o=_pm[_fk[_fi]]||{}, _n=matBudget[_fk[_fi]]; if(_o.manual||(Number(_o.sqft)||0)!==_n.sqft||(Number(_o.inch)||0)!==_n.inch||(Number(_o.bfPerSet)||_n.bfPerSet)!==_n.bfPerSet) _n.manual=true; }
   db.collection('projects').doc(editingProjId).update({name:name,client:client||null,clientPhone:(document.getElementById('ep-phone').value.trim()||null),clientEmail:(document.getElementById('ep-email').value.trim()||null),desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,matBudget:matBudget});
   closeModal('modal-edit-project');
   showToast('Project updated! ✅');
