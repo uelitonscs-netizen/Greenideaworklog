@@ -1394,6 +1394,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
+// Firebase could not be downloaded (no connection): a stand-in that never answers, so the app opens with what is saved on this phone.
+if(typeof firebase==='undefined'||!firebase.firestore||!firebase.auth){ (function(){
+  window._wlNoSdk=true;
+  function rej(){ return Promise.reject({code:'unavailable',message:'offline'}); }
+  function noop(){ return function(){}; }
+  function q(){ var o={}; o.where=o.orderBy=o.limit=function(){ return o; }; o.onSnapshot=noop; o.get=rej; o.add=rej;
+    o.doc=function(id){ return {id:id||('off'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)),set:rej,update:rej,'delete':rej,get:rej,onSnapshot:noop,collection:q}; }; return o; }
+  var fs=function(){ return {collection:q,batch:function(){ return {set:function(){},update:function(){},'delete':function(){},commit:rej}; },settings:function(){},enablePersistence:rej}; };
+  fs.FieldPath={documentId:function(){ return '__name__'; }};
+  fs.FieldValue={serverTimestamp:function(){ return new Date().toISOString(); },'delete':function(){ return null; },arrayUnion:function(){ return []; },arrayRemove:function(){ return []; },increment:function(n){ return n; }};
+  fs.Timestamp={fromDate:function(d){ return d; },now:function(){ return new Date(); }};
+  var user=null; try{ if(localStorage.getItem('wl_session')==='admin'){ var su=JSON.parse(localStorage.getItem('wl_oc_user')||'null'); if(su&&su.uid) user={uid:su.uid,email:su.email||'',isAnonymous:false}; } }catch(e){}
+  var au={currentUser:user,onAuthStateChanged:function(cb){ setTimeout(function(){ try{ cb(au.currentUser); }catch(e){} },0); return function(){}; },signInAnonymously:rej,signInWithEmailAndPassword:rej,sendPasswordResetEmail:rej,signOut:function(){ return Promise.resolve(); },setPersistence:function(){ return Promise.resolve(); }};
+  var af=function(){ return au; }; af.Auth={Persistence:{LOCAL:'local',SESSION:'session',NONE:'none'}};
+  window.firebase={initializeApp:function(){ return {}; },firestore:fs,auth:af};
+  window.addEventListener('online',function(){ setTimeout(function(){ try{ location.reload(); }catch(e){} },1200); });
+})(); }
+</script>
+<script>
 var _app = firebase.initializeApp({
   apiKey:"AIzaSyBHQWTKirZQZ_ua9chnaLy7lnXi0KDygPA",
   authDomain:"work-log-5aa9f.firebaseapp.com",
@@ -2378,7 +2397,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.17e';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.18';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2430,6 +2449,127 @@ function startListeners(){
   if(hid) wlHelperListen(hid);
 }
 
+// ══ OFFLINE COPY (office) ═══════════════════════════════════════════════════
+// The last data this phone received is kept in the phone (IndexedDB). When Firebase can't be reached the office
+// screens open with that copy, read-only, and say from when it is. Photos are not kept (too heavy).
+var _WL_OC_COLS=['helpers','entries','payments','advances','absences','projects','projectExpenses','projectHistory'];
+var _wlOc={got:{},mode:false,at:null,t:null,none:false,blockAt:0};
+function wlOcVar(n,v){
+  if(n==='helpers'){ if(v) helpers=v; return helpers; } if(n==='entries'){ if(v) entries=v; return entries; }
+  if(n==='payments'){ if(v) payments=v; return payments; } if(n==='advances'){ if(v) advances=v; return advances; }
+  if(n==='absences'){ if(v) absences=v; return absences; } if(n==='projects'){ if(v) projects=v; return projects; }
+  if(n==='projectExpenses'){ if(v) projectExpenses=v; return projectExpenses; } if(n==='projectHistory'){ if(v) projectHistory=v; return projectHistory; }
+  return [];
+}
+function wlOcDb(cb){
+  try{ if(!window.indexedDB){ cb(null); return; } var rq=indexedDB.open('wl_offline',1), done=false;
+    rq.onupgradeneeded=function(){ try{ rq.result.createObjectStore('kv'); }catch(e){} };
+    rq.onsuccess=function(){ if(done) return; done=true; cb(rq.result); };
+    rq.onerror=function(){ if(done) return; done=true; cb(null); };
+    rq.onblocked=function(){ if(done) return; done=true; cb(null); };
+  }catch(e){ cb(null); }
+}
+function wlOcRead(cb){
+  wlOcDb(function(d){ if(!d){ cb(null); return; }
+    try{ var rq=d.transaction('kv','readonly').objectStore('kv').get('admin');
+      rq.onsuccess=function(){ var o=null; try{ o=rq.result?JSON.parse(rq.result):null; }catch(e){} try{ d.close(); }catch(e){} cb(o); };
+      rq.onerror=function(){ try{ d.close(); }catch(e){} cb(null); };
+    }catch(e){ cb(null); } });
+}
+function wlOcWrite(obj,cb){
+  var str; try{ str=JSON.stringify(obj); }catch(e){ if(cb) cb(false); return; }
+  wlOcDb(function(d){ if(!d){ if(cb) cb(false); return; }
+    try{ var tx=d.transaction('kv','readwrite'); tx.objectStore('kv').put(str,'admin');
+      tx.oncomplete=function(){ try{ d.close(); }catch(e){} if(cb) cb(true); };
+      tx.onerror=tx.onabort=function(){ try{ d.close(); }catch(e){} if(cb) cb(false); };
+    }catch(e){ if(cb) cb(false); } });
+}
+function wlOcClear(){ wlOcDb(function(d){ if(!d) return; try{ var tx=d.transaction('kv','readwrite'); tx.objectStore('kv')['delete']('admin'); tx.oncomplete=function(){ try{ d.close(); }catch(e){} }; }catch(e){} }); try{ localStorage.removeItem('wl_oc_at'); localStorage.removeItem('wl_oc_user'); }catch(e){} }
+// Long texts inside a record are pictures / signatures: left out of the copy
+function wlOcSlim(arr){ var out=[]; for(var i=0;i<arr.length;i++){ var r=arr[i], c={}; for(var k in r){ if(!Object.prototype.hasOwnProperty.call(r,k)) continue; var v=r[k]; if(typeof v==='string'&&v.length>4000) continue; c[k]=v; } out.push(c); } return out; }
+function wlOcIsOffice(){ try{ var u=auth.currentUser; return !!(window._listenersStarted&&u&&!u.isAnonymous&&u.uid===WL_ADMIN_UID); }catch(e){ return false; } }
+// The SDK answers "empty, from cache" when it can't reach the server: that is not data. Ignored until real data has arrived.
+function wlOcSkip(s,n){ var fc=!!(s&&s.metadata&&s.metadata.fromCache); if(fc&&!_wlOc.got[n]) return true; if(!fc) wlOcGot(n); return false; }
+window.wlOcSkip=wlOcSkip;
+function wlOcGot(n){
+  _wlOc.got[n]=1;
+  if(_wlOc.mode||_wlOc.none){ _wlOc.mode=false; _wlOc.none=false; wlOcBanner(); }
+  if(!_wlOc.t) _wlOc.t=setTimeout(wlOcSave,5000);
+  try{ wlBkRemind(); }catch(e){}
+}
+function wlOcSave(){
+  _wlOc.t=null; if(_wlOc.mode||!wlOcIsOffice()) return; var g=_wlOc.got; if(!g.helpers||!g.entries||!g.projects) return;
+  wlOcRead(function(prev){
+    if(_wlOc.mode) return; var o={v:1,at:new Date().toISOString(),cols:{}};
+    for(var i=0;i<_WL_OC_COLS.length;i++){ var n=_WL_OC_COLS[i]; if(_wlOc.got[n]) o.cols[n]=wlOcSlim(wlOcVar(n)||[]); else if(prev&&prev.cols&&prev.cols[n]) o.cols[n]=prev.cols[n]; }
+    wlOcWrite(o,function(ok){ if(!ok) return; try{ localStorage.setItem('wl_oc_at',o.at); var u=auth.currentUser; localStorage.setItem('wl_oc_user',JSON.stringify({uid:u.uid,email:u.email||''})); }catch(e){} });
+  });
+}
+function wlOcArm(){
+  var wait=(window._wlNoSdk||navigator.onLine===false)?250:4000;
+  setTimeout(function(){ if(_wlOc.got.helpers||_wlOc.got.entries||_wlOc.got.projects) return; wlOcShow(); },wait);
+}
+function wlOcShow(){
+  if(!wlOcIsOffice()) return;
+  wlOcRead(function(o){
+    if(_wlOc.got.helpers||_wlOc.got.entries||_wlOc.got.projects) return;
+    if(!o||!o.cols){ _wlOc.none=true; wlOcBanner(); return; }
+    for(var i=0;i<_WL_OC_COLS.length;i++){ var n=_WL_OC_COLS[i]; if(!_wlOc.got[n]&&o.cols[n]&&o.cols[n].length!==undefined) wlOcVar(n,o.cols[n]); }
+    _wlOc.mode=true; _wlOc.at=o.at; wlOcBanner();
+    try{ populateHelperSelectDD(); }catch(e){} try{ refreshView(); }catch(e){} try{ updateProjectDropdowns(); }catch(e){}
+  });
+}
+function wlOcWhen(iso){ try{ var d=new Date(iso), n=new Date(), same=d.toDateString()===n.toDateString(); return (same?'today':d.toLocaleDateString('en-US',{month:'short',day:'numeric'}))+', '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function wlOcBanner(){
+  var el=document.getElementById('wl-oc');
+  if(!_wlOc.mode&&!_wlOc.none){ if(el) el.style.display='none'; return; }
+  if(!el){ var body=document.querySelector('#screen-admin .admin-body'); if(!body) return; el=document.createElement('div'); el.id='wl-oc';
+    el.style.cssText='margin:0 0 12px;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.45;background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;display:flex;gap:10px;align-items:center'; body.insertBefore(el,body.firstChild); }
+  el.style.display='flex';
+  var txt=_wlOc.mode?('<b>Offline copy</b> · data from '+wlOcWhen(_wlOc.at)+'<br><span style="font-size:11.5px">Read-only until the connection is back. Photos are not in the copy.</span>')
+                    :('<b>No connection</b><br><span style="font-size:11.5px">There is no saved copy on this phone yet. It is saved by itself the next time the app opens online.</span>');
+  el.innerHTML='<span style="font-size:20px">📴</span><span style="flex:1">'+txt+'</span><button type="button" onclick="location.reload()" style="background:#fff;border:1px solid #fdba74;color:#7c2d12;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:var(--font-d);white-space:nowrap">Try again</button>';
+  try{ var l=document.getElementById('sync-lbl'); if(l) l.textContent='Offline copy'; }catch(e){}
+}
+// Read-only: while the copy is on screen nothing is written (it would be lost when the app closes)
+function wlOcBlocked(){ if(!_wlOc.mode) return null; _wlOc.blockAt=Date.now(); try{ wlOcToast(); }catch(e){} return Promise.reject({code:'unavailable',message:'Offline copy is read-only'}); }
+function wlOcToast(){ var el=document.getElementById('toast-el'); if(!el) return; el.textContent='Offline — read-only. Nothing was saved.'; el.className='toast err'; el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){ el.style.display='none'; },3500); }
+(function(){
+  try{
+    var _col=db.collection, _bat=db.batch;
+    function guardDoc(d){ if(!d||d._wlG) return d; d._wlG=1; var s0=d.set,u0=d.update,x0=d['delete'];
+      d.set=function(){ return wlOcBlocked()||s0.apply(d,arguments); }; d.update=function(){ return wlOcBlocked()||u0.apply(d,arguments); }; d['delete']=function(){ return wlOcBlocked()||x0.apply(d,arguments); }; return d; }
+    db.collection=function(){ var r=_col.apply(db,arguments), a0=r.add, d0=r.doc;
+      r.add=function(){ return wlOcBlocked()||a0.apply(r,arguments); };
+      r.doc=function(){ return guardDoc(d0.apply(r,arguments)); }; return r; };
+    if(_bat) db.batch=function(){ var b=_bat.apply(db,arguments), c0=b.commit; b.commit=function(){ return wlOcBlocked()||c0.apply(b,arguments); }; return b; };
+    var _st=showToast; showToast=function(msg,type){ if(_wlOc.mode&&Date.now()-_wlOc.blockAt<1500){ wlOcToast(); return; } return _st.apply(this,arguments); }; window.showToast=showToast;
+  }catch(e){}
+})();
+window.wlOcGot=wlOcGot; window.wlOcArm=wlOcArm; window.wlOcShow=wlOcShow; window.wlOcSave=wlOcSave; window._wlOc=_wlOc;
+
+// ══ BACKUP REMINDER ═════════════════════════════════════════════════════════
+// A full backup file is the only copy outside Firebase. After WL_BK_DAYS days without one, the Dashboard reminds.
+var WL_BK_DAYS=7, _wlBkRemote=null, _wlBkAsked=false;
+function wlBkLast(){ var a=''; try{ a=localStorage.getItem('wl_last_backup')||''; }catch(e){} if(_wlBkRemote&&String(_wlBkRemote)>String(a)) a=_wlBkRemote; return a; }
+function wlBkRemind(){
+  var el=document.getElementById('wl-bkr');
+  if(!wlOcIsOffice()||_wlOc.mode||window._wlNoSdk||!_wlOc.got.entries){ if(el) el.style.display='none'; return; }
+  if(!_wlBkAsked){ _wlBkAsked=true; try{ db.collection('wl_config').doc('backupInfo').get().then(function(d){ var x=d&&d.exists?d.data():null; if(x&&x.at){ _wlBkRemote=x.at; wlBkRemind(); } }).catch(function(){}); }catch(e){} }
+  var last=wlBkLast(), days=last?Math.floor((Date.now()-new Date(last).getTime())/86400000):-1, sn=0; try{ sn=parseInt(localStorage.getItem('wl_bk_snooze')||'0',10)||0; }catch(e){}
+  if((last&&days<WL_BK_DAYS)||Date.now()<sn){ if(el) el.style.display='none'; return; }
+  if(!el){ var tab=document.getElementById('tab-dashboard'); if(!tab) return; el=document.createElement('div'); el.id='wl-bkr';
+    el.style.cssText='margin:0 0 12px;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.45;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a'; tab.insertBefore(el,tab.firstChild); }
+  el.style.display='block';
+  el.innerHTML='<div><b>💾 '+(last?('Last full backup: '+days+' days ago'):'No full backup yet')+'</b><br><span style="font-size:11.5px">The backup file is your copy outside Firebase. Keep it in Google Drive too.</span></div>'
+    +'<div style="display:flex;gap:8px;margin-top:9px"><button type="button" id="wl-bkr-go" onclick="wlBkNow()" style="background:#1d4ed8;border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:var(--font-d)">Back up now</button>'
+    +'<button type="button" onclick="wlBkLater()" style="background:#fff;border:1px solid #93c5fd;color:#1e3a8a;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:var(--font-d)">Later</button></div>';
+}
+function wlBkNow(){ var b=document.getElementById('wl-bkr-go'); if(b) b.textContent='Reading…'; wlBackupAll(); }
+function wlBkLater(){ try{ localStorage.setItem('wl_bk_snooze',String(Date.now()+86400000)); }catch(e){} wlBkRemind(); }
+function wlBkDone(at){ _wlBkRemote=at; try{ localStorage.removeItem('wl_bk_snooze'); }catch(e){} try{ db.collection('wl_config').doc('backupInfo').set({at:at}).catch(function(){}); }catch(e){} wlBkRemind(); }
+window.wlBkRemind=wlBkRemind; window.wlBkNow=wlBkNow; window.wlBkLater=wlBkLater;
+
 function startFullListeners(){
   if(window._listenersStarted) return;
   window._listenersStarted = true;
@@ -2444,6 +2584,7 @@ function startFullListeners(){
     window._currentHelperId = hid;
   }
   db.collection('helpers').onSnapshot(function(s){
+    if(wlOcSkip(s,'helpers')) return;
     helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     wlPublishHelperNames(); wlAutoAssign();
     setSyncStatus(true);
@@ -2457,17 +2598,18 @@ function startFullListeners(){
     }
     if(window._pendingQR){ window._pendingQR=false; showQRHelperModal(); }
   },function(){setSyncStatus(false);});
-  db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
-  db.collection('payments').orderBy('date','desc').onSnapshot(function(s){payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('advances').orderBy('date','desc').onSnapshot(function(s){advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
-  db.collection('absences').orderBy('date','desc').onSnapshot(function(s){absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); try{ wlMgPublish(); }catch(_e){} refreshView(); updateClientSuggestions();},function(){});
-  db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(_e){} },function(){});
+  db.collection('entries').orderBy('startTime','desc').onSnapshot(function(s){ if(wlOcSkip(s,'entries')) return; entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); setSyncStatus(true); refreshView();},function(){});
+  db.collection('payments').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'payments')) return; payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('advances').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'advances')) return; advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
+  db.collection('absences').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'absences')) return; absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projects')) return; projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); try{ wlMgPublish(); }catch(_e){} refreshView(); updateClientSuggestions();},function(){});
+  db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projectExpenses')) return; projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(_e){} },function(){});
   db.collection('managers').onSnapshot(function(s){ wlMgList=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); wlMgBanner(); wlMgPublish(); }catch(_e){} },function(){});
   db.collection('hoursLog').orderBy('at','desc').limit(40).onSnapshot(function(s){ wlMgLog=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){ return String(b.at||'')<String(a.at||'')?-1:1; }).slice(0,40); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); }catch(_e){} },function(){});
   db.collection('helperReports').onSnapshot(function(s){ var old={}; for(var _i=0;_i<wlReports.length;_i++){ if(wlReports[_i]._shown) old[wlReports[_i].id]=1; } wlReports=s.docs.map(function(d){ var o=Object.assign({id:d.id},d.data()); if(old[o.id]) o._shown=true; return o; }).sort(function(a,b){ return String(b.createdAt||'')<String(a.createdAt||'')?-1:1; }); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); wlRpPill(); refreshView(); }catch(_e){} },function(){});
   db.collection('projectPhotos').orderBy('createdAt','desc').onSnapshot(function(s){projectPhotos=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  db.collection('projectHistory').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projectHistory')) return; projectHistory=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
+  wlOcArm();
 }
 
 function refreshView(){
@@ -5582,6 +5724,7 @@ function wlBackupAll(){
     var total=0; for(var k in out.counts) total+=out.counts[k];
     var failedNames=Object.keys(out.failed);
     try{ localStorage.setItem('wl_last_backup',out.createdAt); }catch(e){}
+    try{ wlBkDone(out.createdAt); }catch(e){}
     if(failedNames.length){
       wlBkStatus('Saved '+f.fname+' ('+total+' records, '+f.mb.toFixed(1)+' MB) — could not read: '+failedNames.join(', '),'var(--red)');
     } else {
@@ -5590,7 +5733,7 @@ function wlBackupAll(){
     showToast('Backup downloaded ✅');
   }).catch(function(e){
     wlBkStatus('Backup failed: '+(e&&e.message||e)+'. Nothing was changed.','var(--red)');
-  }).then(function(){ _wlBackupRunning=false; var b=document.getElementById('wl-backup-btn'); if(b) b.textContent='Download'; });
+  }).then(function(){ _wlBackupRunning=false; var b=document.getElementById('wl-backup-btn'); if(b) b.textContent='Download'; var b2=document.getElementById('wl-bkr-go'); if(b2) b2.textContent='Back up now'; });
 }
 window.wlBackupAll=wlBackupAll;
 
@@ -6398,7 +6541,9 @@ goLanding = function(){
 };
 
 function adminLogout(){
+  if(_wlOc.mode||window._wlNoSdk){ wlOcToast(); var _t=document.getElementById('toast-el'); if(_t) _t.textContent='Offline — log out when the connection is back.'; return; }
   auth.signOut().then(function(){
+    try{ wlOcClear(); _wlOc.got={}; }catch(_e){}
     localStorage.removeItem('wl_session');
     window._listenersStarted = false;
     try{ helpers=[]; entries=[]; payments=[]; advances=[]; absences=[]; projects=[]; projectExpenses=[]; projectPhotos=[]; }catch(_e){}
