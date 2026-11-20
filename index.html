@@ -2311,7 +2311,7 @@ window.wlMgxOpen=wlMgxOpen; window.wlMgxClose=wlMgxClose; window.wlMgxAdd=wlMgxA
 var _wlHUnsubs=[], _wlHelperId=null;
 function _wlHStop(){ for(var i=0;i<_wlHUnsubs.length;i++){ try{ _wlHUnsubs[i](); }catch(e){} } _wlHUnsubs=[]; }
 // Anonymous sign-in for helpers: keeps trying (it used to try once — with a weak signal nothing ever loaded)
-function _wlAnonTry(n){ window._wlAnonAsked=true; auth.signInAnonymously().catch(function(){ setTimeout(function(){ if(auth.currentUser) return; _wlAnonTry(n+1); },Math.min(30000,3000*(n+1))); }); }
+function _wlAnonTry(n){ window._wlAnonAsked=true; auth.signInAnonymously().then(function(){ window._wlAnonErr=''; }).catch(function(e){ window._wlAnonErr=String((e&&e.code)||'error'); try{ if(document.getElementById('wl-linkwait')) wlLinkWait(); }catch(_e){} setTimeout(function(){ if(auth.currentUser) return; _wlAnonTry(n+1); },Math.min(30000,3000*(n+1))); }); }
 function _wlWhenAuth(cb){
   var u=auth.currentUser; if(u){ cb(u); return; }
   // Wait until Firebase has restored the saved sign-in; sign in anonymously only if nobody is
@@ -2351,13 +2351,14 @@ function wlHelperListen(hid){
     db.collection('helperSessions').doc(u.uid).set({helperId:hid,at:new Date().toISOString()}).catch(function(){}).then(function(){
       var gotEntries=false;
       _wlHUnsubs.push(db.collection('helpers').doc(hid).onSnapshot(function(d){
-        if(d&&!d.exists&&d.metadata&&d.metadata.fromCache===false){ wlLsDel('wl_hc_'+hid); if((wlLsGet('wl_session')||'')==='helper:'+hid){ wlLsDel('wl_session'); _wlHStop(); _wlHelperId=null; try{ goLanding(); showToast('This helper link is no longer active','err'); }catch(e){} } return; }
+        if(d&&!d.exists&&d.metadata&&d.metadata.fromCache===false){ if(window._wlLinkHid===hid&&(wlLsGet('wl_session')||'')!=='helper:'+hid){ try{ wlLinkWait('gone'); }catch(_e){} } wlLsDel('wl_hc_'+hid); if((wlLsGet('wl_session')||'')==='helper:'+hid){ wlLsDel('wl_session'); _wlHStop(); _wlHelperId=null; try{ goLanding(); showToast('This helper link is no longer active','err'); }catch(e){} } return; }
         if(!d||!d.exists) return; var me=Object.assign({id:d.id},d.data()), found=false;
         for(var i=0;i<helpers.length;i++){ if(helpers[i].id===hid){ helpers[i]=me; found=true; } } if(!found) helpers.push(me);
         if(currentHelper&&currentHelper.id===hid) currentHelper=me;
         wlHcSave(); setSyncStatus(true); refreshView();
+        window._wlHErr='';
         if(window._pendingHelperSession===hid){ window._pendingHelperSession=null; openHelperView(hid); }
-      },function(){ wlHRetry(hid); }));
+      },function(e){ window._wlHErr=String((e&&e.code)||'error'); try{ if(document.getElementById('wl-linkwait')) wlLinkWait(); }catch(_e){} wlHRetry(hid); }));
       _wlHUnsubs.push(db.collection('entries').where('helperId','==',hid).onSnapshot(function(s){
         var _fc=!!(s.metadata&&s.metadata.fromCache);
         if(_fc&&_wlHelperLive!==hid) return;            // offline "empty" answer: keep the copy saved on the phone
@@ -2397,7 +2398,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.18';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.19';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2726,6 +2727,7 @@ function showHelperModal(){
   if(!wlIsOffice()){
     // A helper never picks a name: the phone opens only the helper it was linked to by the personal link.
     var dv=wlLsGet('wl_helper_dev');
+    if(!dv&&window._wlLinkHid){ if(hById(window._wlLinkHid)){ openHelperView(window._wlLinkHid); return; } window._pendingHelperSession=window._wlLinkHid; wlLinkWait(); return; }
     if(!dv){ wlNeedLink(); return; }
     if(hById(dv)){ openHelperView(dv); return; }
     window._pendingHelperSession=dv; wlHelperListen(dv); if(hById(dv)){ window._pendingHelperSession=null; openHelperView(dv); } else showToast('Opening your screen…');
@@ -2775,7 +2777,37 @@ window.selectHelper=selectHelper;
 window.closeModal=closeModal;
 
 // ── HELPER VIEW ────────────────────────────────────────
+// ══ LINK STATUS: a personal link that has not opened the helper's screen yet says WHY ══
+// (it used to fall back to the start page, where "I'm a Helper" answered "open your personal link" — to someone
+// who had just opened it). The small grey line is for the office: a screenshot of it tells what went wrong.
+var _wlLk={state:''};
+function wlLinkState(){
+  if(_wlLk.state==='gone') return 'gone';
+  var a=String(window._wlAnonErr||''), h=String(window._wlHErr||''), signed=false; try{ signed=!!auth.currentUser; }catch(e){}
+  if(!signed&&a&&!/network|timeout|unavailable/.test(a)) return 'auth';
+  if(/permission/.test(h)) return 'denied';
+  return 'slow';
+}
+function wlLinkWait(state){
+  if(state) _wlLk.state=state; var st=wlLinkState(), pt=false; try{ pt=wlLang()==='pt'; }catch(e){}
+  var T={slow:['📶',pt?'Ainda conectando…':'Still connecting…',pt?'Seu link está certo, mas o app ainda não conseguiu carregar seus dados. Confira a internet deste celular. Sua tela abre sozinha assim que carregar.':'Your link is right, but the app could not load your data yet. Check the internet on this phone. Your screen opens by itself as soon as it loads.'],
+    gone:['🔗',pt?'Este link não está ativo':'This link is not active',pt?'Peça um link novo para o escritório. (O link pode ter vindo incompleto ou o cadastro foi refeito.)':'Ask the office for a new link. (The link may be incomplete, or your record was created again.)'],
+    auth:['🔒',pt?'Este navegador bloqueou o acesso':'This browser blocked the sign-in',pt?'Abra o link no Safari ou no Chrome, não dentro do WhatsApp: toque em ⋯ ou no ícone da bússola → "Abrir no navegador". Se estiver em aba privada/anônima, use uma aba normal.':'Open the link in Safari or Chrome, not inside WhatsApp: tap ⋯ or the compass icon → "Open in browser". If this is a private/incognito tab, use a normal tab.'],
+    denied:['⛔',pt?'Acesso não permitido':'Access not allowed',pt?'Mande uma foto desta tela para o escritório.':'Send a picture of this screen to the office.']}[st];
+  var o=document.getElementById('wl-linkwait'); if(o&&o.parentNode) o.parentNode.removeChild(o);
+  var nd=document.getElementById('wl-needlink'); if(nd&&nd.parentNode) nd.parentNode.removeChild(nd);
+  var signed=false; try{ signed=!!auth.currentUser; }catch(e){}
+  var info='v'+WL_BUILD+' · '+st+' · id '+String(window._wlLinkHid||'').slice(0,6)+'… · '+(signed?'signed':'not signed')+(window._wlAnonErr?' · '+window._wlAnonErr:'')+(window._wlHErr?' · '+window._wlHErr:'')+(window._wlNoSdk?' · no-sdk':'')+(navigator.onLine===false?' · offline':'');
+  o=document.createElement('div'); o.id='wl-linkwait'; o.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px';
+  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center"><div style="font-size:34px">'+T[0]+'</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">'+T[1]+'</div><div style="font-size:13px;color:#4b5563;line-height:1.5">'+T[2]+'</div>'
+    +'<button type="button" onclick="location.reload()" style="margin-top:14px;width:100%;padding:13px;border:none;border-radius:12px;background:var(--green);color:#fff;font-family:var(--font-d);font-weight:800;font-size:14px">'+(pt?'Tentar de novo':'Try again')+'</button>'
+    +'<div id="wl-linkinfo" style="margin-top:10px;font-size:10px;color:#9ca3af;font-family:var(--font-m);word-break:break-all">'+info+'</div></div>';
+  document.body.appendChild(o);
+}
+function wlLinkDone(){ _wlLk.state=''; var o=document.getElementById('wl-linkwait'); if(o&&o.parentNode) o.parentNode.removeChild(o); }
+window.wlLinkWait=wlLinkWait; window.wlLinkDone=wlLinkDone;
 function openHelperView(hid){
+  try{ wlLinkDone(); }catch(_e){}
   wlLsSet('wl_session','helper:'+hid); wlLsSet('wl_helper_dev',hid);   // this phone now belongs to this helper (only a personal link changes it)
   if(!window._listenersStarted) wlHelperListen(hid);
   var h=hById(hid); if(!h) return showToast('Helper not found','err');
@@ -5878,12 +5910,9 @@ function checkRoute(){
     startListeners();
     var done=false;
     var wait=setInterval(function(){
-      if(helpers.length>0){
-        clearInterval(wait);
-        if(!done){ done=true; var h=hById(hid); if(h) openHelperView(hid); else showScreen('landing'); }
-      }
+      if(!done&&hById(hid)){ done=true; clearInterval(wait); openHelperView(hid); }
     },300);
-    setTimeout(function(){clearInterval(wait); if(!done){done=true; window._pendingHelperSession=hid; showScreen('landing'); showToast('Slow connection — your screen opens as soon as it loads');}},10000);
+    setTimeout(function(){clearInterval(wait); if(!done){done=true; if(hById(hid)){ openHelperView(hid); return; } window._pendingHelperSession=hid; showScreen('landing'); wlLinkWait();}},10000);
     return true;
   }
   return false;
