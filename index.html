@@ -822,6 +822,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
             <div id="sum-total-pay" style="font-size:13px;font-weight:700;color:var(--green2)"></div>
           </div>
         </div>
+        <button type="button" id="sum-pdf-btn" class="wl-res-print" style="margin-top:12px" onclick="wlHrsPdfOpen()">🖨️ PDF — Detailed hours</button>
       </div>
 
       <!-- Payments panel -->
@@ -1044,6 +1045,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261120-1830</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1237,6 +1239,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <button class="btn" onclick="selectHelper()">Open My View</button>
       <button class="btn ghost" onclick="closeModal('modal-helper-select')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div id="modal-hrs-pdf" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">🖨️ Detailed hours PDF</div>
+    <div id="hrs-pdf-lbl" style="font-size:12px;color:var(--muted);margin:-4px 0 10px"></div>
+    <div id="hrs-pdf-list"></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal('modal-hrs-pdf')">Cancel</button></div>
   </div>
 </div>
 
@@ -4467,6 +4478,77 @@ function renderSummary(){
   if(th) th.textContent=Math.floor(totalM/60)+'h '+p2(totalM%60)+'m';
   if(tp) tp.textContent=fmtC(totalP);
 }
+
+// ── DETAILED HOURS PDF (Summary) — read only: builds a printable page, writes nothing ──
+function wlHrsPdfOpen(){
+  var range=getSumRange(sumPeriod), lbl=document.getElementById('hrs-pdf-lbl'), box=document.getElementById('hrs-pdf-list');
+  if(!box) return;
+  if(lbl) lbl.textContent='📅 '+range.lbl+' · choose who goes in the PDF';
+  var withH=helpers.filter(function(h){ return periodMin(h.id,range.s,range.e)>0; });
+  if(!withH.length){ showToast('No hours in this period','err'); return; }
+  var tot=withH.reduce(function(a,h){ return a+periodMin(h.id,range.s,range.e); },0);
+  var bs='display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text)';
+  var h='<button type="button" style="'+bs+';background:var(--green);color:#fff;border-color:var(--green)" onclick="wlHrsPdf(\'\')"><span>👥 All helpers ('+withH.length+')</span><span>'+fmtD(tot)+'</span></button>';
+  withH.forEach(function(x){ h+='<button type="button" style="'+bs+'" data-hid="'+wlEsc(x.id)+'" onclick="wlHrsPdf(this.getAttribute(\'data-hid\'))"><span>'+wlEsc(x.name)+'</span><span style="color:var(--green)">'+fmtD(periodMin(x.id,range.s,range.e))+'</span></button>'; });
+  box.innerHTML=h;
+  document.getElementById('modal-hrs-pdf').classList.add('open');
+}
+window.wlHrsPdfOpen=wlHrsPdfOpen;
+function wlHrsPdf(hid){
+  var range=getSumRange(sumPeriod), list=hid?helpers.filter(function(h){return h.id===hid;}):helpers.filter(function(h){ return periodMin(h.id,range.s,range.e)>0; });
+  if(!list.length){ showToast('Nothing to export','err'); return; }
+  try{ closeModal('modal-hrs-pdf'); }catch(e){}
+  function hm(m){ return Math.floor(m/60)+'h '+p2(m%60)+'m'; }
+  function dec(m){ return (Math.round(m/60*100)/100).toFixed(2); }
+  function tm(d){ return new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+  var G={m:0,reg:0,ot:0,regPay:0,otPay:0,pay:0}, overview='', sections='';
+  list.forEach(function(h,hi){
+    var rate=Number(h.rate)||0, wp=calcPeriodPay(h.id,rate,range.s,range.e);
+    var es=entries.filter(function(x){ return x.helperId===h.id&&x.endTime&&new Date(x.startTime)>=range.s&&new Date(x.startTime)<=range.e; })
+      .sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); });
+    var weeks={}, wk=[];
+    es.forEach(function(e){ var wb=getWeekBoundaries(e.startTime), k=wb.start.toISOString().slice(0,10); if(!weeks[k]){ weeks[k]={s:wb.start,e:wb.end,list:[],m:0}; wk.push(k); } weeks[k].list.push(e); weeks[k].m+=gMin(e); });
+    var rows='';
+    wk.forEach(function(k){ var W=weeks[k], lastDay='';
+      rows+='<tr class="wk"><td colspan="6">Week of '+W.s.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+W.e.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</td></tr>';
+      W.list.forEach(function(e,i){ var d=new Date(e.startTime), day=d.toLocaleDateString('en-US',{weekday:'short',month:'2-digit',day:'2-digit'}), p=null; try{ p=wlProjOf(e); }catch(x){}
+        var note=(e.note&&e.note!=='Added by admin')?e.note:'';
+        rows+='<tr'+(i%2?' class="alt"':'')+'><td>'+(day!==lastDay?'<b>'+day+'</b>':'')+'</td><td>'+wlEsc(p?p.name:'—')+(note?'<div class="c">'+wlEsc(note)+'</div>':'')+(e.addedByAdmin||e.type==='manual'?'<div class="c">✎ added manually</div>':'')+'</td><td class="r">'+tm(e.startTime)+'</td><td class="r">'+tm(e.endTime)+'</td><td class="r">'+hm(gMin(e))+'</td><td class="r">'+dec(gMin(e))+'</td></tr>'; lastDay=day; });
+      var wot=Math.max(0,W.m-OT_THRESHOLD_MINS);
+      rows+='<tr class="ws"><td colspan="4">Week total'+(wot>0?' · <span class="ot">'+hm(wot)+' overtime</span>':'')+'</td><td class="r">'+hm(W.m)+'</td><td class="r">'+dec(W.m)+'</td></tr>'; });
+    var m=wp.regMins+wp.otMins;
+    G.m+=m; G.reg+=wp.regMins; G.ot+=wp.otMins; G.regPay+=wp.regPay; G.otPay+=wp.otPay; G.pay+=wp.totalPay;
+    overview+='<tr'+(hi%2?' class="alt"':'')+'><td><b>'+wlEsc(h.name)+'</b></td><td class="r">$'+rate+'/hr</td><td class="r">'+hm(wp.regMins)+'</td><td class="r">'+(wp.otMins?hm(wp.otMins):'—')+'</td><td class="r">'+hm(m)+'</td><td class="r"><b>'+fmtC(wp.totalPay)+'</b></td></tr>';
+    sections+='<div class="hp'+(list.length>1?' pb':'')+'"><div class="hn"><div><h2>'+wlEsc(h.name)+'</h2><span>$'+rate+'/hr'+(wp.otMins?' · overtime $'+(Math.round(rate*OT_MULTIPLIER*100)/100)+'/hr':'')+' · '+es.length+' entr'+(es.length!==1?'ies':'y')+'</span></div><div class="tt"><b>'+hm(m)+'</b><span>'+fmtC(wp.totalPay)+'</span></div></div>'+
+      '<table><thead><tr><th>Date</th><th>Job</th><th class="r">In</th><th class="r">Out</th><th class="r">Hours</th><th class="r">Dec.</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6">No entries in this period.</td></tr>')+'</tbody></table>'+
+      '<div class="pay"><div><span>Regular</span><b>'+hm(wp.regMins)+' × $'+rate+' = '+fmtC(wp.regPay)+'</b></div>'+(wp.otMins?'<div><span>Overtime</span><b class="ot">'+hm(wp.otMins)+' × $'+(Math.round(rate*OT_MULTIPLIER*100)/100)+' = '+fmtC(wp.otPay)+'</b></div>':'')+'<div class="tot"><span>Total</span><b>'+fmtC(wp.totalPay)+'</b></div></div>'+
+      '<div class="sig"><div>Helper signature</div><div>Date</div></div></div>';
+  });
+  var title=(list.length===1?list[0].name:'All helpers')+' · '+range.lbl;
+  var ov=list.length>1?'<div class="sec"><h3>Overview</h3><table><thead><tr><th>Helper</th><th class="r">Rate</th><th class="r">Regular</th><th class="r">Overtime</th><th class="r">Hours</th><th class="r">Pay</th></tr></thead><tbody>'+overview+'</tbody><tfoot><tr><td colspan="2">Total · '+list.length+' helpers</td><td class="r">'+hm(G.reg)+'</td><td class="r">'+(G.ot?hm(G.ot):'—')+'</td><td class="r">'+hm(G.m)+'</td><td class="r">'+fmtC(G.pay)+'</td></tr></tfoot></table></div>':'';
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hours · '+wlEsc(title)+'</title><style>'+
+    '@page{size:letter;margin:12mm}body{font-family:Inter,"Segoe UI",Arial,sans-serif;margin:0;color:#1a1a1a;font-size:12px;background:#fff}'+
+    '.hd{background:#0f3d1d;color:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.hd h1{margin:0;font-size:18px}.hd small{opacity:.8;letter-spacing:.08em;font-size:10px}.hd .rt{font-size:10.5px;opacity:.85;text-align:right}'+
+    '.ttl{padding:16px 22px 4px}.ttl h2{margin:0;font-size:20px}.ttl div{color:#666;margin-top:3px}'+
+    '.sec{padding:10px 22px 0}.sec h3{font-size:11px;letter-spacing:.08em;color:#1a6b2a;margin:8px 0 6px;text-transform:uppercase}.sec table{width:100%;margin:0}'+
+    '.hp{padding:14px 22px 0}.pb{break-before:page;page-break-before:always}.pb:first-of-type{break-before:auto;page-break-before:auto}'+
+    '.hn{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1a6b2a;padding-bottom:6px;margin-bottom:8px}.hn h2{margin:0;font-size:18px}.hn span{color:#666;font-size:11px}.tt{text-align:right}.tt b{display:block;font-size:18px;color:#1a6b2a}'+
+    'table{width:100%;border-collapse:collapse}th{text-align:left;font-size:10.5px;color:#fff;background:#1a6b2a;padding:7px 8px}th.r,td.r{text-align:right;white-space:nowrap}td{padding:6px 8px;border-bottom:1px solid #e8ebe7;vertical-align:top}tr.alt td{background:#f6f8f5}td .c{color:#777;font-size:10.5px;margin-top:1px}'+
+    'tr.wk td{background:#eef4ef;font-weight:800;color:#1a6b2a;font-size:11px;letter-spacing:.03em;padding-top:8px}tr.ws td{font-weight:700;border-bottom:2px solid #cfd8cf;background:#fafbf9}.ot{color:#b45309}'+
+    'tfoot td{font-weight:700;background:#eef4ef;border-top:2px solid #1a6b2a;border-bottom:none}'+
+    '.pay{margin:10px 0 0 auto;max-width:340px;border:1px solid #e3e6e2;border-radius:10px;padding:8px 12px;background:#fafbf9}.pay div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}.pay span{color:#666}.pay .tot{border-top:1px solid #ddd;margin-top:3px;padding-top:6px;font-size:14px}.pay .tot b{color:#1a6b2a}'+
+    '.sig{display:flex;gap:30px;margin:34px 0 6px}.sig div{flex:1;border-top:1px solid #999;padding-top:4px;color:#888;font-size:10px}.sig div:last-child{flex:0 0 140px}'+
+    '.ft{margin:18px 22px 0;padding:8px 0 16px;border-top:1px solid #ddd;font-size:10px;color:#888;display:flex;justify-content:space-between}'+
+    '@media print{button{display:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}tr{break-inside:avoid}}</style></head><body>'+
+    '<button onclick="window.print()" style="position:fixed;bottom:18px;right:18px;background:#2563eb;color:#fff;border:none;border-radius:24px;padding:12px 20px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9">🖨️ Print / PDF</button>'+
+    '<div class="hd"><div><h1>Green Idea Insulation</h1><small>DETAILED HOURS REPORT</small></div><div class="rt">238 Webster Street #3 · Worcester, MA 01603<br>774-578-7186 | 508-579-0762</div></div>'+
+    '<div class="ttl"><h2>'+wlEsc(title)+'</h2><div>'+(range.s.getFullYear()>2000?range.s.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' – '+new Date(Math.min(range.e,Date.now())).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · ':'')+'generated '+new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</div></div>'+
+    ov+sections+
+    '<div class="ft"><span>Green Idea Insulation · WorkLog</span><span>Overtime after '+(OT_THRESHOLD_MINS/60)+'h per week (Mon–Sun) at '+OT_MULTIPLIER+'×</span></div></body></html>';
+  var w=window.open('','_blank'); if(w){ w.document.write(html); w.document.close(); }
+  else { var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download='hours-'+title.replace(/[^a-z0-9]/gi,'_')+'.html'; document.body.appendChild(a); a.click(); a.remove(); showToast('Report downloaded — open it and tap Print / PDF'); }
+}
+window.wlHrsPdf=wlHrsPdf;
 
 // ── PAYMENTS ──────────────────────────────────────────
 
