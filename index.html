@@ -1045,7 +1045,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261120-1830</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261120-1915</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1294,6 +1294,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="modal">
     <div class="modal-title" id="ehr-title">Edit Rate</div>
     <div id="ehr-current" style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
+    <div class="fg"><label>Name</label><input id="ehr-name" type="text" autocomplete="off" maxlength="60"/><div style="font-size:11px;color:var(--muted);margin-top:4px">The helper's link stays the same — no need to send a new one.</div></div>
     <div class="fg" id="ehr-rate-box"><label>New Rate ($/hr)</label><input id="ehr-rate" type="number" min="0" step="0.25"/></div>
     <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4;margin:2px 0 14px;text-align:left"><input type="checkbox" id="ehr-sal" style="width:22px;height:22px;flex-shrink:0;margin-top:1px" onchange="wlSalUi()"/><span><b>Salaried (owner / partner)</b><br><span style="color:var(--muted)">Hours count in the jobs, but no hourly cost — the salary is already in the overhead.</span></span></label>
     <div class="modal-actions">
@@ -6478,7 +6479,7 @@ function renderSettingsTeam(){
         '<div style="font-weight:700;font-size:14px">'+h.name+'</div>' +
         '<div style="font-size:12px;color:var(--muted);margin-top:1px">'+wlRateTxt(h)+' · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
       '</div>' +
-      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Rate</button>' +
+      '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Edit</button>' +
       '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
       '</div>';
   }).join('');
@@ -6493,6 +6494,7 @@ function openEditHelperRate(hid){
   document.getElementById('ehr-current').textContent = h.salaried?'Salaried — no hourly cost':'Current rate: $'+h.rate+'/hr';
   document.getElementById('ehr-rate').value = h.salaried?(h.rateBefore||''):h.rate;
   document.getElementById('ehr-sal').checked = !!h.salaried; wlSalUi();
+  var nm = document.getElementById('ehr-name'); if(nm) nm.value = h.name||'';
   document.getElementById('modal-edit-helper-rate').classList.add('open');
 }
 window.openEditHelperRate = openEditHelperRate;
@@ -6500,6 +6502,17 @@ window.openEditHelperRate = openEditHelperRate;
 function saveHelperRate(){
   if(!editingHelperId) return;
   var rate = parseFloat(document.getElementById('ehr-rate').value), sal = document.getElementById('ehr-sal').checked, h0 = hById(editingHelperId)||{};
+  // Name: only the name field of the same helper record changes — the id (and so the helper's link, hours, payments) stays
+  var nmEl = document.getElementById('ehr-name'), newName = nmEl ? nmEl.value.replace(/\s+/g,' ').trim() : (h0.name||'');
+  if(!newName) return showToast('Enter a name','err');
+  var dup = helpers.some(function(x){ return x.id!==editingHelperId && String(x.name||'').trim().toLowerCase()===newName.toLowerCase(); });
+  if(dup) return showToast('Another helper already has this name','err');
+  if(!sal && (isNaN(rate)||rate<0)) return showToast('Enter a valid rate','err');
+  if(newName!==(h0.name||'')){
+    db.collection('helpers').doc(editingHelperId).update({name:newName}).then(function(){ showToast('Name updated ✅'); }).catch(function(e){ showToast('Name not saved: '+((e&&e.code)||e),'err'); });
+    var nRate = sal ? 0 : rate, oRate = Number(h0.rate)||0;
+    if(!!sal===!!h0.salaried && (sal || nRate===oRate)){ closeModal('modal-edit-helper-rate'); return; }   // only the name changed
+  }
   if(sal){
     // salaried: the hourly cost is zero everywhere (pay, labor cost, overtime); the old rate is kept in case it is switched back
     var keep = h0.salaried?(Number(h0.rateBefore)||0):(Number(h0.rate)||0);
