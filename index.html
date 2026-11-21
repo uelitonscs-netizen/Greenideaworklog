@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2215</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2300</div>
     </div>
 
     <!-- PROJECTS -->
@@ -4473,31 +4473,56 @@ function toLocalDT(isoStr){
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
-// ── new Edit Entry fields → the two hidden values (an end before the start = the next day) ──
-function wlEeP(n){ return String(n).padStart(2,'0'); }
-function wlEeSync(){
-  var d=document.getElementById('en-date').value, st=document.getElementById('en-s').value, en=document.getElementById('en-e').value, run=document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none';
-  var inEl=document.getElementById('edit-entry-in'), outEl=document.getElementById('edit-entry-out'), dur=document.getElementById('en-dur');
-  inEl.value=(d&&st)?d+'T'+st:''; var next=false;
-  if(run||!en||!d){ outEl.value=''; }
-  else { var o=d+'T'+en; if(st&&en<=st){ var x=new Date(d+'T00:00'); x.setDate(x.getDate()+1); o=x.getFullYear()+'-'+wlEeP(x.getMonth()+1)+'-'+wlEeP(x.getDate())+'T'+en; next=true; } outEl.value=o; }
-  if(!inEl.value){ dur.innerHTML=''; return; }
-  var a=new Date(inEl.value), b=run?new Date():(outEl.value?new Date(outEl.value):null);
-  if(!b){ dur.innerHTML='<small>Set the clock out time</small>'; return; }
-  var m=Math.round((b-a)/60000);
-  if(m<=0){ dur.innerHTML='<span style="color:var(--red);font-size:16px">'+(run?'⚠️ Clock in is in the future':'⚠️ Check the times')+'</span>'; return; }
-  dur.innerHTML=fmtD(m)+'<small>'+(run?'so far · still working':(next?'ends the next day':'total'))+(m>14*60?' · ⚠️ more than 14h':'')+'</small>';
-}
-function wlEeBump(k,mins){ var el=document.getElementById(k==='s'?'en-s':'en-e'); if(k==='e'&&document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none') return;
-  var v=el.value||document.getElementById('en-s').value||'07:00', t=(+v.slice(0,2))*60+(+v.slice(3,5))+mins; t=((t%1440)+1440)%1440; el.value=wlEeP(Math.floor(t/60))+':'+wlEeP(t%60); wlEeSync(); }
-function wlEeNow(){ var n=new Date(), r=Math.round(n.getMinutes()/5)*5, h=n.getHours(); if(r===60){ r=0; h=(h+1)%24; }
-  var rr=document.getElementById('en-run'); if(rr.checked){ rr.checked=false; wlEeRun(true); }
-  document.getElementById('en-e').value=wlEeP(h)+':'+wlEeP(r); wlEeSync(); }
-function wlEeRun(keep){ var run=document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none', box=document.getElementById('en-out-box'), en=document.getElementById('en-e');
-  box.classList.toggle('off',run); en.disabled=run;
-  if(!run&&!en.value&&keep!==true){ var n=new Date(); en.value=wlEeP(n.getHours())+':'+wlEeP(Math.floor(n.getMinutes()/5)*5); }
-  wlEeSync(); }
-window.wlEeSync=wlEeSync; window.wlEeBump=wlEeBump; window.wlEeNow=wlEeNow; window.wlEeRun=wlEeRun;
+// ── Edit Entry: big clock with arrows. The state below fills the two hidden values saveEntryEdit uses ──
+var _ck={d:'',s:420,e:930,run:false,canRun:false,sel:'s'};
+function wlCkPt(){ try{ return wlLang()==='pt'; }catch(e){ return false; } }
+function wlCkP(n){ return String(n).padStart(2,'0'); }
+function wlCkFmt(m){ if(m==null) return '—'; var h=Math.floor(m/60)%24, mm=m%60, ap=h<12?'AM':'PM', h12=h%12||12; return h12+':'+wlCkP(mm)+' '+ap; }
+function wlCkOpen(entry){ var pt=wlCkPt(), st=new Date(entry.startTime), h=hById(entry.helperId), pj=null; try{ pj=wlProjOf(entry); }catch(e){}
+  _ck.d=st.getFullYear()+'-'+wlCkP(st.getMonth()+1)+'-'+wlCkP(st.getDate()); _ck.s=st.getHours()*60+st.getMinutes();
+  if(entry.endTime){ var en=new Date(entry.endTime); _ck.e=en.getHours()*60+en.getMinutes(); _ck.run=false; _ck.canRun=false; }
+  else { var n=new Date(); _ck.e=n.getHours()*60+Math.floor(n.getMinutes()/5)*5; _ck.run=true; _ck.canRun=true; }
+  _ck.sel='s';
+  document.getElementById('en-title').textContent='✏️ '+(h?h.name:'Entry');
+  document.getElementById('en-sub').textContent=st.toLocaleDateString(pt?'pt-BR':'en-US',{weekday:'short',month:'short',day:'numeric'})+(pj?' · '+pj.name:'');
+  document.getElementById('ck-ls').textContent=pt?'🟢 Entrada':'🟢 Clock in'; document.getElementById('ck-le').textContent=pt?'🔴 Saída':'🔴 Clock out';
+  document.getElementById('ck-run-t').textContent=pt?'● Ainda trabalhando':'● Still working';
+  document.getElementById('ck-hint').textContent=pt?'hora · minutos (de 5 em 5)':'hour · minutes (5 by 5)';
+  document.getElementById('ck-now').textContent=pt?'Agora':'Now'; document.getElementById('ck-dlab').textContent=pt?'Dia':'Day';
+  document.getElementById('ck-cancel').textContent=pt?'Cancelar':'Cancel'; document.getElementById('saveEntryEditBtn').textContent=pt?'Salvar':'Save';
+  document.getElementById('ck-run-row').style.display=_ck.canRun?'flex':'none'; document.getElementById('ck-run').checked=_ck.run;
+  document.getElementById('ck-date').value=_ck.d;
+  wlCkDraw(); }
+function wlCkSel(k){ _ck.sel=k; wlCkDraw(); }
+function wlCkCur(){ return _ck.sel==='s'?_ck.s:_ck.e; }
+function wlCkSet(v){ v=((v%1440)+1440)%1440; if(_ck.sel==='s') _ck.s=v; else _ck.e=v; wlCkDraw(); }
+function wlCkStep(k,d){ if(_ck.sel==='e'&&_ck.run) return; var v=wlCkCur(), h=Math.floor(v/60), m=v%60;
+  if(k==='h') h=(h+d+24)%24; else { m=m+d; if(m%5) m=d>0?Math.ceil(m/5)*5:Math.floor(m/5)*5; if(m>=60){ m-=60; h=(h+1)%24; } if(m<0){ m+=60; h=(h+23)%24; } }
+  wlCkSet(h*60+m); }
+function wlCkAdd(n){ if(_ck.sel==='e'&&_ck.run) return; wlCkSet(wlCkCur()+n); }
+function wlCkAmPm(){ if(_ck.sel==='e'&&_ck.run) return; wlCkSet(wlCkCur()+720); }
+function wlCkNow(){ var n=new Date(), v=n.getHours()*60+Math.round(n.getMinutes()/5)*5; if(_ck.sel==='e'&&_ck.run){ _ck.run=false; document.getElementById('ck-run').checked=false; } wlCkSet(v); }
+function wlCkRun(){ _ck.run=document.getElementById('ck-run').checked; if(!_ck.run) _ck.sel='e'; wlCkDraw(); }
+function wlCkDate(){ var v=document.getElementById('ck-date').value; if(v) _ck.d=v; wlCkDraw(); }
+function wlCkDraw(){ var pt=wlCkPt(), cur=wlCkCur(), h=Math.floor(cur/60), m=cur%60, off=(_ck.sel==='e'&&_ck.run);
+  document.getElementById('ck-bs').classList.toggle('on',_ck.sel==='s'); document.getElementById('ck-be').classList.toggle('on',_ck.sel==='e');
+  document.getElementById('ck-vs').textContent=wlCkFmt(_ck.s); document.getElementById('ck-ve').textContent=_ck.run?(pt?'trabalhando…':'working…'):wlCkFmt(_ck.e);
+  document.getElementById('ck-h').textContent=wlCkP(h%12||12); document.getElementById('ck-m').textContent=wlCkP(m); document.getElementById('ck-ap').textContent=h<12?'AM':'PM';
+  ['ck-face','ck-hint'].forEach(function(i){ document.getElementById(i).classList.toggle('ck-off',off); }); document.querySelectorAll('#ck-body .ck-pm').forEach(function(x){ x.classList.toggle('ck-off',off); });   // 'Now' stays active: it closes an open punch
+  // hidden values for saveEntryEdit
+  var inV=_ck.d+'T'+wlCkP(Math.floor(_ck.s/60))+':'+wlCkP(_ck.s%60), outV='', next=false;
+  if(!_ck.run){ var od=_ck.d; if(_ck.e<=_ck.s){ var x=new Date(_ck.d+'T00:00'); x.setDate(x.getDate()+1); od=x.getFullYear()+'-'+wlCkP(x.getMonth()+1)+'-'+wlCkP(x.getDate()); next=true; } outV=od+'T'+wlCkP(Math.floor(_ck.e/60))+':'+wlCkP(_ck.e%60); }
+  document.getElementById('edit-entry-in').value=inV; document.getElementById('edit-entry-out').value=outV;
+  var a=new Date(inV), b=_ck.run?new Date():new Date(outV), mins=Math.round((b-a)/60000), du=document.getElementById('ck-dur');
+  if(_ck.run&&mins<0){ du.className='ck-dur bad'; du.textContent=pt?'⚠️ A entrada está no futuro':'⚠️ Clock in is in the future'; return; }
+  du.className='ck-dur'+(mins>14*60?' bad':'');
+  du.textContent=fmtD(Math.max(0,mins))+' '+(_ck.run?(pt?'até agora':'so far'):(pt?'trabalhadas':'worked'))+(next?(pt?' · sai no dia seguinte':' · ends the next day'):'')+(mins>14*60?(pt?' · confira':' · check it'):''); }
+// arrows: tap = one step, hold = repeat
+(function(){ var t=null, r=null; function stop(){ clearTimeout(t); clearInterval(r); t=r=null; }
+  document.addEventListener('pointerdown',function(ev){ var b=ev.target.closest&&ev.target.closest('.ck-ar'); if(!b) return; ev.preventDefault(); var k=b.getAttribute('data-k'), d=+b.getAttribute('data-d');
+    wlCkStep(k,d); stop(); t=setTimeout(function(){ r=setInterval(function(){ wlCkStep(k,d); },110); },420); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(n){ document.addEventListener(n,stop); }); })();
+window.wlCkSel=wlCkSel; window.wlCkAdd=wlCkAdd; window.wlCkAmPm=wlCkAmPm; window.wlCkNow=wlCkNow; window.wlCkRun=wlCkRun; window.wlCkDate=wlCkDate; window.wlCkOpen=wlCkOpen; window.wlCkStep=wlCkStep;
 function updateEditDuration(){
   var inVal = document.getElementById('edit-entry-in').value;
   var outVal = document.getElementById('edit-entry-out').value;
@@ -4515,12 +4540,7 @@ function openEditEntry(id){
   _editEntryId = id;
   document.getElementById('edit-entry-in').value = toLocalDT(entry.startTime);
   document.getElementById('edit-entry-out').value = entry.endTime?toLocalDT(entry.endTime):'';
-  var _h=hById(entry.helperId), _d=new Date(entry.startTime);
-  document.getElementById('en-title').textContent='✏️ '+(_h?_h.name:'Entry')+' · '+_d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  var _iv=toLocalDT(entry.startTime); document.getElementById('en-date').value=_iv.slice(0,10); document.getElementById('en-s').value=_iv.slice(11,16);
-  document.getElementById('en-e').value=entry.endTime?toLocalDT(entry.endTime).slice(11,16):'';
-  document.getElementById('en-run-row').style.display=entry.endTime?'none':'flex'; document.getElementById('en-run').checked=!entry.endTime;
-  wlEeRun(true);
+  wlCkOpen(entry);
   document.getElementById('modal-edit-entry').classList.add('open');
 }
 window.openEditEntry = openEditEntry;
@@ -6952,40 +6972,52 @@ function showInstallBanner(){
   </div>
 </div>
 
-<!-- EDIT ENTRY MODAL: one date, start / end side by side, quick ±15 min, live duration -->
+<!-- EDIT ENTRY MODAL: big clock with arrows (pick Clock in / Clock out on top) -->
 <style>
-.ee-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:10px 0 6px}
-.ee-box{min-width:0;border:2px solid var(--border);border-radius:14px;padding:9px 7px 8px;text-align:center;background:#fafbf9}
-.ee-box.in{border-color:#86c79a;background:#f0fdf4}.ee-box.out{border-color:#f2a7a7;background:#fff7f7}
-.ee-box.off{opacity:.55}
-.ee-lab{font-size:10.5px;font-weight:800;letter-spacing:.06em;margin-bottom:4px}
-.ee-box.in .ee-lab{color:#1a6b2a}.ee-box.out .ee-lab{color:#b91c1c}
-.ee-t{width:100%;min-width:0;box-sizing:border-box;border:none;background:transparent;font-family:var(--font-d);font-weight:800;font-size:20px;text-align:center;color:var(--text);padding:2px 0;min-height:40px}
-.ee-chips{display:flex;gap:4px;justify-content:center;margin-top:6px}
-.ee-chips button{flex:1;min-width:0;border:1px solid var(--border2);background:#fff;border-radius:9px;padding:8px 0;font-size:12px;font-weight:800;font-family:var(--font-d);cursor:pointer;color:var(--text)}
-.ee-chips button:active{background:#eef4ef}
-.ee-dur{text-align:center;font-family:var(--font-d);font-weight:800;font-size:28px;color:var(--green);margin:8px 0 2px}
-.ee-dur small{display:block;font-size:11.5px;font-weight:700;color:var(--muted);font-family:inherit}
-.ee-run{display:flex;align-items:center;gap:10px;justify-content:center;font-size:13.5px;font-weight:700;margin:4px 0 2px;color:#16a34a}
-.ee-run input{width:22px;height:22px}
+.ck-seg{display:flex;background:#eef0ec;border-radius:14px;padding:4px;margin:10px 0 6px}
+.ck-seg button{flex:1;border:none;background:transparent;border-radius:11px;padding:9px 4px;font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;line-height:1.25}
+.ck-seg button b{display:block;font-size:18px;color:var(--text)}
+.ck-seg button.on{background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.14);color:var(--text)}
+.ck-seg button.on.s{outline:2px solid #86c79a}.ck-seg button.on.e{outline:2px solid #f2a7a7}
+.ck-face{display:grid;grid-template-columns:auto auto auto auto;justify-content:center;align-items:center;column-gap:8px;row-gap:6px;margin:6px 0 2px;user-select:none;-webkit-user-select:none}
+.ck-ar{width:64px;height:46px;border-radius:13px;border:1px solid var(--border2);background:#fff;font-size:20px;font-weight:900;cursor:pointer;color:var(--text);touch-action:manipulation}
+.ck-ar:active{background:#eef4ef}
+.ck-n{font-family:var(--font-d);font-weight:900;font-size:50px;text-align:center;line-height:1;min-width:64px}
+.ck-col{font-family:var(--font-d);font-weight:900;font-size:44px;line-height:1;padding-bottom:6px}
+.ck-ap{border:1px solid var(--border2);background:#fff;border-radius:11px;padding:8px 10px;font-family:var(--font-d);font-weight:900;font-size:18px;cursor:pointer;margin-left:2px}
+.ck-hint{text-align:center;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:8px}
+.ck-chips{display:flex;gap:8px;justify-content:center}
+.ck-chips button{border:1px solid var(--border2);background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13px;font-family:var(--font-d);cursor:pointer;color:var(--text)}
+.ck-dur{text-align:center;font-weight:800;font-size:15px;color:#1a6b2a;background:#eaf5ec;border-radius:11px;padding:10px;margin:12px 0 8px}
+.ck-dur.bad{color:#b91c1c;background:#fdecec}
+.ck-run{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:800;color:#16a34a;margin:2px 0 6px}
+.ck-run input{width:22px;height:22px}
+.ck-off{opacity:.35;pointer-events:none}
+.ck-day{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.ck-day input{border:1px solid var(--border2);border-radius:9px;padding:6px 8px;font-size:13px;font-family:inherit}
 </style>
 <div class="modal-overlay" id="modal-edit-entry">
   <div class="modal" style="max-width:420px">
-    <div class="modal-title" id="en-title" style="margin-bottom:2px">&#x270F;&#xFE0F; Edit Entry</div>
-    <div class="fg" style="margin:8px 0 0"><label>Date</label><input type="date" id="en-date" onchange="wlEeSync()"/></div>
-    <div class="ee-grid">
-      <div class="ee-box in"><div class="ee-lab">&#x1F7E2; CLOCK IN</div><input class="ee-t" type="time" id="en-s" oninput="wlEeSync()"/>
-        <div class="ee-chips"><button type="button" onclick="wlEeBump('s',-15)">&minus;15</button><button type="button" onclick="wlEeBump('s',15)">+15</button></div></div>
-      <div class="ee-box out" id="en-out-box"><div class="ee-lab">&#x1F534; CLOCK OUT</div><input class="ee-t" type="time" id="en-e" oninput="wlEeSync()"/>
-        <div class="ee-chips"><button type="button" onclick="wlEeBump('e',-15)">&minus;15</button><button type="button" onclick="wlEeBump('e',15)">+15</button><button type="button" onclick="wlEeNow()">Now</button></div></div>
+    <div class="modal-title" id="en-title" style="margin-bottom:0">&#x270F;&#xFE0F; Edit Entry</div>
+    <div id="en-sub" style="font-size:12.5px;color:var(--muted)"></div>
+    <div class="ck-seg"><button type="button" class="s" id="ck-bs" onclick="wlCkSel('s')"><span id="ck-ls">🟢 Clock in</span><b id="ck-vs"></b></button><button type="button" class="e" id="ck-be" onclick="wlCkSel('e')"><span id="ck-le">🔴 Clock out</span><b id="ck-ve"></b></button></div>
+    <label class="ck-run" id="ck-run-row" style="display:none"><input type="checkbox" id="ck-run" onchange="wlCkRun()"/> <span id="ck-run-t">● Still working</span></label>
+    <div id="ck-body">
+      <div class="ck-face" id="ck-face">
+        <button type="button" class="ck-ar" data-k="h" data-d="1">▲</button><span></span><button type="button" class="ck-ar" data-k="m" data-d="5">▲</button><span></span>
+        <div class="ck-n" id="ck-h">07</div><div class="ck-col">:</div><div class="ck-n" id="ck-m">00</div><button type="button" class="ck-ap" id="ck-ap" onclick="wlCkAmPm()">AM</button>
+        <button type="button" class="ck-ar" data-k="h" data-d="-1">▼</button><span></span><button type="button" class="ck-ar" data-k="m" data-d="-5">▼</button><span></span>
+      </div>
+      <div class="ck-hint" id="ck-hint">hour · minutes (5 by 5)</div>
+      <div class="ck-chips"><button type="button" class="ck-pm" onclick="wlCkAdd(-15)">− 15 min</button><button type="button" class="ck-pm" onclick="wlCkAdd(15)">+ 15 min</button><button type="button" id="ck-now" onclick="wlCkNow()">Now</button></div>
     </div>
-    <label class="ee-run" id="en-run-row" style="display:none"><input type="checkbox" id="en-run" onchange="wlEeRun()"/> ● Still working (no clock out yet)</label>
-    <div class="ee-dur" id="en-dur"></div>
+    <div class="ck-dur" id="ck-dur"></div>
+    <div class="ck-day">📅 <span id="ck-dlab">Day</span> <input type="date" id="ck-date" onchange="wlCkDate()"/></div>
     <input type="datetime-local" id="edit-entry-in" style="display:none"/>
     <input type="datetime-local" id="edit-entry-out" style="display:none"/>
     <div id="edit-entry-duration" style="display:none"></div>
     <div class="modal-actions">
-      <button class="btn ghost" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
+      <button class="btn ghost" id="ck-cancel" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
       <button class="btn" id="saveEntryEditBtn">Save</button>
     </div>
   </div>
