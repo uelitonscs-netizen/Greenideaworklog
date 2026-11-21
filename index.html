@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1500</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1700</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2175,7 +2175,7 @@ var WL_ADMIN_UID='G7Tp4TUmYEYM0f8NaqfEg3Jm4OG2';
 var _wlMg={on:false,ok:false,uid:'',email:'',name:'',unsubs:[],week:'',open:{},err:'',status:'',perms:{}};
 var wlMgList=[], wlMgLog=[];
 // What a partner may do. Today only the hours exist; each new function becomes one more switch here and in the server rules.
-var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours'],['reports','Reports','The whole Reports tab: entries, summary + PDF, payments, advances, accuracy, results. Can record and delete payments and advances. Needs Hours on.']];
+var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours'],['reports','Reports','The whole Reports tab: entries, summary + PDF, payments, advances, accuracy, results. Can record and delete payments and advances. Needs Hours on.'],['helpers','Add helpers','Add a new helper (name and hourly rate) and send him his link. Cannot remove helpers or change rates. Needs Hours on.']];
 function mT(en,pt){ return wlLang()==='pt'?pt:en; }
 function wlMgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function wlMgMonday(d){ var dt=new Date(d), day=dt.getDay(), diff=(day===0)?-6:1-day; dt.setDate(dt.getDate()+diff); dt.setHours(0,0,0,0); return dt; }
@@ -2189,11 +2189,11 @@ function wlMgEnter(u){
   var dataOn=false;
   if(!_wlMg.email){ _wlMg.err='permission-denied'; wlMgDraw(); return; }
   _wlMg.unsubs.push(db.collection('managers').doc(_wlMg.email).onSnapshot(function(d){
-    if(d.exists){ _wlMg.err=''; var dd=d.data()||{}; if(dd.name) _wlMg.name=dd.name; _wlMg.perms=dd.perms||{};
+    if(d.exists){ _wlMg.err=''; var dd=d.data()||{}; if(dd.name) _wlMg.name=dd.name; _wlMg.perms=dd.perms||{}; _wlMg.status=(_wlMg.perms.hours===true)?'':'none';   // switched off: show "no access", not an endless Loading
       if(_wlMg.perms.hours===true){ if(!_wlMg.ok){ _wlMg.ok=true; if(!dataOn){ dataOn=true; wlMgListen(); } } }
+      else if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; }
       if(_wlMg.perms.hours===true&&_wlMg.perms.reports===true){ if(!_wlMg.repOn){ _wlMg.repOn=true; wlMgRepListen(); } }
-      else if(_wlMg.view==='reports'){ _wlMg.view='hours'; }
-      else if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
+      else if(_wlMg.view==='reports'){ _wlMg.view='hours'; } }
     else { if(d.metadata&&d.metadata.fromCache) return; _wlMg.status='none'; if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
     wlMgDraw();
   },function(e){ _wlMg.err=String((e&&e.code)||e||'error'); wlMgDraw(); }));
@@ -2266,11 +2266,12 @@ function wlMgDraw(){
     if(open){
       for(k=0;k<es.length;k++){ var e=es[k], pj=wlProjOf(e), em=gMin(e);
         cards+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--border);font-size:12.5px"><div style="min-width:0"><div style="font-weight:700">'+new Date(e.startTime).toLocaleDateString(L,{weekday:'short',month:'short',day:'numeric'})+'</div><div style="color:var(--muted)">'+wlMgT(e.startTime)+' → '+(e.endTime?wlMgT(e.endTime):'<b style="color:#16a34a">'+mT('running','aberto')+'</b>')+(pj?' · <span style="color:var(--green);font-weight:600">'+wlMgEsc(wlT(pj.name))+'</span>':' · <span style="color:#b45309">'+mT('no project','sem projeto')+'</span>')+(e.note?' · '+wlMgEsc(wlT(e.note)):'')+(e.editedBy?' · <i>'+mT('edited by ','alterado por ')+wlMgEsc(e.editedBy)+'</i>':'')+'</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="text-align:right;margin-right:2px"><div style="font-weight:700">'+(e.endTime?fmtD(em):'—')+'</div><div style="font-size:11px;color:var(--muted)">'+(e.endTime?fmtC((em/60)*rate):'')+'</div></div><button type="button" class="btn sm ghost" data-id="'+e.id+'" onclick="wlMgEdit(this.dataset.id)">✏️</button><button type="button" class="btn sm ghost" style="color:#dc2626" data-id="'+e.id+'" onclick="wlMgDel(this.dataset.id)">🗑</button></div></div>'; }
-      cards+='<div style="padding:10px 14px;border-top:1px solid var(--border)"><button type="button" class="btn sm" data-h="'+h.id+'" onclick="wlMgEdit(\'\',this.dataset.h)">+ '+mT('Add hours','Adicionar horas')+'</button></div>';
+      cards+='<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-h="'+h.id+'" onclick="wlMgEdit(\'\',this.dataset.h)">+ '+mT('Add hours','Adicionar horas')+'</button>'+(_wlMg.perms.helpers===true?'<button type="button" class="btn sm ghost" data-h="'+h.id+'" onclick="wlMgHLink(this.dataset.h)">🔗 '+mT('Helper link','Link do helper')+'</button>':'')+'</div>';
     }
     cards+='</div>';
   }
   var top='<div class="card" style="padding:12px 14px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(-1)">‹</button><div style="text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">📅 '+ws.toLocaleDateString(L,{month:'short',day:'numeric'})+' – '+we.toLocaleDateString(L,{month:'short',day:'numeric'})+'</div>'+(isNow?'<div style="font-size:11px;color:var(--muted)">'+mT('this week','esta semana')+'</div>':'<a href="#" onclick="wlMgWeekNow();return false" style="font-size:11.5px;color:var(--green);font-weight:700">'+mT('go to this week','ir para esta semana')+'</a>')+'</div><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(1)">›</button></div><div style="display:flex;justify-content:space-around;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);text-align:center"><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(totM)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL HOURS','TOTAL DE HORAS')+'</div></div><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px">'+fmtC(totP)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL PAY','TOTAL A PAGAR')+'</div></div></div></div>';
+  if(_wlMg.perms.helpers===true) cards+='<button type="button" class="btn" style="width:100%;margin:4px 0 8px" onclick="wlMgNewH()">+ '+mT('New helper','Novo helper')+'</button>';
   body.innerHTML=top+(hs.length?cards:'<div style="color:var(--muted);padding:20px;text-align:center">'+mT('Loading…','Carregando…')+'</div>')+'<div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:6px">WorkLog v'+WL_BUILD+'</div>';
 }
 function wlMgT(iso){ return new Date(iso).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
@@ -2313,6 +2314,31 @@ function wlMgSave(){
 function wlMgDel(id){ var e=null; for(var i=0;i<entries.length;i++){ if(entries[i].id===id) e=entries[i]; } if(!e) return; var h=hById(e.helperId)||{};
   if(!window.confirm(mT('Delete this entry of ','Apagar este registro de ')+(h.name||'')+'?\n'+new Date(e.startTime).toLocaleString())) return;
   db.collection('entries').doc(id).delete().then(function(){ wlMgLogAdd('delete',id,e.helperId,wlMgSnap(e),null); showToast(mT('Entry deleted','Registro apagado')); }).catch(function(er){ showToast(mT('Not deleted: ','Não apagado: ')+((er&&er.code)||er),'err'); }); }
+// ── Partner + "Add helpers" switch: new helper (name + rate) and his personal link. No remove, no rate change.
+function wlMgNewH(){ if(_wlMg.perms.helpers!==true) return;
+  var x='<div class="modal-title">+ '+mT('New helper','Novo helper')+'</div>';
+  x+='<div class="fg"><label>'+mT('Name','Nome')+'</label><input id="mg-hn" type="text" autocomplete="off" maxlength="60"/></div>';
+  x+='<div class="fg"><label>'+mT('Rate ($/hr)','Valor por hora ($/hr)')+'</label><input id="mg-hr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00"/></div>';
+  x+='<div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn" style="flex:1" id="mg-hsave" onclick="wlMgNewHSave()">'+mT('Add','Adicionar')+'</button><button type="button" class="btn ghost" onclick="closeModal(\'modal-mg\')">'+mT('Cancel','Cancelar')+'</button></div>';
+  document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open'); try{ document.getElementById('mg-hn').focus(); }catch(e){} }
+function wlMgNewHSave(){ if(_wlMg.perms.helpers!==true) return;
+  var nm=String(document.getElementById('mg-hn').value||'').replace(/\s+/g,' ').trim(), rv=String(document.getElementById('mg-hr').value||'').replace(',','.'), rate=parseFloat(rv);
+  if(!nm) return showToast(mT('Enter a name','Digite o nome'),'err');
+  if(isNaN(rate)||rate<0) return showToast(mT('Enter a valid rate','Digite um valor válido'),'err');
+  if(helpers.some(function(x){ return String(x.name||'').trim().toLowerCase()===nm.toLowerCase(); })) return showToast(mT('Another helper already has this name','Já existe um helper com este nome'),'err');
+  var bt=document.getElementById('mg-hsave'); if(bt){ bt.disabled=true; bt.textContent='…'; }
+  var ref=db.collection('helpers').doc();
+  ref.set({name:nm,rate:Math.round(rate*100)/100,createdAt:new Date().toISOString(),addedBy:_wlMg.name||_wlMg.email})
+    .then(function(){ showToast(nm+mT(' added ✓',' adicionado ✓')); wlMgHLink(ref.id,nm); })
+    .catch(function(e){ if(bt){ bt.disabled=false; bt.textContent=mT('Add','Adicionar'); } showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); }); }
+function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h), msg=mT('Hi ','Oi ')+(h.name||'')+'! WorkLog: '+link;
+  var x='<div class="modal-title">🔗 '+mT('Link for ','Link de ')+wlMgEsc(h.name||'')+'</div>';
+  x+='<div style="font-size:12.5px;color:#4b5563;line-height:1.45;margin-bottom:10px">'+mT('Send this link to the helper. He opens it on HIS phone to clock in. Do not open it on your phone.','Mande este link para o helper. Ele abre no celular DELE para bater o ponto. Não abra no seu celular.')+'</div>';
+  x+='<div style="background:#f3f4f6;border-radius:10px;padding:10px;font-family:var(--font-m);font-size:11.5px;word-break:break-all;margin-bottom:12px">'+wlMgEsc(link)+'</div>';
+  x+='<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" style="flex:1;text-align:center;text-decoration:none;background:#16a34a" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><button type="button" class="btn ghost" style="flex:1" data-l="'+wlMgEsc(link)+'" onclick="copyLink(this.dataset.l)">'+mT('Copy','Copiar')+'</button></div>';
+  x+='<button type="button" class="btn ghost" style="width:100%;margin-top:8px" onclick="closeModal(\'modal-mg\')">'+mT('Close','Fechar')+'</button>';
+  document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open'); }
+window.wlMgNewH=wlMgNewH; window.wlMgNewHSave=wlMgNewHSave; window.wlMgHLink=wlMgHLink;
 window.wlMgEnter=wlMgEnter; window.wlMgLogout=wlMgLogout; window.wlMgLang=wlMgLang; window.wlMgWeekShift=wlMgWeekShift; window.wlMgWeekNow=wlMgWeekNow; window.wlMgToggle=wlMgToggle; window.wlMgEdit=wlMgEdit; window.wlMgSave=wlMgSave; window.wlMgDel=wlMgDel;
 
 // ── office side: approve / remove the partner, see what was changed ──
