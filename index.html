@@ -154,6 +154,7 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 
 /* SUMMARY */
 .sum-period-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+#rep-tabbar{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;max-width:100%;min-width:0;}#rep-tabbar::-webkit-scrollbar{display:none;}#rep-tabbar>button{flex:1 0 auto !important;white-space:nowrap;}
 .speriod-btn{background:#eef0f2;color:var(--muted);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer;transition:background .15s,color .15s;}
 .speriod-btn.active{background:var(--green);color:#fff;box-shadow:var(--shadow-sm);}
 .sum-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
@@ -777,8 +778,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <!-- ENTRIES -->
     <!-- REPORTS (Entries + Summary merged) -->
     <div id="tab-reports" class="tab-panel">
-      <!-- Toggle -->
-      <div style="display:flex;gap:0;background:#f0f0f0;border-radius:10px;padding:3px;margin-bottom:16px">
+      <!-- Toggle (scrolls sideways on its own on a phone; the page stays still) -->
+      <div id="rep-tabbar" style="display:flex;gap:0;background:#f0f0f0;border-radius:10px;padding:3px;margin-bottom:16px">
         <button id="rep-toggle-entries" onclick="switchReport('entries',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:var(--green);color:#fff">📋 Entries</button>
         <button id="rep-toggle-summary" onclick="switchReport('summary',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💰 Summary</button>
         <button id="rep-toggle-payments" onclick="switchReport('payments',this)" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-d);background:transparent;color:var(--muted)">💳 Payments</button>
@@ -1045,7 +1046,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261120-1915</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-0900</div>
     </div>
 
     <!-- PROJECTS -->
@@ -4146,6 +4147,7 @@ window.confirmDeleteHelper=confirmDeleteHelper;
 var currentReport = 'entries';
 function switchReport(panel, btn){
   currentReport = panel;
+  try{ var tb=document.getElementById('rep-tabbar'), tbt=document.getElementById('rep-toggle-'+panel); if(tb&&tbt&&tb.scrollWidth>tb.clientWidth){ var x=tbt.offsetLeft-(tb.clientWidth-tbt.offsetWidth)/2; tb.scrollTo({left:Math.max(0,x),behavior:'smooth'}); } }catch(_e){}   // keep the chosen tab visible inside the bar (only the bar moves)
   document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
   document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
   var resEl=document.getElementById('rep-results'); if(resEl) resEl.style.display = panel==='results'?'block':'none'; var resBt=document.getElementById('rep-toggle-results'); if(resBt){ resBt.style.background=panel==='results'?'var(--green)':'transparent'; resBt.style.color=panel==='results'?'#fff':'var(--muted)'; } if(panel==='results'){ currentReport='results'; wlResRender(); }
