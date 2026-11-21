@@ -659,7 +659,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <button class="btn sm ghost" style="color:#fff;border-color:#fff5" onclick="wlMgLogout()" id="mg-out">Logout</button>
     </div>
   </div>
+  <div id="mg-switch" style="display:none"></div>
   <div class="helper-body" id="mg-body"></div>
+  <div class="admin-body" id="mg-rep" style="display:none"></div>
 </div>
 <div id="modal-mg" class="modal-overlay"><div class="modal" id="mg-modal"></div></div>
 <div id="screen-login" class="screen" style="align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#1a6b2a15 0%,transparent 60%),var(--bg)">
@@ -1046,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-0900</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1500</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2173,7 +2175,7 @@ var WL_ADMIN_UID='G7Tp4TUmYEYM0f8NaqfEg3Jm4OG2';
 var _wlMg={on:false,ok:false,uid:'',email:'',name:'',unsubs:[],week:'',open:{},err:'',status:'',perms:{}};
 var wlMgList=[], wlMgLog=[];
 // What a partner may do. Today only the hours exist; each new function becomes one more switch here and in the server rules.
-var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours']];
+var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours'],['reports','Reports','The whole Reports tab: entries, summary + PDF, payments, advances, accuracy, results. Can record and delete payments and advances. Needs Hours on.']];
 function mT(en,pt){ return wlLang()==='pt'?pt:en; }
 function wlMgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function wlMgMonday(d){ var dt=new Date(d), day=dt.getDay(), diff=(day===0)?-6:1-day; dt.setDate(dt.getDate()+diff); dt.setHours(0,0,0,0); return dt; }
@@ -2181,7 +2183,7 @@ function wlMgStop(){ for(var i=0;i<_wlMg.unsubs.length;i++){ try{ _wlMg.unsubs[i
 function wlMgLang(l){ wlLsSet('wl_lang',l); wlMgDraw(); }
 function wlMgEnter(u){
   wlMgStop(); try{ _wlHStop(); _wlHelperId=null; window._wlLinkHid=null; }catch(e){}
-  _wlMg.on=true; _wlMg.ok=false; _wlMg.err=''; _wlMg.status=''; _wlMg.perms={}; _wlMg.uid=u.uid; _wlMg.email=String(u.email||'').toLowerCase(); _wlMg.name=u.displayName||_wlMg.email.split('@')[0]; _wlMg.week=localDateStr(wlMgMonday(new Date())); _wlMg.open={};
+  _wlMg.on=true; _wlMg.ok=false; _wlMg.err=''; _wlMg.status=''; _wlMg.perms={}; _wlMg.view='hours'; _wlMg.repOn=false; _wlMg.fullProj=false; _wlMg.repErr={}; payments=[]; advances=[]; projectExpenses=[]; _wlMg.uid=u.uid; _wlMg.email=String(u.email||'').toLowerCase(); _wlMg.name=u.displayName||_wlMg.email.split('@')[0]; _wlMg.week=localDateStr(wlMgMonday(new Date())); _wlMg.open={};
   wlLsSet('wl_session','manager'); helpers=[]; entries=[]; projects=[]; payments=[]; projectPhotos=[];
   showScreen('manager'); wlMgDraw();
   var dataOn=false;
@@ -2189,6 +2191,8 @@ function wlMgEnter(u){
   _wlMg.unsubs.push(db.collection('managers').doc(_wlMg.email).onSnapshot(function(d){
     if(d.exists){ _wlMg.err=''; var dd=d.data()||{}; if(dd.name) _wlMg.name=dd.name; _wlMg.perms=dd.perms||{};
       if(_wlMg.perms.hours===true){ if(!_wlMg.ok){ _wlMg.ok=true; if(!dataOn){ dataOn=true; wlMgListen(); } } }
+      if(_wlMg.perms.hours===true&&_wlMg.perms.reports===true){ if(!_wlMg.repOn){ _wlMg.repOn=true; wlMgRepListen(); } }
+      else if(_wlMg.view==='reports'){ _wlMg.view='hours'; }
       else if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
     else { if(d.metadata&&d.metadata.fromCache) return; _wlMg.status='none'; if(_wlMg.ok){ _wlMg.ok=false; helpers=[]; entries=[]; projects=[]; } }
     wlMgDraw();
@@ -2197,9 +2201,44 @@ function wlMgEnter(u){
 function wlMgListen(){
   _wlMg.unsubs.push(db.collection('helpers').onSnapshot(function(s){ helpers=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlMgDraw(); },function(e){ _wlMg.err=String((e&&e.code)||e); wlMgDraw(); }));
   _wlMg.unsubs.push(db.collection('entries').onSnapshot(function(s){ entries=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlMgDraw(); },function(e){ _wlMg.err=String((e&&e.code)||e); wlMgDraw(); }));
-  _wlMg.unsubs.push(db.collection('wl_manager').doc('projects').onSnapshot(function(d){ if(d.exists){ var l=(d.data()||{}).list; if(Array.isArray(l)) projects=l; } wlMgDraw(); },function(){}));
+  _wlMg.unsubs.push(db.collection('wl_manager').doc('projects').onSnapshot(function(d){ if(d.exists&&!_wlMg.fullProj){ var l=(d.data()||{}).list; if(Array.isArray(l)) projects=l; } wlMgDraw(); },function(){}));
 }
-function wlMgLogout(){ wlMgStop(); _wlMg.on=false; _wlMg.ok=false; closeModal('modal-mg'); helpers=[]; entries=[]; projects=[];
+// ── Partner + Reports switch: the same Reports tab as the office (moved into this screen), with the data it needs.
+// Read only except payments / advances (and hours, as before). Server rules must allow it: see the PR notes.
+function wlMgRepListen(){
+  function err(c){ return function(e){ _wlMg.repErr[c]=String((e&&e.code)||e||'error'); wlMgDraw(); }; }
+  _wlMg.repErr={};
+  _wlMg.unsubs.push(db.collection('payments').orderBy('date','desc').onSnapshot(function(s){ payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); delete _wlMg.repErr.payments; wlMgDraw(); },err('payments')));
+  _wlMg.unsubs.push(db.collection('advances').orderBy('date','desc').onSnapshot(function(s){ advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); delete _wlMg.repErr.advances; wlMgDraw(); },err('advances')));
+  _wlMg.unsubs.push(db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){ _wlMg.fullProj=true; projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); delete _wlMg.repErr.projects; wlMgDraw(); },err('projects')));
+  _wlMg.unsubs.push(db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){ projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); delete _wlMg.repErr.projectExpenses; wlMgDraw(); },err('projectExpenses')));
+  // overtime rule / overhead from the office settings (a clean phone has none saved)
+  db.collection('wl_config').doc('settings').get().then(function(doc){ if(doc.exists){ var fs=doc.data(); _applySettings(fs); try{ localStorage.setItem('wl_settings',JSON.stringify(fs)); }catch(e){} wlMgDraw(); } }).catch(function(){});
+}
+var _wlMgRepHome=null;
+function wlMgRepMount(on){
+  var tr=document.getElementById('tab-reports'), box=document.getElementById('mg-rep'); if(!tr||!box) return;
+  if(on){ if(tr.parentNode!==box){ _wlMgRepHome={parent:tr.parentNode,next:tr.nextSibling,active:tr.classList.contains('active')}; box.appendChild(tr); } tr.classList.add('active'); }
+  else if(_wlMgRepHome&&tr.parentNode===box){ var H=_wlMgRepHome; _wlMgRepHome=null; H.parent.insertBefore(tr,H.next&&H.next.parentNode===H.parent?H.next:null); if(!H.active) tr.classList.remove('active'); }
+}
+function wlMgView(v){ _wlMg.view=v; wlMgDraw(); try{ window.scrollTo(0,0); }catch(e){} }
+window.wlMgView=wlMgView;
+function wlMgRepDraw(){
+  var sw=document.getElementById('mg-switch'), body=document.getElementById('mg-body'), box=document.getElementById('mg-rep'); if(!sw||!body||!box) return false;
+  var can=_wlMg.ok&&_wlMg.perms.reports===true;
+  if(!can){ sw.style.display='none'; box.style.display='none'; body.style.display=''; wlMgRepMount(false); return false; }
+  var rep=_wlMg.view==='reports', b='flex:1;border:none;border-radius:9px;padding:9px;font-weight:800;font-size:13px;font-family:var(--font-d);cursor:pointer;';
+  sw.style.cssText='display:flex;gap:4px;margin:10px 16px 0;background:#e7ebe4;border-radius:12px;padding:4px';
+  sw.innerHTML='<button type="button" style="'+b+(rep?'background:transparent;color:var(--muted)':'background:var(--green);color:#fff')+'" onclick="wlMgView(\'hours\')">⏱ '+mT('Hours','Horas')+'</button><button type="button" style="'+b+(rep?'background:var(--green);color:#fff':'background:transparent;color:var(--muted)')+'" onclick="wlMgView(\'reports\')">📊 Reports</button>';
+  if(!rep){ box.style.display='none'; body.style.display=''; return false; }
+  body.style.display='none'; box.style.display='block'; wlMgRepMount(true);
+  var ek=Object.keys(_wlMg.repErr||{}), note=document.getElementById('mg-rep-note');
+  if(!note){ note=document.createElement('div'); note.id='mg-rep-note'; box.insertBefore(note,box.firstChild); }
+  note.innerHTML=ek.length?'<div style="background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:12px;line-height:1.45">⚠️ '+mT('Some data is blocked for this login','Alguns dados estão bloqueados para este login')+' ('+wlMgEsc(ek.join(', '))+'). '+mT('The office must update the Firebase rules.','O escritório precisa atualizar as regras do Firebase.')+'</div>':'';
+  try{ switchReport(currentReport||'entries',null); }catch(e){}
+  return true;
+}
+function wlMgLogout(){ wlMgStop(); _wlMg.on=false; _wlMg.ok=false; _wlMg.view='hours'; _wlMg.repOn=false; _wlMg.fullProj=false; try{ wlMgRepDraw(); }catch(e){} payments=[]; advances=[]; projectExpenses=[]; closeModal('modal-mg'); helpers=[]; entries=[]; projects=[];
   auth.signOut().then(function(){ wlLsDel('wl_session'); showScreen('login'); wlNamesListen(); },function(){ wlLsDel('wl_session'); showScreen('login'); }); }
 function wlMgWeekShift(n){ var d=parseLocalDate(_wlMg.week); d.setDate(d.getDate()+7*n); _wlMg.week=localDateStr(d); wlMgDraw(); }
 function wlMgWeekNow(){ _wlMg.week=localDateStr(wlMgMonday(new Date())); wlMgDraw(); }
@@ -2214,8 +2253,9 @@ function wlMgDraw(){
   if(!_wlMg.ok){
     var has=(_wlMg.status==='none')||/permission/.test(_wlMg.err);
     if(!has){ body.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 10px">'+mT('Loading…','Carregando…')+'</div>'; return; }
-    body.innerHTML='<div class="card" style="text-align:center;padding:28px 18px"><div style="font-size:38px">🔒</div><div style="font-weight:700;margin:10px 0 6px">'+wlMgEsc(_wlMg.email)+'</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+mT('This login has no access to WorkLog.','Este login não tem acesso ao WorkLog.')+'</div></div>'; return;
+    wlMgRepDraw(); body.innerHTML='<div class="card" style="text-align:center;padding:28px 18px"><div style="font-size:38px">🔒</div><div style="font-weight:700;margin:10px 0 6px">'+wlMgEsc(_wlMg.email)+'</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+mT('This login has no access to WorkLog.','Este login não tem acesso ao WorkLog.')+'</div></div>'; return;
   }
+  if(wlMgRepDraw()) return;
   var ws=parseLocalDate(_wlMg.week), we=new Date(ws); we.setDate(we.getDate()+6); var isNow=_wlMg.week===localDateStr(wlMgMonday(new Date()));
   var hs=helpers.slice().sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; }), totM=0, totP=0, cards='';
   for(var i=0;i<hs.length;i++){ var h=hs[i], rate=Number(h.rate)||0, es=wlMgWeekEntries(h.id), mins=0, run=null, k;
@@ -4146,8 +4186,8 @@ window.confirmDeleteHelper=confirmDeleteHelper;
 // ── ENTRIES ────────────────────────────────────────────
 var currentReport = 'entries';
 function switchReport(panel, btn){
-  currentReport = panel;
-  try{ var tb=document.getElementById('rep-tabbar'), tbt=document.getElementById('rep-toggle-'+panel); if(tb&&tbt&&tb.scrollWidth>tb.clientWidth){ var x=tbt.offsetLeft-(tb.clientWidth-tbt.offsetWidth)/2; tb.scrollTo({left:Math.max(0,x),behavior:'smooth'}); } }catch(_e){}   // keep the chosen tab visible inside the bar (only the bar moves)
+  var _srPrev=currentReport; currentReport = panel;
+  try{ var tb=document.getElementById('rep-tabbar'), tbt=document.getElementById('rep-toggle-'+panel); if(tb&&tbt&&(btn||panel!==_srPrev)&&tb.scrollWidth>tb.clientWidth){ var x=tbt.offsetLeft-(tb.clientWidth-tbt.offsetWidth)/2; tb.scrollTo({left:Math.max(0,x),behavior:'smooth'}); } }catch(_e){}   // keep the chosen tab visible inside the bar (only the bar moves)
   document.getElementById('rep-entries').style.display = panel==='entries'?'block':'none';
   document.getElementById('rep-summary').style.display = panel==='summary'?'block':'none';
   var resEl=document.getElementById('rep-results'); if(resEl) resEl.style.display = panel==='results'?'block':'none'; var resBt=document.getElementById('rep-toggle-results'); if(resBt){ resBt.style.background=panel==='results'?'var(--green)':'transparent'; resBt.style.color=panel==='results'?'#fff':'var(--muted)'; } if(panel==='results'){ currentReport='results'; wlResRender(); }
@@ -4629,12 +4669,12 @@ function addAdvance(){
       document.getElementById('adv-note').value = '';
       showToast(type==='advance'?'Advance recorded':'Discount recorded');
       renderDashboard();
-    });
+    }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
 }
 window.addAdvance = addAdvance;
 
 function delAdvance(id){
-  db.collection('advances').doc(id).delete();
+  db.collection('advances').doc(id).delete().catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); });
   showToast('Entry deleted');
   renderDashboard();
 }
@@ -4662,12 +4702,12 @@ function addPayment(){
   if(!hid) return showToast('Select a helper','err');
   if(isNaN(amount)||amount<=0) return showToast('Enter a valid amount','err');
   if(!date) return showToast('Select a date','err');
-  db.collection('payments').add({helperId:hid,amount:amount,date:date,note:note,createdAt:new Date().toISOString()});
+  db.collection('payments').add({helperId:hid,amount:amount,date:date,note:note,createdAt:new Date().toISOString()}).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
   document.getElementById('pay-amount').value=''; document.getElementById('pay-note').value='';
   showToast('Payment recorded! ✅');
 }
 window.addPayment=addPayment;
-function delPayment(id){db.collection('payments').doc(id).delete(); showToast('Payment deleted');}
+function delPayment(id){db.collection('payments').doc(id).delete().catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); }); showToast('Payment deleted');}
 window.delPayment=delPayment;
 
 // ── ABSENCES ───────────────────────────────────────────
