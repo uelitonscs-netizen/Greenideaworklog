@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1930</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2000</div>
     </div>
 
     <!-- PROJECTS -->
@@ -4673,9 +4673,9 @@ function renderAdvances(){
   var sel = document.getElementById('adv-helper');
   if(sel){
     sel.innerHTML = '<option value="">-- Select Helper --</option>';
-    helpers.forEach(function(h){
+    helpers.filter(wlHOn).concat(helpers.filter(function(x){ return !wlHOn(x); })).forEach(function(h){
       var o = document.createElement('option');
-      o.value = h.id; o.textContent = h.name;
+      o.value = h.id; o.textContent = h.name+(wlHOn(h)?'':' (inactive)');
       sel.appendChild(o);
     });
   }
@@ -4796,7 +4796,7 @@ window.wlPayEdit=wlPayEdit; window.wlPaySave=wlPaySave;
 // ── ABSENCES ───────────────────────────────────────────
 var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
 function renderAbsences(){
-  var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
+  var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){ if(!wlHOn(h)) return; var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
   var el=document.getElementById('absences-list');
   if(!absences.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No absences recorded yet.</div>'; return;}
@@ -5408,7 +5408,7 @@ function addProject(){
     rb2Boards:parseFloat(document.getElementById('proj-rb2-boards').value)||0,
     rb1Boards:parseFloat(document.getElementById('proj-rb1-boards').value)||0
   };
-  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:helpers.map(function(h){return h.id;}),matBudget:matBudget,createdAt:new Date().toISOString()});
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:helpers.filter(wlHOn).map(function(h){return h.id;}),matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
   document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
   document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
