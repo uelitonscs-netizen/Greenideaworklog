@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2130</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2215</div>
     </div>
 
     <!-- PROJECTS -->
@@ -4473,6 +4473,31 @@ function toLocalDT(isoStr){
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
+// ── new Edit Entry fields → the two hidden values (an end before the start = the next day) ──
+function wlEeP(n){ return String(n).padStart(2,'0'); }
+function wlEeSync(){
+  var d=document.getElementById('en-date').value, st=document.getElementById('en-s').value, en=document.getElementById('en-e').value, run=document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none';
+  var inEl=document.getElementById('edit-entry-in'), outEl=document.getElementById('edit-entry-out'), dur=document.getElementById('en-dur');
+  inEl.value=(d&&st)?d+'T'+st:''; var next=false;
+  if(run||!en||!d){ outEl.value=''; }
+  else { var o=d+'T'+en; if(st&&en<=st){ var x=new Date(d+'T00:00'); x.setDate(x.getDate()+1); o=x.getFullYear()+'-'+wlEeP(x.getMonth()+1)+'-'+wlEeP(x.getDate())+'T'+en; next=true; } outEl.value=o; }
+  if(!inEl.value){ dur.innerHTML=''; return; }
+  var a=new Date(inEl.value), b=run?new Date():(outEl.value?new Date(outEl.value):null);
+  if(!b){ dur.innerHTML='<small>Set the clock out time</small>'; return; }
+  var m=Math.round((b-a)/60000);
+  if(m<=0){ dur.innerHTML='<span style="color:var(--red);font-size:16px">'+(run?'⚠️ Clock in is in the future':'⚠️ Check the times')+'</span>'; return; }
+  dur.innerHTML=fmtD(m)+'<small>'+(run?'so far · still working':(next?'ends the next day':'total'))+(m>14*60?' · ⚠️ more than 14h':'')+'</small>';
+}
+function wlEeBump(k,mins){ var el=document.getElementById(k==='s'?'en-s':'en-e'); if(k==='e'&&document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none') return;
+  var v=el.value||document.getElementById('en-s').value||'07:00', t=(+v.slice(0,2))*60+(+v.slice(3,5))+mins; t=((t%1440)+1440)%1440; el.value=wlEeP(Math.floor(t/60))+':'+wlEeP(t%60); wlEeSync(); }
+function wlEeNow(){ var n=new Date(), r=Math.round(n.getMinutes()/5)*5, h=n.getHours(); if(r===60){ r=0; h=(h+1)%24; }
+  var rr=document.getElementById('en-run'); if(rr.checked){ rr.checked=false; wlEeRun(true); }
+  document.getElementById('en-e').value=wlEeP(h)+':'+wlEeP(r); wlEeSync(); }
+function wlEeRun(keep){ var run=document.getElementById('en-run').checked&&document.getElementById('en-run-row').style.display!=='none', box=document.getElementById('en-out-box'), en=document.getElementById('en-e');
+  box.classList.toggle('off',run); en.disabled=run;
+  if(!run&&!en.value&&keep!==true){ var n=new Date(); en.value=wlEeP(n.getHours())+':'+wlEeP(Math.floor(n.getMinutes()/5)*5); }
+  wlEeSync(); }
+window.wlEeSync=wlEeSync; window.wlEeBump=wlEeBump; window.wlEeNow=wlEeNow; window.wlEeRun=wlEeRun;
 function updateEditDuration(){
   var inVal = document.getElementById('edit-entry-in').value;
   var outVal = document.getElementById('edit-entry-out').value;
@@ -4490,8 +4515,12 @@ function openEditEntry(id){
   _editEntryId = id;
   document.getElementById('edit-entry-in').value = toLocalDT(entry.startTime);
   document.getElementById('edit-entry-out').value = entry.endTime?toLocalDT(entry.endTime):'';
-  var _run=document.getElementById('edit-entry-run'); if(_run) _run.style.display=entry.endTime?'none':'block';
-  updateEditDuration();
+  var _h=hById(entry.helperId), _d=new Date(entry.startTime);
+  document.getElementById('en-title').textContent='✏️ '+(_h?_h.name:'Entry')+' · '+_d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  var _iv=toLocalDT(entry.startTime); document.getElementById('en-date').value=_iv.slice(0,10); document.getElementById('en-s').value=_iv.slice(11,16);
+  document.getElementById('en-e').value=entry.endTime?toLocalDT(entry.endTime).slice(11,16):'';
+  document.getElementById('en-run-row').style.display=entry.endTime?'none':'flex'; document.getElementById('en-run').checked=!entry.endTime;
+  wlEeRun(true);
   document.getElementById('modal-edit-entry').classList.add('open');
 }
 window.openEditEntry = openEditEntry;
@@ -6923,22 +6952,38 @@ function showInstallBanner(){
   </div>
 </div>
 
-<!-- EDIT ENTRY MODAL -->
+<!-- EDIT ENTRY MODAL: one date, start / end side by side, quick ±15 min, live duration -->
+<style>
+.ee-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:10px 0 6px}
+.ee-box{min-width:0;border:2px solid var(--border);border-radius:14px;padding:9px 7px 8px;text-align:center;background:#fafbf9}
+.ee-box.in{border-color:#86c79a;background:#f0fdf4}.ee-box.out{border-color:#f2a7a7;background:#fff7f7}
+.ee-box.off{opacity:.55}
+.ee-lab{font-size:10.5px;font-weight:800;letter-spacing:.06em;margin-bottom:4px}
+.ee-box.in .ee-lab{color:#1a6b2a}.ee-box.out .ee-lab{color:#b91c1c}
+.ee-t{width:100%;min-width:0;box-sizing:border-box;border:none;background:transparent;font-family:var(--font-d);font-weight:800;font-size:20px;text-align:center;color:var(--text);padding:2px 0;min-height:40px}
+.ee-chips{display:flex;gap:4px;justify-content:center;margin-top:6px}
+.ee-chips button{flex:1;min-width:0;border:1px solid var(--border2);background:#fff;border-radius:9px;padding:8px 0;font-size:12px;font-weight:800;font-family:var(--font-d);cursor:pointer;color:var(--text)}
+.ee-chips button:active{background:#eef4ef}
+.ee-dur{text-align:center;font-family:var(--font-d);font-weight:800;font-size:28px;color:var(--green);margin:8px 0 2px}
+.ee-dur small{display:block;font-size:11.5px;font-weight:700;color:var(--muted);font-family:inherit}
+.ee-run{display:flex;align-items:center;gap:10px;justify-content:center;font-size:13.5px;font-weight:700;margin:4px 0 2px;color:#16a34a}
+.ee-run input{width:22px;height:22px}
+</style>
 <div class="modal-overlay" id="modal-edit-entry">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-title">&#x270F;&#xFE0F; Edit Entry</div>
-    <div style="margin-bottom:14px">
-      <div style="margin-bottom:10px">
-        <label style="font-size:10px;font-weight:700;color:#1a6b2a;display:block;margin-bottom:5px">&#x1F7E2; CLOCK IN</label>
-        <input type="datetime-local" id="edit-entry-in" style="width:100%;background:#f0fdf4;border:2px solid var(--green);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--green);outline:none"/>
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:10px;font-weight:700;color:#dc2626;display:block;margin-bottom:5px">&#x1F534; CLOCK OUT</label>
-        <input type="datetime-local" id="edit-entry-out" style="width:100%;background:#fff5f5;border:2px solid var(--red);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--red);outline:none"/>
-      </div>
-      <div id="edit-entry-run" style="display:none;font-size:12px;color:#16a34a;font-weight:700;margin:-4px 0 10px">● Still clocked in. Change the clock in time and leave CLOCK OUT empty to keep him on the clock.</div>
-      <div id="edit-entry-duration" style="text-align:center;font-size:14px;font-weight:700;color:var(--muted);padding:8px;background:#f8f9fa;border-radius:8px"></div>
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="en-title" style="margin-bottom:2px">&#x270F;&#xFE0F; Edit Entry</div>
+    <div class="fg" style="margin:8px 0 0"><label>Date</label><input type="date" id="en-date" onchange="wlEeSync()"/></div>
+    <div class="ee-grid">
+      <div class="ee-box in"><div class="ee-lab">&#x1F7E2; CLOCK IN</div><input class="ee-t" type="time" id="en-s" oninput="wlEeSync()"/>
+        <div class="ee-chips"><button type="button" onclick="wlEeBump('s',-15)">&minus;15</button><button type="button" onclick="wlEeBump('s',15)">+15</button></div></div>
+      <div class="ee-box out" id="en-out-box"><div class="ee-lab">&#x1F534; CLOCK OUT</div><input class="ee-t" type="time" id="en-e" oninput="wlEeSync()"/>
+        <div class="ee-chips"><button type="button" onclick="wlEeBump('e',-15)">&minus;15</button><button type="button" onclick="wlEeBump('e',15)">+15</button><button type="button" onclick="wlEeNow()">Now</button></div></div>
     </div>
+    <label class="ee-run" id="en-run-row" style="display:none"><input type="checkbox" id="en-run" onchange="wlEeRun()"/> ● Still working (no clock out yet)</label>
+    <div class="ee-dur" id="en-dur"></div>
+    <input type="datetime-local" id="edit-entry-in" style="display:none"/>
+    <input type="datetime-local" id="edit-entry-out" style="display:none"/>
+    <div id="edit-entry-duration" style="display:none"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
       <button class="btn" id="saveEntryEditBtn">Save</button>
