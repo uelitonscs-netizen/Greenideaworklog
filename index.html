@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1930</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2300</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2348,11 +2348,11 @@ function wlMgNewHSave(){ if(_wlMg.perms.helpers!==true) return;
   ref.set({name:nm,rate:Math.round(rate*100)/100,createdAt:new Date().toISOString(),addedBy:_wlMg.name||_wlMg.email})
     .then(function(){ showToast(nm+mT(' added ✓',' adicionado ✓')); wlMgHLink(ref.id,nm); })
     .catch(function(e){ if(bt){ bt.disabled=false; bt.textContent=mT('Add','Adicionar'); } showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); }); }
-function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h), msg=mT('Hi ','Oi ')+(h.name||'')+'! WorkLog: '+link;
+function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h), msg=mT('Hi ','Oi ')+(h.name||'')+'! WorkLog: '+link; try{ navigator.clipboard.writeText(link).catch(function(){}); }catch(e){}
   var x='<div class="modal-title">🔗 '+mT('Link for ','Link de ')+wlMgEsc(h.name||'')+'</div>';
   x+='<div style="font-size:12.5px;color:#4b5563;line-height:1.45;margin-bottom:10px">'+mT('Send this link to the helper. He opens it on HIS phone to clock in. Do not open it on your phone.','Mande este link para o helper. Ele abre no celular DELE para bater o ponto. Não abra no seu celular.')+'</div>';
   x+='<div style="background:#f3f4f6;border-radius:10px;padding:10px;font-family:var(--font-m);font-size:11.5px;word-break:break-all;margin-bottom:12px">'+wlMgEsc(link)+'</div>';
-  x+='<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" style="flex:1;text-align:center;text-decoration:none;background:#16a34a" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><button type="button" class="btn ghost" style="flex:1" data-l="'+wlMgEsc(link)+'" onclick="copyLink(this.dataset.l)">'+mT('Copy','Copiar')+'</button></div>';
+  x+='<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" style="flex:1;text-align:center;text-decoration:none;background:#16a34a" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><a class="btn" style="flex:1;text-align:center;text-decoration:none;background:#2563eb" href="sms:?&body='+encodeURIComponent(msg)+'">💬 SMS</a><button type="button" class="btn ghost" style="flex:1" data-l="'+wlMgEsc(link)+'" onclick="copyLink(this.dataset.l)">'+mT('Copy','Copiar')+'</button></div>';
   x+='<button type="button" class="btn ghost" style="width:100%;margin-top:8px" onclick="closeModal(\'modal-mg\')">'+mT('Close','Fechar')+'</button>';
   document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open'); }
 function wlMgHEdit(hid){ if(_wlMg.perms.helpers!==true) return; var h=hById(hid); if(!h) return;
@@ -2962,6 +2962,8 @@ function updateHelperStats(){
   var projName='';
   if(open){ var pj=wlProjOf(open); if(pj) projName=wlT('WORKING ON: ')+String(wlT(pj.name)).toUpperCase(); }
   document.getElementById('clock-status').textContent=open?(projName||wlT('CLOCKED IN SINCE ')+new Date(open.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):wlT('NOT CLOCKED IN');
+  try{ var _es=document.getElementById('wl-edit-start'); if(!_es){ _es=document.createElement('button'); _es.id='wl-edit-start'; _es.type='button'; _es.style.cssText='display:none;margin:2px auto 8px;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-d);color:var(--text)'; _es.textContent='✏️ Edit clock in time'; var _cs=document.getElementById('clock-status'); _cs.parentNode.insertBefore(_es,_cs.nextSibling); }
+    if(open&&window._listenersStarted){ _es.style.display='block'; _es.onclick=function(){ openEditEntry(open.id); }; } else _es.style.display='none'; }catch(_e){}
   var btn=document.getElementById('clock-btn'), tel=document.getElementById('clock-elapsed');
   if(open){ tel.className='clock-time'; updateElapsed(open.startTime); } else { tel.className='clock-time idle'; tel.textContent='00:00:00'; }
   if(!_wlClockBusy){
@@ -3200,7 +3202,7 @@ function renderDashboard(){
       '<div style="font-size:13px;color:var(--text);line-height:1.8">This week: <strong>'+fmtD(wm)+'</strong><br><span style="color:var(--green2);font-weight:700">'+fmtC(weekEarned)+'</span> <span style="color:var(--muted);font-size:11px">earned this week</span></div>'+(window.wlWeekBarHtml?wlWeekBarHtml(wm):'')+
       '<!-- Advance balance badge -->'+ (function(){ var advBal=getAdvanceBalance(h.id); return advBal>0?'<div style="background:#fff5f5;border:1px solid var(--red);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--red);margin-top:8px">💳 Advance owed: $'+advBal.toFixed(2)+'</div>':''; })() +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">'+
-      '<button data-link="'+hLink(h)+'" onclick="copyLink(this.dataset.link)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">🔗 Copy link</button>'+
+      '<button data-hid="'+h.id+'" onclick="wlShareLink(this.dataset.hid)" style="font-size:11px;color:var(--blue);cursor:pointer;background:transparent;border:none;padding:0;font-family:var(--font-m)">📤 Send link</button>'+
       '<button onclick="openQuickHours(\''+h.id+'\',\''+h.name+'\')" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer">+ Hours</button>'+
       '</div></div>';
   }).join('');
@@ -3244,9 +3246,9 @@ function wlRenderOnClock(){
     var e=open[i], hp=hById(e.helperId), name=hp?hp.name:'?';
     var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
     var p=wlProjOf(e);
-    h+='<div class="wl-oc-row"><div class="wl-oc-av'+(p?'':' warn')+'">'+wlEsc(ini)+'</div><div class="wl-oc-mid"><div class="wl-oc-name">'+wlEsc(name)+'</div>'+
+    h+='<div class="wl-oc-row" style="cursor:pointer" title="Change clock in time" data-eid="'+wlEsc(e.id)+'" onclick="openEditEntry(this.dataset.eid)"><div class="wl-oc-av'+(p?'':' warn')+'">'+wlEsc(ini)+'</div><div class="wl-oc-mid"><div class="wl-oc-name">'+wlEsc(name)+'</div>'+
        '<div class="wl-oc-sub'+(p?'':' warn')+'">'+(p?wlEsc(p.name):'No job picked')+'</div></div>'+
-       '<div class="wl-oc-time" data-start="'+wlEsc(e.startTime)+'">'+wlHm((Date.now()-new Date(e.startTime))/60000)+'</div></div>';
+       '<div class="wl-oc-time" data-start="'+wlEsc(e.startTime)+'">'+wlHm((Date.now()-new Date(e.startTime))/60000)+'</div><span style="margin-left:6px;font-size:13px">✏️</span></div>';
   }
   box.innerHTML=h+'</div>';
 }
@@ -4192,6 +4194,20 @@ function wlIgnQ(mb){ var sf=Number(mb&&mb.ignSqft)||0, q=0;
 window.wlFoamQ=wlFoamQ; window.wlIgnQ=wlIgnQ;
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
+// Send a helper his link: copied at once, then WhatsApp / Message (SMS) / Copy in one tap
+function wlShareLink(hid){ var h=hById(hid); if(!h) return; var link=hLink(h), msg=(h.name||'')+' — WorkLog: '+link, pt=wlLang()==='pt';
+  try{ navigator.clipboard.writeText(link).catch(function(){}); }catch(e){}
+  var m=document.getElementById('modal-share'); if(!m){ m=document.createElement('div'); m.id='modal-share'; m.className='modal-overlay'; m.innerHTML='<div class="modal" id="share-box"></div>'; m.addEventListener('click',function(ev){ if(ev.target===m) m.classList.remove('open'); }); document.body.appendChild(m); }
+  var B='display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;margin-bottom:8px;font-family:var(--font-d);border:none;cursor:pointer;';
+  document.getElementById('share-box').innerHTML='<div class="modal-title">📤 '+(pt?'Link de ':'Link for ')+wlEsc(h.name||'')+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin:-4px 0 10px">✓ '+(pt?'Link copiado. Escolha como mandar:':'Link copied. Choose how to send it:')+'</div>'+
+    '<a style="'+B+'background:#16a34a;color:#fff" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'" onclick="document.getElementById(\'modal-share\').classList.remove(\'open\')">WhatsApp</a>'+
+    '<a style="'+B+'background:#2563eb;color:#fff" href="sms:?&body='+encodeURIComponent(msg)+'" onclick="document.getElementById(\'modal-share\').classList.remove(\'open\')">💬 '+(pt?'Mensagem (SMS)':'Message (SMS)')+'</a>'+
+    '<button type="button" style="'+B+'background:#fff;color:var(--text);border:1px solid var(--border)" data-l="'+wlEsc(link)+'" onclick="copyLink(this.dataset.l)">🔗 '+(pt?'Copiar de novo':'Copy again')+'</button>'+
+    '<div style="font-family:var(--font-m);font-size:10.5px;color:var(--muted);word-break:break-all;text-align:center;margin:4px 0 10px">'+wlEsc(link)+'</div>'+
+    '<button type="button" class="btn ghost" style="width:100%" onclick="document.getElementById(\'modal-share\').classList.remove(\'open\')">'+(pt?'Fechar':'Close')+'</button>';
+  m.classList.add('open'); }
+window.wlShareLink=wlShareLink;
 
 // ── HELPERS LIST ───────────────────────────────────────
 function addHelper(){
@@ -4213,7 +4229,7 @@ function renderHelpersList(){
   el.innerHTML=_hs.map(function(h){
     if(!wlHOn(h)) return '<div style="background:#f6f6f4;border:1px dashed var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;opacity:.75"><div style="flex:1"><div style="font-weight:800">'+wlEsc(h.name)+'</div><div style="font-size:12px;color:var(--muted)">Inactive · history kept</div></div><button class="btn sm ghost" style="color:var(--green);border-color:var(--green)" onclick="wlHReactivate(\''+h.id+'\')">Reactivate</button></div>';
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">'+
-      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">'+wlRateTxt(h)+'</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy helper link</div></div>'+
+      '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">'+wlRateTxt(h)+'</div><div style="font-size:12px;color:var(--blue);margin-top:4px;cursor:pointer;font-weight:700" onclick="wlShareLink(\''+h.id+'\')">📤 Send helper link</div></div>'+
       '<button class="btn sm ghost" onclick="openHelperViewAdmin(\''+h.id+'\')">Preview</button>'+
       '<button class="btn sm ghost" style="color:var(--red);border-color:#fcc" onclick="promptDeleteHelper(\''+h.id+'\')">'+(wlHHist(h.id)>0?'Disable':'Remove')+'</button>'+
       '</div>';
@@ -4457,6 +4473,56 @@ function toLocalDT(isoStr){
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
+// ── Edit Entry: big clock with arrows. The state below fills the two hidden values saveEntryEdit uses ──
+var _ck={d:'',s:420,e:930,run:false,canRun:false,sel:'s'};
+function wlCkPt(){ try{ return wlLang()==='pt'; }catch(e){ return false; } }
+function wlCkP(n){ return String(n).padStart(2,'0'); }
+function wlCkFmt(m){ if(m==null) return '—'; var h=Math.floor(m/60)%24, mm=m%60, ap=h<12?'AM':'PM', h12=h%12||12; return h12+':'+wlCkP(mm)+' '+ap; }
+function wlCkOpen(entry){ var pt=wlCkPt(), st=new Date(entry.startTime), h=hById(entry.helperId), pj=null; try{ pj=wlProjOf(entry); }catch(e){}
+  _ck.d=st.getFullYear()+'-'+wlCkP(st.getMonth()+1)+'-'+wlCkP(st.getDate()); _ck.s=st.getHours()*60+st.getMinutes();
+  if(entry.endTime){ var en=new Date(entry.endTime); _ck.e=en.getHours()*60+en.getMinutes(); _ck.run=false; _ck.canRun=false; }
+  else { var n=new Date(); _ck.e=n.getHours()*60+Math.floor(n.getMinutes()/5)*5; _ck.run=true; _ck.canRun=true; }
+  _ck.sel='s';
+  document.getElementById('en-title').textContent='✏️ '+(h?h.name:'Entry');
+  document.getElementById('en-sub').textContent=st.toLocaleDateString(pt?'pt-BR':'en-US',{weekday:'short',month:'short',day:'numeric'})+(pj?' · '+pj.name:'');
+  document.getElementById('ck-ls').textContent=pt?'🟢 Entrada':'🟢 Clock in'; document.getElementById('ck-le').textContent=pt?'🔴 Saída':'🔴 Clock out';
+  document.getElementById('ck-run-t').textContent=pt?'● Ainda trabalhando':'● Still working';
+  document.getElementById('ck-hint').textContent=pt?'hora · minutos (de 5 em 5)':'hour · minutes (5 by 5)';
+  document.getElementById('ck-now').textContent=pt?'Agora':'Now'; document.getElementById('ck-dlab').textContent=pt?'Dia':'Day';
+  document.getElementById('ck-cancel').textContent=pt?'Cancelar':'Cancel'; document.getElementById('saveEntryEditBtn').textContent=pt?'Salvar':'Save';
+  document.getElementById('ck-run-row').style.display=_ck.canRun?'flex':'none'; document.getElementById('ck-run').checked=_ck.run;
+  document.getElementById('ck-date').value=_ck.d;
+  wlCkDraw(); }
+function wlCkSel(k){ _ck.sel=k; wlCkDraw(); }
+function wlCkCur(){ return _ck.sel==='s'?_ck.s:_ck.e; }
+function wlCkSet(v){ v=((v%1440)+1440)%1440; if(_ck.sel==='s') _ck.s=v; else _ck.e=v; wlCkDraw(); }
+function wlCkStep(k,d){ if(_ck.sel==='e'&&_ck.run) return; var v=wlCkCur(), h=Math.floor(v/60), m=v%60;
+  if(k==='h') h=(h+d+24)%24; else { m=m+d; if(m%5) m=d>0?Math.ceil(m/5)*5:Math.floor(m/5)*5; if(m>=60){ m-=60; h=(h+1)%24; } if(m<0){ m+=60; h=(h+23)%24; } }
+  wlCkSet(h*60+m); }
+function wlCkAdd(n){ if(_ck.sel==='e'&&_ck.run) return; wlCkSet(wlCkCur()+n); }
+function wlCkAmPm(){ if(_ck.sel==='e'&&_ck.run) return; wlCkSet(wlCkCur()+720); }
+function wlCkNow(){ var n=new Date(), v=n.getHours()*60+Math.round(n.getMinutes()/5)*5; if(_ck.sel==='e'&&_ck.run){ _ck.run=false; document.getElementById('ck-run').checked=false; } wlCkSet(v); }
+function wlCkRun(){ _ck.run=document.getElementById('ck-run').checked; if(!_ck.run) _ck.sel='e'; wlCkDraw(); }
+function wlCkDate(){ var v=document.getElementById('ck-date').value; if(v) _ck.d=v; wlCkDraw(); }
+function wlCkDraw(){ var pt=wlCkPt(), cur=wlCkCur(), h=Math.floor(cur/60), m=cur%60, off=(_ck.sel==='e'&&_ck.run);
+  document.getElementById('ck-bs').classList.toggle('on',_ck.sel==='s'); document.getElementById('ck-be').classList.toggle('on',_ck.sel==='e');
+  document.getElementById('ck-vs').textContent=wlCkFmt(_ck.s); document.getElementById('ck-ve').textContent=_ck.run?(pt?'trabalhando…':'working…'):wlCkFmt(_ck.e);
+  document.getElementById('ck-h').textContent=wlCkP(h%12||12); document.getElementById('ck-m').textContent=wlCkP(m); document.getElementById('ck-ap').textContent=h<12?'AM':'PM';
+  ['ck-face','ck-hint'].forEach(function(i){ document.getElementById(i).classList.toggle('ck-off',off); }); document.querySelectorAll('#ck-body .ck-pm').forEach(function(x){ x.classList.toggle('ck-off',off); });   // 'Now' stays active: it closes an open punch
+  // hidden values for saveEntryEdit
+  var inV=_ck.d+'T'+wlCkP(Math.floor(_ck.s/60))+':'+wlCkP(_ck.s%60), outV='', next=false;
+  if(!_ck.run){ var od=_ck.d; if(_ck.e<=_ck.s){ var x=new Date(_ck.d+'T00:00'); x.setDate(x.getDate()+1); od=x.getFullYear()+'-'+wlCkP(x.getMonth()+1)+'-'+wlCkP(x.getDate()); next=true; } outV=od+'T'+wlCkP(Math.floor(_ck.e/60))+':'+wlCkP(_ck.e%60); }
+  document.getElementById('edit-entry-in').value=inV; document.getElementById('edit-entry-out').value=outV;
+  var a=new Date(inV), b=_ck.run?new Date():new Date(outV), mins=Math.round((b-a)/60000), du=document.getElementById('ck-dur');
+  if(_ck.run&&mins<0){ du.className='ck-dur bad'; du.textContent=pt?'⚠️ A entrada está no futuro':'⚠️ Clock in is in the future'; return; }
+  du.className='ck-dur'+(mins>14*60?' bad':'');
+  du.textContent=fmtD(Math.max(0,mins))+' '+(_ck.run?(pt?'até agora':'so far'):(pt?'trabalhadas':'worked'))+(next?(pt?' · sai no dia seguinte':' · ends the next day'):'')+(mins>14*60?(pt?' · confira':' · check it'):''); }
+// arrows: tap = one step, hold = repeat
+(function(){ var t=null, r=null; function stop(){ clearTimeout(t); clearInterval(r); t=r=null; }
+  document.addEventListener('pointerdown',function(ev){ var b=ev.target.closest&&ev.target.closest('.ck-ar'); if(!b) return; ev.preventDefault(); var k=b.getAttribute('data-k'), d=+b.getAttribute('data-d');
+    wlCkStep(k,d); stop(); t=setTimeout(function(){ r=setInterval(function(){ wlCkStep(k,d); },110); },420); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(n){ document.addEventListener(n,stop); }); })();
+window.wlCkSel=wlCkSel; window.wlCkAdd=wlCkAdd; window.wlCkAmPm=wlCkAmPm; window.wlCkNow=wlCkNow; window.wlCkRun=wlCkRun; window.wlCkDate=wlCkDate; window.wlCkOpen=wlCkOpen; window.wlCkStep=wlCkStep;
 function updateEditDuration(){
   var inVal = document.getElementById('edit-entry-in').value;
   var outVal = document.getElementById('edit-entry-out').value;
@@ -4473,8 +4539,8 @@ function openEditEntry(id){
   if(!entry) return;
   _editEntryId = id;
   document.getElementById('edit-entry-in').value = toLocalDT(entry.startTime);
-  document.getElementById('edit-entry-out').value = toLocalDT(entry.endTime);
-  updateEditDuration();
+  document.getElementById('edit-entry-out').value = entry.endTime?toLocalDT(entry.endTime):'';
+  wlCkOpen(entry);
   document.getElementById('modal-edit-entry').classList.add('open');
 }
 window.openEditEntry = openEditEntry;
@@ -4483,10 +4549,13 @@ function saveEntryEdit(){
   if(!_editEntryId) return;
   var inVal = document.getElementById('edit-entry-in').value;
   var outVal = document.getElementById('edit-entry-out').value;
-  if(!inVal||!outVal){ showToast('Fill both times'); return; }
+  var _cur=entries.find(function(e){ return e.id===_editEntryId; })||{};
+  // A punch still running may have only its start changed (clock out left empty: he stays clocked in)
+  if(!inVal||(!outVal&&_cur.endTime)){ showToast('Fill both times'); return; }
   var newIn = new Date(inVal).toISOString();
-  var newOut = new Date(outVal).toISOString();
-  if(new Date(newOut) <= new Date(newIn)){ showToast('Clock out must be after clock in'); return; }
+  var newOut = outVal?new Date(outVal).toISOString():null;
+  if(!newOut&&new Date(newIn)>new Date()){ showToast('Clock in cannot be in the future'); return; }
+  if(newOut&&new Date(newOut) <= new Date(newIn)){ showToast('Clock out must be after clock in'); return; }
   db.collection('entries').doc(_editEntryId).update({
     startTime: newIn,
     endTime: newOut
@@ -4673,9 +4742,9 @@ function renderAdvances(){
   var sel = document.getElementById('adv-helper');
   if(sel){
     sel.innerHTML = '<option value="">-- Select Helper --</option>';
-    helpers.forEach(function(h){
+    helpers.filter(wlHOn).concat(helpers.filter(function(x){ return !wlHOn(x); })).forEach(function(h){
       var o = document.createElement('option');
-      o.value = h.id; o.textContent = h.name;
+      o.value = h.id; o.textContent = h.name+(wlHOn(h)?'':' (inactive)');
       sel.appendChild(o);
     });
   }
@@ -4796,7 +4865,7 @@ window.wlPayEdit=wlPayEdit; window.wlPaySave=wlPaySave;
 // ── ABSENCES ───────────────────────────────────────────
 var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
 function renderAbsences(){
-  var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
+  var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){ if(!wlHOn(h)) return; var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
   var el=document.getElementById('absences-list');
   if(!absences.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No absences recorded yet.</div>'; return;}
@@ -5408,7 +5477,7 @@ function addProject(){
     rb2Boards:parseFloat(document.getElementById('proj-rb2-boards').value)||0,
     rb1Boards:parseFloat(document.getElementById('proj-rb1-boards').value)||0
   };
-  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:helpers.map(function(h){return h.id;}),matBudget:matBudget,createdAt:new Date().toISOString()});
+  db.collection('projects').add({name:name,client:client||null,desc:desc,budget:budget,overhead:overhead,ohDays:ohDays,start:start,end:end||null,status:'active',helpers:helpers.filter(wlHOn).map(function(h){return h.id;}),matBudget:matBudget,createdAt:new Date().toISOString()});
   document.getElementById('proj-name').value=''; document.getElementById('proj-client').value=''; document.getElementById('proj-budget').value=''; document.getElementById('proj-end').value='';
   document.getElementById('proj-cc-sqft').value=''; document.getElementById('proj-cc-inch').value=''; document.getElementById('proj-oc-sqft').value=''; document.getElementById('proj-oc-inch').value='';
   document.getElementById('proj-cel-bags').value=''; document.getElementById('proj-rox-bags').value=''; document.getElementById('proj-fbg-bags').value='';
@@ -6903,23 +6972,52 @@ function showInstallBanner(){
   </div>
 </div>
 
-<!-- EDIT ENTRY MODAL -->
+<!-- EDIT ENTRY MODAL: big clock with arrows (pick Clock in / Clock out on top) -->
+<style>
+.ck-seg{display:flex;background:#eef0ec;border-radius:14px;padding:4px;margin:10px 0 6px}
+.ck-seg button{flex:1;border:none;background:transparent;border-radius:11px;padding:9px 4px;font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;line-height:1.25}
+.ck-seg button b{display:block;font-size:18px;color:var(--text)}
+.ck-seg button.on{background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.14);color:var(--text)}
+.ck-seg button.on.s{outline:2px solid #86c79a}.ck-seg button.on.e{outline:2px solid #f2a7a7}
+.ck-face{display:grid;grid-template-columns:auto auto auto auto;justify-content:center;align-items:center;column-gap:8px;row-gap:6px;margin:6px 0 2px;user-select:none;-webkit-user-select:none}
+.ck-ar{width:64px;height:46px;border-radius:13px;border:1px solid var(--border2);background:#fff;font-size:20px;font-weight:900;cursor:pointer;color:var(--text);touch-action:manipulation}
+.ck-ar:active{background:#eef4ef}
+.ck-n{font-family:var(--font-d);font-weight:900;font-size:50px;text-align:center;line-height:1;min-width:64px}
+.ck-col{font-family:var(--font-d);font-weight:900;font-size:44px;line-height:1;padding-bottom:6px}
+.ck-ap{border:1px solid var(--border2);background:#fff;border-radius:11px;padding:8px 10px;font-family:var(--font-d);font-weight:900;font-size:18px;cursor:pointer;margin-left:2px}
+.ck-hint{text-align:center;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:8px}
+.ck-chips{display:flex;gap:8px;justify-content:center}
+.ck-chips button{border:1px solid var(--border2);background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13px;font-family:var(--font-d);cursor:pointer;color:var(--text)}
+.ck-dur{text-align:center;font-weight:800;font-size:15px;color:#1a6b2a;background:#eaf5ec;border-radius:11px;padding:10px;margin:12px 0 8px}
+.ck-dur.bad{color:#b91c1c;background:#fdecec}
+.ck-run{display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:800;color:#16a34a;margin:2px 0 6px}
+.ck-run input{width:22px;height:22px}
+.ck-off{opacity:.35;pointer-events:none}
+.ck-day{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.ck-day input{border:1px solid var(--border2);border-radius:9px;padding:6px 8px;font-size:13px;font-family:inherit}
+</style>
 <div class="modal-overlay" id="modal-edit-entry">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-title">&#x270F;&#xFE0F; Edit Entry</div>
-    <div style="margin-bottom:14px">
-      <div style="margin-bottom:10px">
-        <label style="font-size:10px;font-weight:700;color:#1a6b2a;display:block;margin-bottom:5px">&#x1F7E2; CLOCK IN</label>
-        <input type="datetime-local" id="edit-entry-in" style="width:100%;background:#f0fdf4;border:2px solid var(--green);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--green);outline:none"/>
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="en-title" style="margin-bottom:0">&#x270F;&#xFE0F; Edit Entry</div>
+    <div id="en-sub" style="font-size:12.5px;color:var(--muted)"></div>
+    <div class="ck-seg"><button type="button" class="s" id="ck-bs" onclick="wlCkSel('s')"><span id="ck-ls">🟢 Clock in</span><b id="ck-vs"></b></button><button type="button" class="e" id="ck-be" onclick="wlCkSel('e')"><span id="ck-le">🔴 Clock out</span><b id="ck-ve"></b></button></div>
+    <label class="ck-run" id="ck-run-row" style="display:none"><input type="checkbox" id="ck-run" onchange="wlCkRun()"/> <span id="ck-run-t">● Still working</span></label>
+    <div id="ck-body">
+      <div class="ck-face" id="ck-face">
+        <button type="button" class="ck-ar" data-k="h" data-d="1">▲</button><span></span><button type="button" class="ck-ar" data-k="m" data-d="5">▲</button><span></span>
+        <div class="ck-n" id="ck-h">07</div><div class="ck-col">:</div><div class="ck-n" id="ck-m">00</div><button type="button" class="ck-ap" id="ck-ap" onclick="wlCkAmPm()">AM</button>
+        <button type="button" class="ck-ar" data-k="h" data-d="-1">▼</button><span></span><button type="button" class="ck-ar" data-k="m" data-d="-5">▼</button><span></span>
       </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:10px;font-weight:700;color:#dc2626;display:block;margin-bottom:5px">&#x1F534; CLOCK OUT</label>
-        <input type="datetime-local" id="edit-entry-out" style="width:100%;background:#fff5f5;border:2px solid var(--red);border-radius:8px;padding:10px 12px;font-size:15px;font-weight:700;color:var(--red);outline:none"/>
-      </div>
-      <div id="edit-entry-duration" style="text-align:center;font-size:14px;font-weight:700;color:var(--muted);padding:8px;background:#f8f9fa;border-radius:8px"></div>
+      <div class="ck-hint" id="ck-hint">hour · minutes (5 by 5)</div>
+      <div class="ck-chips"><button type="button" class="ck-pm" onclick="wlCkAdd(-15)">− 15 min</button><button type="button" class="ck-pm" onclick="wlCkAdd(15)">+ 15 min</button><button type="button" id="ck-now" onclick="wlCkNow()">Now</button></div>
     </div>
+    <div class="ck-dur" id="ck-dur"></div>
+    <div class="ck-day">📅 <span id="ck-dlab">Day</span> <input type="date" id="ck-date" onchange="wlCkDate()"/></div>
+    <input type="datetime-local" id="edit-entry-in" style="display:none"/>
+    <input type="datetime-local" id="edit-entry-out" style="display:none"/>
+    <div id="edit-entry-duration" style="display:none"></div>
     <div class="modal-actions">
-      <button class="btn ghost" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
+      <button class="btn ghost" id="ck-cancel" onclick="document.getElementById('modal-edit-entry').classList.remove('open')">Cancel</button>
       <button class="btn" id="saveEntryEditBtn">Save</button>
     </div>
   </div>
