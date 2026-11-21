@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1700</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-1930</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1245,6 +1245,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   </div>
 </div>
 
+<div id="modal-pay-edit" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="pe-title">✏️ Payment</div>
+    <div class="fg"><label>Amount ($)</label><input id="pe-amount" type="text" inputmode="decimal" autocomplete="off"/></div>
+    <div class="fg"><label>Date</label><input id="pe-date" type="date"/></div>
+    <div class="fg"><label>Note</label><input id="pe-note" type="text"/></div>
+    <div class="modal-actions"><button class="btn" onclick="wlPaySave()">✓ Save</button><button class="btn ghost" onclick="closeModal('modal-pay-edit')">Cancel</button></div>
+  </div>
+</div>
+
 <div id="modal-hrs-pdf" class="modal-overlay">
   <div class="modal">
     <div class="modal-title">🖨️ Detailed hours PDF</div>
@@ -1268,10 +1278,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
 <div id="modal-delete-helper" class="modal-overlay">
   <div class="modal">
-    <div class="modal-title">Remove Helper?</div>
-    <p style="color:var(--muted);font-size:13px">This will delete all their time entries. Cannot be undone.</p>
+    <div class="modal-title" id="dh-title">Remove Helper?</div>
+    <p style="color:var(--muted);font-size:13px" id="dh-text">This will delete all their time entries. Cannot be undone.</p>
     <div class="modal-actions">
-      <button class="btn red" onclick="confirmDeleteHelper()">Yes, Remove</button>
+      <button class="btn red" id="dh-btn" onclick="confirmDeleteHelper()">Yes, Remove</button>
       <button class="btn ghost" onclick="closeModal('modal-delete-helper')">Cancel</button>
     </div>
   </div>
@@ -1490,6 +1500,9 @@ function fmtD(m){return Math.floor(m/60)+'h '+p2(m%60)+'m';}
 function fmtC(v){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v);}
 function gMin(e){if(!e.endTime) return 0; return Math.round((new Date(e.endTime)-new Date(e.startTime))/60000);}
 function hById(id){return helpers.find(function(h){return h.id===id;});}
+// Inactive helper: hidden from the day-to-day lists, but his hours, payments and project costs stay (nothing is deleted)
+function wlHOn(h){ return !!h&&h.inactive!==true; }
+function wlHHist(hid){ var n=0, i; for(i=0;i<entries.length;i++) if(entries[i].helperId===hid) n++; for(i=0;i<payments.length;i++) if(payments[i].helperId===hid) n++; for(i=0;i<advances.length;i++) if(advances[i].helperId===hid) n++; return n; }
 function isClocked(hid){return !!getOpen(hid);}
 function getOpen(hid){return entries.find(function(e){return e.helperId===hid&&!e.endTime;})||null;}
 function totalMin(hid){return entries.filter(function(e){return e.helperId===hid&&e.endTime;}).reduce(function(s,e){return s+gMin(e);},0);}
@@ -1909,6 +1922,7 @@ function wlHRetry(hid){ if(_wlHRetryT||window._listenersStarted) return; _wlHRet
   _wlHRetryT=setTimeout(function(){ _wlHRetryT=null; if(window._listenersStarted||_wlHelperId!==hid) return; _wlHStop(); _wlHelperId=null; wlHelperListen(hid); },Math.min(30000,2500*_wlHRetryN)); }
 // One place for every punch. Office account: straight to the server, as before, but errors are shown.
 function wlPunchIn(hid,data){
+  if(!window._listenersStarted){ var _ph=hById(hid); if(_ph&&_ph.inactive===true){ showToast(wlLang()==='pt'?'Seu acesso foi desativado. Fale com o escritório.':'Your access was disabled. Talk to the office.','err'); return; } }
   if(window._listenersStarted){ db.collection('entries').add(data).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); return; }
   var id; try{ id=db.collection('entries').doc().id; }catch(e){ id='h'+Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
   wlqPut({k:'add',id:id,hid:hid,data:data,at:Date.now()});
@@ -2175,7 +2189,7 @@ var WL_ADMIN_UID='G7Tp4TUmYEYM0f8NaqfEg3Jm4OG2';
 var _wlMg={on:false,ok:false,uid:'',email:'',name:'',unsubs:[],week:'',open:{},err:'',status:'',perms:{}};
 var wlMgList=[], wlMgLog=[];
 // What a partner may do. Today only the hours exist; each new function becomes one more switch here and in the server rules.
-var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours'],['reports','Reports','The whole Reports tab: entries, summary + PDF, payments, advances, accuracy, results. Can record and delete payments and advances. Needs Hours on.'],['helpers','Add helpers','Add a new helper (name and hourly rate) and send him his link. Cannot remove helpers or change rates. Needs Hours on.']];
+var WL_MG_PERMS=[['hours','Hours','See, add, change and delete the helpers\' hours'],['reports','Reports','The whole Reports tab: entries, summary + PDF, payments, advances, accuracy, results. Can record and delete payments and advances. Needs Hours on.'],['helpers','Helpers','Add helpers and send their link, change name and hourly rate, disable / reactivate a helper (history is always kept). Needs Hours on.']];
 function mT(en,pt){ return wlLang()==='pt'?pt:en; }
 function wlMgEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function wlMgMonday(d){ var dt=new Date(d), day=dt.getDay(), diff=(day===0)?-6:1-day; dt.setDate(dt.getDate()+diff); dt.setHours(0,0,0,0); return dt; }
@@ -2257,7 +2271,7 @@ function wlMgDraw(){
   }
   if(wlMgRepDraw()) return;
   var ws=parseLocalDate(_wlMg.week), we=new Date(ws); we.setDate(we.getDate()+6); var isNow=_wlMg.week===localDateStr(wlMgMonday(new Date()));
-  var hs=helpers.slice().sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; }), totM=0, totP=0, cards='';
+  var hs=helpers.filter(function(x){ return wlHOn(x)||wlMgWeekEntries(x.id).length>0; }).sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; }), totM=0, totP=0, cards='';
   for(var i=0;i<hs.length;i++){ var h=hs[i], rate=Number(h.rate)||0, es=wlMgWeekEntries(h.id), mins=0, run=null, k;
     for(k=0;k<es.length;k++){ if(es[k].endTime) mins+=gMin(es[k]); else run=es[k]; }
     var reg=Math.min(mins,OT_THRESHOLD_MINS), ot=Math.max(0,mins-OT_THRESHOLD_MINS), pay=(reg/60)*rate+(ot/60)*(rate*OT_MULTIPLIER); totM+=mins; totP+=pay;
@@ -2266,12 +2280,15 @@ function wlMgDraw(){
     if(open){
       for(k=0;k<es.length;k++){ var e=es[k], pj=wlProjOf(e), em=gMin(e);
         cards+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--border);font-size:12.5px"><div style="min-width:0"><div style="font-weight:700">'+new Date(e.startTime).toLocaleDateString(L,{weekday:'short',month:'short',day:'numeric'})+'</div><div style="color:var(--muted)">'+wlMgT(e.startTime)+' → '+(e.endTime?wlMgT(e.endTime):'<b style="color:#16a34a">'+mT('running','aberto')+'</b>')+(pj?' · <span style="color:var(--green);font-weight:600">'+wlMgEsc(wlT(pj.name))+'</span>':' · <span style="color:#b45309">'+mT('no project','sem projeto')+'</span>')+(e.note?' · '+wlMgEsc(wlT(e.note)):'')+(e.editedBy?' · <i>'+mT('edited by ','alterado por ')+wlMgEsc(e.editedBy)+'</i>':'')+'</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="text-align:right;margin-right:2px"><div style="font-weight:700">'+(e.endTime?fmtD(em):'—')+'</div><div style="font-size:11px;color:var(--muted)">'+(e.endTime?fmtC((em/60)*rate):'')+'</div></div><button type="button" class="btn sm ghost" data-id="'+e.id+'" onclick="wlMgEdit(this.dataset.id)">✏️</button><button type="button" class="btn sm ghost" style="color:#dc2626" data-id="'+e.id+'" onclick="wlMgDel(this.dataset.id)">🗑</button></div></div>'; }
-      cards+='<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-h="'+h.id+'" onclick="wlMgEdit(\'\',this.dataset.h)">+ '+mT('Add hours','Adicionar horas')+'</button>'+(_wlMg.perms.helpers===true?'<button type="button" class="btn sm ghost" data-h="'+h.id+'" onclick="wlMgHLink(this.dataset.h)">🔗 '+mT('Helper link','Link do helper')+'</button>':'')+'</div>';
+      cards+='<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-h="'+h.id+'" onclick="wlMgEdit(\'\',this.dataset.h)">+ '+mT('Add hours','Adicionar horas')+'</button>'+(_wlMg.perms.helpers===true?'<button type="button" class="btn sm ghost" data-h="'+h.id+'" onclick="wlMgHLink(this.dataset.h)">🔗 '+mT('Link','Link')+'</button><button type="button" class="btn sm ghost" data-h="'+h.id+'" onclick="wlMgHEdit(this.dataset.h)">✏️ '+mT('Edit','Editar')+'</button>'+(wlHOn(h)?'<button type="button" class="btn sm ghost" style="color:var(--red);border-color:#fcc" data-h="'+h.id+'" onclick="wlMgHOff(this.dataset.h)">'+mT('Disable','Desativar')+'</button>':'<button type="button" class="btn sm ghost" style="color:var(--green);border-color:var(--green)" data-h="'+h.id+'" onclick="wlMgHOn(this.dataset.h)">'+mT('Reactivate','Reativar')+'</button>'):'')+'</div>';
     }
     cards+='</div>';
   }
   var top='<div class="card" style="padding:12px 14px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(-1)">‹</button><div style="text-align:center"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">📅 '+ws.toLocaleDateString(L,{month:'short',day:'numeric'})+' – '+we.toLocaleDateString(L,{month:'short',day:'numeric'})+'</div>'+(isNow?'<div style="font-size:11px;color:var(--muted)">'+mT('this week','esta semana')+'</div>':'<a href="#" onclick="wlMgWeekNow();return false" style="font-size:11.5px;color:var(--green);font-weight:700">'+mT('go to this week','ir para esta semana')+'</a>')+'</div><button type="button" class="btn sm ghost" onclick="wlMgWeekShift(1)">›</button></div><div style="display:flex;justify-content:space-around;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);text-align:center"><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px;color:var(--green)">'+fmtD(totM)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL HOURS','TOTAL DE HORAS')+'</div></div><div><div style="font-family:var(--font-d);font-weight:800;font-size:18px">'+fmtC(totP)+'</div><div style="font-size:10px;color:var(--muted)">'+mT('TOTAL PAY','TOTAL A PAGAR')+'</div></div></div></div>';
-  if(_wlMg.perms.helpers===true) cards+='<button type="button" class="btn" style="width:100%;margin:4px 0 8px" onclick="wlMgNewH()">+ '+mT('New helper','Novo helper')+'</button>';
+  if(_wlMg.perms.helpers===true){ cards+='<button type="button" class="btn" style="width:100%;margin:4px 0 8px" onclick="wlMgNewH()">+ '+mT('New helper','Novo helper')+'</button>';
+    var off=helpers.filter(function(x){ return !wlHOn(x); }).sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; });
+    if(off.length){ cards+='<div style="font-size:11px;font-weight:800;color:var(--muted);margin:14px 2px 6px">'+mT('INACTIVE','INATIVOS')+' ('+off.length+') · '+mT('history kept','histórico guardado')+'</div>';
+      for(var oi=0;oi<off.length;oi++) cards+='<div class="wl-rp-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;opacity:.75;padding:10px 14px"><span style="font-weight:700">'+wlMgEsc(off[oi].name||'')+'</span><button type="button" class="btn sm ghost" style="color:var(--green);border-color:var(--green)" data-h="'+off[oi].id+'" onclick="wlMgHOn(this.dataset.h)">'+mT('Reactivate','Reativar')+'</button></div>'; } }
   body.innerHTML=top+(hs.length?cards:'<div style="color:var(--muted);padding:20px;text-align:center">'+mT('Loading…','Carregando…')+'</div>')+'<div style="text-align:center;font-size:10.5px;color:var(--muted);margin-top:6px">WorkLog v'+WL_BUILD+'</div>';
 }
 function wlMgT(iso){ return new Date(iso).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
@@ -2338,7 +2355,28 @@ function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h
   x+='<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" style="flex:1;text-align:center;text-decoration:none;background:#16a34a" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">WhatsApp</a><button type="button" class="btn ghost" style="flex:1" data-l="'+wlMgEsc(link)+'" onclick="copyLink(this.dataset.l)">'+mT('Copy','Copiar')+'</button></div>';
   x+='<button type="button" class="btn ghost" style="width:100%;margin-top:8px" onclick="closeModal(\'modal-mg\')">'+mT('Close','Fechar')+'</button>';
   document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open'); }
-window.wlMgNewH=wlMgNewH; window.wlMgNewHSave=wlMgNewHSave; window.wlMgHLink=wlMgHLink;
+function wlMgHEdit(hid){ if(_wlMg.perms.helpers!==true) return; var h=hById(hid); if(!h) return;
+  var x='<div class="modal-title">✏️ '+wlMgEsc(h.name||'')+'</div>';
+  x+='<div class="fg"><label>'+mT('Name','Nome')+'</label><input id="mg-en" type="text" autocomplete="off" maxlength="60" value="'+wlMgEsc(h.name||'')+'"/></div>';
+  if(h.salaried) x+='<div style="font-size:12.5px;color:var(--muted);margin:-4px 0 10px">'+mT('Salaried (owner / partner): no hourly rate.','Assalariado (dono / sócio): sem valor por hora.')+'</div>';
+  else x+='<div class="fg"><label>'+mT('Rate ($/hr)','Valor por hora ($/hr)')+'</label><input id="mg-er" type="text" inputmode="decimal" autocomplete="off" value="'+wlMgEsc(h.rate)+'"/><div style="font-size:11px;color:var(--muted);margin-top:4px">'+mT('The new rate counts for all of this helper\'s hours, also past weeks.','O valor novo vale para todas as horas deste helper, inclusive semanas passadas.')+'</div></div>';
+  x+='<div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn" style="flex:1" data-h="'+h.id+'" onclick="wlMgHEditSave(this.dataset.h)">'+mT('Save','Salvar')+'</button><button type="button" class="btn ghost" onclick="closeModal(\'modal-mg\')">'+mT('Cancel','Cancelar')+'</button></div>';
+  document.getElementById('mg-modal').innerHTML=x; document.getElementById('modal-mg').classList.add('open'); }
+function wlMgHEditSave(hid){ if(_wlMg.perms.helpers!==true) return; var h=hById(hid); if(!h) return;
+  var nm=String(document.getElementById('mg-en').value||'').replace(/\s+/g,' ').trim(); if(!nm) return showToast(mT('Enter a name','Digite o nome'),'err');
+  if(helpers.some(function(x){ return x.id!==hid&&String(x.name||'').trim().toLowerCase()===nm.toLowerCase(); })) return showToast(mT('Another helper already has this name','Já existe um helper com este nome'),'err');
+  var u={}; if(nm!==(h.name||'')) u.name=nm;
+  var re=document.getElementById('mg-er'); if(re){ var r=parseFloat(String(re.value||'').replace(',','.')); if(isNaN(r)||r<0) return showToast(mT('Enter a valid rate','Digite um valor válido'),'err'); r=Math.round(r*100)/100; if(r!==Number(h.rate)) u.rate=r; }
+  if(!Object.keys(u).length){ closeModal('modal-mg'); return; }
+  u.editedBy=_wlMg.name||_wlMg.email; u.editedAt=new Date().toISOString();
+  db.collection('helpers').doc(hid).update(u).then(function(){ showToast(mT('Saved ✓','Salvo ✓')); }).catch(function(e){ showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); });
+  closeModal('modal-mg'); }
+function wlMgHOff(hid){ if(_wlMg.perms.helpers!==true) return; var h=hById(hid); if(!h) return;
+  if(!window.confirm(mT('Disable ','Desativar ')+(h.name||'')+'?\n'+mT('His hours and payments stay. He disappears from the lists and his link stops clocking in. You can reactivate him later.','As horas e pagamentos dele ficam guardados. Ele some das listas e o link dele para de bater ponto. Dá para reativar depois.'))) return;
+  db.collection('helpers').doc(hid).update({inactive:true,inactiveAt:new Date().toISOString(),inactiveBy:_wlMg.name||_wlMg.email}).then(function(){ showToast(mT('Disabled — history kept','Desativado — histórico guardado')); }).catch(function(e){ showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); }); }
+function wlMgHOn(hid){ if(_wlMg.perms.helpers!==true) return;
+  db.collection('helpers').doc(hid).update({inactive:false,inactiveAt:null,inactiveBy:null}).then(function(){ showToast(mT('Reactivated ✓','Reativado ✓')); }).catch(function(e){ showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); }); }
+window.wlMgNewH=wlMgNewH; window.wlMgNewHSave=wlMgNewHSave; window.wlMgHLink=wlMgHLink; window.wlMgHEdit=wlMgHEdit; window.wlMgHEditSave=wlMgHEditSave; window.wlMgHOff=wlMgHOff; window.wlMgHOn=wlMgHOn;
 window.wlMgEnter=wlMgEnter; window.wlMgLogout=wlMgLogout; window.wlMgLang=wlMgLang; window.wlMgWeekShift=wlMgWeekShift; window.wlMgWeekNow=wlMgWeekNow; window.wlMgToggle=wlMgToggle; window.wlMgEdit=wlMgEdit; window.wlMgSave=wlMgSave; window.wlMgDel=wlMgDel;
 
 // ── office side: approve / remove the partner, see what was changed ──
@@ -2478,7 +2516,7 @@ window.wlHelperListen=wlHelperListen;
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
 var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.19';
-function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) ids.push(helpers[i].id);
+function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
     if(add.length) out.push({p:p,cur:cur,add:add}); }
@@ -2834,6 +2872,7 @@ function populateHelperSelectDD(){
   if(!sel) return;
   sel.innerHTML = '<option value="">-- Choose --</option>';
   helpers.forEach(function(h){
+    if(!wlHOn(h)) return;
     var o = document.createElement('option');
     o.value = h.id; o.textContent = h.name;
     sel.appendChild(o);
@@ -3152,7 +3191,7 @@ function renderDashboard(){
 
   var grid=document.getElementById('dash-grid');
   if(!helpers.length){grid.innerHTML='<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:50px">No helpers yet. Go to <strong>Helpers</strong> tab.</div>'; return;}
-  grid.innerHTML=helpers.map(function(h){
+  grid.innerHTML=helpers.filter(function(h){ return wlHOn(h)||isClocked(h.id); }).map(function(h){
     var m=totalMin(h.id), wm=weekMin(h.id), wpay=calcCurrentWeekPay(h.id,h.rate), weekEarned=wpay.totalPay||0, cl=isClocked(h.id);
     return '<div class="hcard'+(cl?' live':'')+'">'+
       (cl?'<span class="live-badge">● LIVE</span>':'')+
@@ -3200,7 +3239,7 @@ function wlRenderOnClock(){
   var box=document.getElementById('wl-onclock'); if(!box) return;
   var open=entries.filter(function(e){return !e.endTime;});
   if(!open.length){ box.innerHTML='<div class="wl-oc wl-oc-empty">Nobody on the clock right now</div>'; return; }
-  var h='<div class="wl-oc"><div class="wl-oc-hd"><span>On the clock now</span><span>'+open.length+' of '+helpers.length+' crew</span></div>';
+  var h='<div class="wl-oc"><div class="wl-oc-hd"><span>On the clock now</span><span>'+open.length+' of '+helpers.filter(wlHOn).length+' crew</span></div>';
   for(var i=0;i<open.length;i++){
     var e=open[i], hp=hById(e.helperId), name=hp?hp.name:'?';
     var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
@@ -3236,7 +3275,7 @@ function wlQaMain(){
 function wlQaPick(kind){
   var h='<button type="button" class="wl-qa-back" data-qa="main">'+wlQaSvg('back')+(kind==='hours'?'Add hours for…':(kind==='exp'?'Add expense to…':'Add photo to…'))+'</button><div class="wl-qa-list">';
   if(kind==='hours'){
-    var hs=helpers.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    var hs=helpers.filter(wlHOn).sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
     for(var i=0;i<hs.length;i++) h+='<button type="button" class="wl-qa-row" data-qa="h" data-id="'+wlEsc(hs[i].id)+'">'+wlEsc(hs[i].name)+'</button>';
     if(!hs.length) h+='<div class="wl-qa-empty">No helpers yet.</div>';
   } else {
@@ -4170,11 +4209,13 @@ window.addHelper=addHelper;
 function renderHelpersList(){
   var el=document.getElementById('helpers-list');
   if(!helpers.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No helpers yet.</div>'; return;}
-  el.innerHTML=helpers.map(function(h){
+  var _hs=helpers.filter(wlHOn).concat(helpers.filter(function(x){ return !wlHOn(x); }));
+  el.innerHTML=_hs.map(function(h){
+    if(!wlHOn(h)) return '<div style="background:#f6f6f4;border:1px dashed var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;opacity:.75"><div style="flex:1"><div style="font-weight:800">'+wlEsc(h.name)+'</div><div style="font-size:12px;color:var(--muted)">Inactive · history kept</div></div><button class="btn sm ghost" style="color:var(--green);border-color:var(--green)" onclick="wlHReactivate(\''+h.id+'\')">Reactivate</button></div>';
     return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">'+
       '<div style="flex:1;min-width:140px"><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+h.name+'</div><div style="font-size:12px;color:var(--muted)">'+wlRateTxt(h)+'</div><div style="font-size:11px;color:var(--blue);margin-top:4px;cursor:pointer" onclick="copyLink(\''+hLink(h)+'\')">🔗 Copy helper link</div></div>'+
       '<button class="btn sm ghost" onclick="openHelperViewAdmin(\''+h.id+'\')">Preview</button>'+
-      '<button class="btn sm ghost" style="color:var(--red);border-color:#fcc" onclick="promptDeleteHelper(\''+h.id+'\')">Remove</button>'+
+      '<button class="btn sm ghost" style="color:var(--red);border-color:#fcc" onclick="promptDeleteHelper(\''+h.id+'\')">'+(wlHHist(h.id)>0?'Disable':'Remove')+'</button>'+
       '</div>';
   }).join('');
 }
@@ -4198,14 +4239,19 @@ function openHelperViewAdmin(id){
   startLiveClock();
 }
 window.openHelperViewAdmin=openHelperViewAdmin;
-function promptDeleteHelper(id){pendingDeleteId=id; document.getElementById('modal-delete-helper').classList.add('open');}
+function promptDeleteHelper(id){pendingDeleteId=id; wlDhFill(id); document.getElementById('modal-delete-helper').classList.add('open');}
+// With history (hours, payments or advances): the helper is only disabled. Without any: deleted.
+function wlDhFill(id){ var h=hById(id)||{}, n=wlHHist(id), t=document.getElementById('dh-title'), x=document.getElementById('dh-text'), b=document.getElementById('dh-btn'); if(!t||!x||!b) return;
+  if(n>0){ t.textContent='Disable '+(h.name||'helper')+'?'; x.innerHTML='His history stays: <b>'+n+'</b> record'+(n!==1?'s':'')+' (hours, payments, advances) and the project costs do not change. He disappears from the lists, his link stops clocking in, and you can reactivate him any time.'; b.textContent='Disable'; }
+  else { t.textContent='Delete '+(h.name||'helper')+'?'; x.textContent='He has no hours, payments or advances, so nothing else is affected.'; b.textContent='Yes, Delete'; } }
 window.promptDeleteHelper=promptDeleteHelper;
 function confirmDeleteHelper(){
   if(!pendingDeleteId) return;
-  db.collection('entries').get().then(function(s){
-    var batch=s.docs.filter(function(d){return d.data().helperId===pendingDeleteId;}).map(function(d){return db.collection('entries').doc(d.id).delete();});
-    return Promise.all(batch);
-  }).then(function(){return db.collection('helpers').doc(pendingDeleteId).delete();}).then(function(){pendingDeleteId=null; closeModal('modal-delete-helper'); showToast('Helper removed');});
+  var id=pendingDeleteId, ref=db.collection('helpers').doc(id), keep=wlHHist(id)>0;
+  // Never deletes hours any more: a helper with history is disabled (kept), one without history is deleted
+  var pr=keep ? ref.update({inactive:true,inactiveAt:new Date().toISOString(),inactiveBy:getAdminName()}) : ref.delete();
+  pr.then(function(){pendingDeleteId=null; closeModal('modal-delete-helper'); showToast(keep?'Helper disabled — history kept':'Helper deleted');})
+    .catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
 }
 window.confirmDeleteHelper=confirmDeleteHelper;
 
@@ -4509,7 +4555,7 @@ function renderSummary(){
   var list=document.getElementById('sum-list'); if(!list) return;
   if(!helpers.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No helpers yet.</div>'; return;}
   var totalM=0, totalP=0;
-  list.innerHTML=helpers.map(function(h,i){
+  list.innerHTML=helpers.filter(function(h){ return wlHOn(h)||periodMin(h.id,range.s,range.e)>0; }).map(function(h,i){
     var m=periodMin(h.id,range.s,range.e);
     var wp=calcPeriodPay(h.id,h.rate,range.s,range.e);
     var pay=wp.totalPay;
@@ -4717,11 +4763,11 @@ function getAdvanceBalance(helperId){
 window.getAdvanceBalance = getAdvanceBalance;
 
 function renderPayments(){
-  var sel=document.getElementById('pay-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
+  var sel=document.getElementById('pay-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.filter(wlHOn).concat(helpers.filter(function(x){return !wlHOn(x);})).forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name+(wlHOn(h)?'':' (inactive)'); sel.appendChild(o);});}
   var pd=document.getElementById('pay-date'); if(pd&&!pd.value) pd.value=localDateStr();
   var el=document.getElementById('payments-list');
   if(!payments.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px">No payments recorded yet.</div>'; return;}
-  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+parseLocalDate(p.date).toLocaleDateString()+(p.note?' · '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
+  el.innerHTML=payments.map(function(p){var h=hById(p.helperId); return '<div class="entry-row" style="margin-bottom:8px"><div style="flex:1"><div style="font-weight:700">'+(h?h.name:'?')+'</div><div class="entry-meta">'+parseLocalDate(p.date).toLocaleDateString()+(p.note?' · '+p.note:'')+'</div></div><div style="font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--green2)">'+fmtC(p.amount)+'</div><button data-pid="'+p.id+'" onclick="wlPayEdit(this.dataset.pid)" title="Edit" style="background:transparent;border:none;cursor:pointer;font-size:15px;padding:2px 6px">✏️</button><button data-pid="'+p.id+'" onclick="delPayment(this.dataset.pid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px">✕</button></div>';}).join('');
 }
 function addPayment(){
   var hid=document.getElementById('pay-helper').value, amount=parseFloat(document.getElementById('pay-amount').value), date=document.getElementById('pay-date').value, note=document.getElementById('pay-note').value;
@@ -4735,6 +4781,17 @@ function addPayment(){
 window.addPayment=addPayment;
 function delPayment(id){db.collection('payments').doc(id).delete().catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); }); showToast('Payment deleted');}
 window.delPayment=delPayment;
+var _wlPayEd=null;
+function wlPayEdit(id){ var p=null; for(var i=0;i<payments.length;i++) if(payments[i].id===id) p=payments[i]; if(!p) return; _wlPayEd=id; var h=hById(p.helperId);
+  document.getElementById('pe-title').textContent='✏️ Payment · '+(h?h.name:'?');
+  document.getElementById('pe-amount').value=p.amount; document.getElementById('pe-date').value=p.date||''; document.getElementById('pe-note').value=p.note||'';
+  document.getElementById('modal-pay-edit').classList.add('open'); }
+function wlPaySave(){ if(!_wlPayEd) return; var a=parseFloat(String(document.getElementById('pe-amount').value||'').replace(',','.')), d=document.getElementById('pe-date').value, n=document.getElementById('pe-note').value.trim();
+  if(isNaN(a)||a<=0) return showToast('Enter a valid amount','err'); if(!d) return showToast('Select a date','err');
+  var who=(typeof _wlMg!=='undefined'&&_wlMg.on)?(_wlMg.name||_wlMg.email):getAdminName();
+  db.collection('payments').doc(_wlPayEd).update({amount:Math.round(a*100)/100,date:d,note:n,editedBy:who,editedAt:new Date().toISOString()}).then(function(){ showToast('Payment updated ✅'); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
+  _wlPayEd=null; closeModal('modal-pay-edit'); }
+window.wlPayEdit=wlPayEdit; window.wlPaySave=wlPaySave;
 
 // ── ABSENCES ───────────────────────────────────────────
 var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
@@ -6097,7 +6154,7 @@ window.wlQrClockIn=wlQrClockIn;
 function showQRHelperModal(){
   var sel=document.getElementById('helper-sel-dd');
   sel.innerHTML='<option value="">-- Select your name --</option>';
-  helpers.forEach(function(h){var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
+  helpers.forEach(function(h){ if(!wlHOn(h)) return; var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});
   // Override select button to do QR clock in
   var btn=document.querySelector('#modal-helper-select .btn');
   if(btn){
@@ -6536,8 +6593,13 @@ function renderSettingsTeam(){
     el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">No helpers yet.</div>';
     return;
   }
-  el.innerHTML = helpers.map(function(h, i){
+  var _hs = helpers.filter(wlHOn).concat(helpers.filter(function(x){ return !wlHOn(x); }));
+  el.innerHTML = _hs.map(function(h, i){
     var cl = isClocked(h.id);
+    if(!wlHOn(h)) return '<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);opacity:.6;background:#f6f6f4">' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:#9ca3af;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">'+getInitials(h.name)+'</div>' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+wlEsc(h.name)+'</div><div style="font-size:12px;color:var(--muted);margin-top:1px">Inactive · '+wlRateTxt(h)+' · history kept</div></div>' +
+      '<button data-hid="'+h.id+'" onclick="wlHReactivate(this.dataset.hid)" style="background:transparent;border:1px solid var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:700;cursor:pointer">Reactivate</button></div>';
     var wm = weekMin(h.id);
     var initials = getInitials(h.name);
     var avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
@@ -6548,7 +6610,7 @@ function renderSettingsTeam(){
         '<div style="font-size:12px;color:var(--muted);margin-top:1px">'+wlRateTxt(h)+' · '+fmtD(wm)+' this week'+(cl?' <span style="color:var(--green);font-weight:700">● Live</span>':'')+'</div>' +
       '</div>' +
       '<button data-hid="'+h.id+'" onclick="openEditHelperRate(this.dataset.hid)" style="background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-right:6px">✏️ Edit</button>' +
-      '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">Remove</button>' +
+      '<button data-hid="'+h.id+'" onclick="settingsPromptDelete(this.dataset.hid)" style="background:transparent;border:1px solid #fcc;color:var(--red);border-radius:8px;padding:6px 12px;font-size:12px;font-family:var(--font-d);font-weight:600;cursor:pointer">'+(wlHHist(h.id)>0?'Disable':'Remove')+'</button>' +
       '</div>';
   }).join('');
 }
@@ -6612,10 +6674,12 @@ function settingsAddHelper(){
 window.settingsAddHelper = settingsAddHelper;
 
 function settingsPromptDelete(hid){
-  pendingDeleteId = hid;
+  pendingDeleteId = hid; wlDhFill(hid);
   document.getElementById('modal-delete-helper').classList.add('open');
 }
 window.settingsPromptDelete = settingsPromptDelete;
+function wlHReactivate(hid){ db.collection('helpers').doc(hid).update({inactive:false,inactiveAt:null,inactiveBy:null}).then(function(){ showToast('Reactivated ✅'); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+window.wlHReactivate=wlHReactivate;
 
 function saveSettings(){
   var otThreshold = parseFloat(document.getElementById('set-ot-threshold').value)||40;
