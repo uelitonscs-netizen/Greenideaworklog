@@ -676,7 +676,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></div>
       <button id="login-btn" class="btn" style="width:100%;padding:13px;font-size:15px" onclick="doLogin()">Sign In</button>
     </div>
-    <div style="margin-top:20px;color:var(--muted);font-size:12px">Helper? Use your personal link to clock in.</div>
+    <button type="button" class="btn ghost" id="login-back" style="width:100%;margin-top:14px;padding:13px;font-size:15px" onclick="wlLoginBack()">← I'm a helper · Back</button>
+    <div style="margin-top:12px;color:var(--muted);font-size:12px">Helper? Use your personal link to clock in.</div>
   </div>
 </div>
 
@@ -1049,7 +1050,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-2130</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-2200</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1625,7 +1626,7 @@ function calcPeriodPay(hid, rate, startDate, endDate){
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
 function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
 function showToast(msg,type){try{ msg=wlTmsg(msg); }catch(_e){} var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
-function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active');}
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active'); if(id==='login'){ try{ wlI18n(); }catch(e){} }}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function setSyncStatus(ok){
   var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl');
@@ -1978,6 +1979,7 @@ function wlTmsg(m){ var D=wlDict(); if(!D||typeof m!=='string') return m; if(D[m
   if(m.indexOf('Not saved: ')===0) return wl3('Not saved: ','Não salvo: ','No guardado: ')+m.slice(11);
   return m; }
 function wlI18n(){ try{
+  var lb=document.getElementById('login-back'); if(lb){ var L=wlLang(); lb.textContent=L==='pt'?'← Sou helper · Voltar':(L==='es'?'← Soy helper · Volver':'← I\'m a helper · Back'); }
   var els=document.querySelectorAll('#screen-helper [data-t]'); for(var i=0;i<els.length;i++){ var k=els[i].getAttribute('data-t'), v=wlT(k); if(els[i].textContent!==v) els[i].textContent=v; }
   var bx=document.getElementById('wl-lang'); if(bx){ if(wlIsOffice()){ bx.style.display='none'; } else { bx.style.display='flex'; var L=wlLang(), bs=bx.querySelectorAll('button'); for(var j=0;j<bs.length;j++){ var on=bs[j].getAttribute('data-l')===L; bs[j].style.background=on?'#fff':'transparent'; bs[j].style.color=on?'#17522a':'#fff'; } } }
 }catch(e){} }
@@ -2537,7 +2539,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-2130';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-2200';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2761,6 +2763,11 @@ function refreshView(){
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
+// Login opened by mistake on a helper's phone: one tap back to his own screen (or to the start page)
+function wlLoginBack(){ try{ document.getElementById('login-password').value=''; }catch(e){} var dv=wlLsGet('wl_helper_dev');
+  if(dv&&!wlIsOffice()){ if(hById(dv)){ openHelperView(dv); return; } location.replace(location.pathname+'?helper='+encodeURIComponent(dv)); return; }
+  showScreen('landing'); }
+window.wlLoginBack=wlLoginBack;
 function goLanding(){
   stopLiveClock();
   currentHelper=null;
