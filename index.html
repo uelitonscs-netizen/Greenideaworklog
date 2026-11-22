@@ -1049,7 +1049,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-2000</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-2130</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1865,7 +1865,11 @@ function wlqSend(op){
   var key=op.k+':'+op.id+':'+op.at; if(_wlqBusy[key]) return; _wlqBusy[key]=1;
   var ref=db.collection(op.col||'entries').doc(op.id), pr;
   try{ pr=op.k==='add'?ref.set(op.data):ref.update(op.data); }catch(e){ delete _wlqBusy[key]; return; }
-  pr.then(function(){ delete _wlqBusy[key]; wlqRemove(op); wlqApply(); wlqBadge(); try{ refreshView(); if(op.col==='helperReports') wlRepRender(); }catch(e){} })
+  pr.then(function(){ delete _wlqBusy[key];
+    if((op.col||'entries')==='entries'&&op.hid===_wlHelperId){ var j=-1; for(var k=0;k<_wlBase.length;k++){ if(_wlBase[k].id===op.id){ j=k; break; } }
+      if(op.k==='add'){ if(j<0) _wlBase.push(Object.assign({id:op.id},op.data)); } else if(j>=0){ _wlBase[j]=Object.assign({},_wlBase[j],op.data); }
+      _wlBase.sort(wlEntSort); try{ wlHcSave(true); }catch(e){} }
+    wlqRemove(op); wlqApply(); wlqBadge(); try{ refreshView(); if(op.col==='helperReports') wlRepRender(); }catch(e){} })
     .catch(function(e){ delete _wlqBusy[key];
       var a=wlqAll(), i=wlqFind(a,op), c=String((e&&e.code)||e||'error'); if(i<0) return;
       a[i].tries=(a[i].tries||0)+1; a[i].err=c;
@@ -1916,7 +1920,8 @@ function wlqBadge(){
 function wlHcLoad(hid){ try{ var o=JSON.parse(wlLsGet('wl_hc_'+hid)||'null'); return (o&&typeof o==='object')?o:null; }catch(e){ return null; } }
 function wlHcSave(now){ if(now){ wlHcWrite(); return; } if(_wlHcT) return; _wlHcT=setTimeout(function(){ _wlHcT=null; wlHcWrite(); },1200); }
 function wlHcWrite(){
-  if(window._listenersStarted||!_wlHelperId||_wlHelperLive!==_wlHelperId) return;
+  if(window._listenersStarted||!_wlHelperId) return;
+  if(_wlHelperLive!==_wlHelperId&&!(_wlBase&&_wlBase.length)) return;
   try{ var me=hById(_wlHelperId), pj=[], i;
     for(i=0;i<projects.length;i++){ var p=projects[i]; pj.push({id:p.id,name:p.name,desc:p.desc||'',status:p.status,helpers:p.helpers||[],start:p.start||'',end:p.end||'',createdAt:p.createdAt||''}); }
     var o={me:(me&&me.rate!==undefined)?me:null,entries:_wlBase.slice(0,150),projects:pj,at:Date.now()};
@@ -2532,7 +2537,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-2000';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-2130';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -6266,6 +6271,7 @@ function checkRoute(){
 }
 
 function wlQrClockIn(id){
+  try{ if(/[?&]action=clockin/.test(location.search)&&window.history&&history.replaceState) history.replaceState(null,'',location.pathname+'?helper='+encodeURIComponent(id)); }catch(_e){}
       openHelperView(id);
       // Clock in after this helper's hours have loaded (avoids a double clock-in)
       var _qrTries=0;
@@ -6334,13 +6340,11 @@ function startGeofence(){
         sessionStorage.setItem('geo_reminded_out_'+currentHelper.id,'1');
         showClockOutReminder();
       }
-      // Case 2: Not clocked in, not clocked out today — auto clock in
-      if(!open&&!clockedOutToday&&!_wlClockBusy&&(window._listenersStarted||_wlHelperLive===currentHelper.id)&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
+      // Case 2: not clocked in at the depot — ASK (the phone never opens a punch by itself; GPS indoors can be off by hundreds of meters)
+      var _acc=Number(pos.coords.accuracy)||9999;
+      if(!open&&!clockedOutToday&&!_wlClockBusy&&_acc<=Math.max(DEPOT_RADIUS,100)&&(window._listenersStarted||_wlHelperLive===currentHelper.id)&&!sessionStorage.getItem('geo_clocked_'+currentHelper.id)){
         sessionStorage.setItem('geo_clocked_'+currentHelper.id,'1');
-        var loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
-        var _pv2=wlPickVal(document.getElementById('clock-proj-select').value), projId=_pv2.projectId;
-        wlPunchIn(currentHelper.id,{helperId:currentHelper.id,startTime:new Date().toISOString(),endTime:null,note:'Auto clock in via geofence',type:'geofence',clockInLocation:loc,projectId:projId,category:_pv2.category});
-        showToast('📍 Auto clocked in at depot!'); try{ refreshView(); }catch(_e){}
+        wlGeoAsk();
       }
     }
     // Clear flags when far from depot
@@ -6351,6 +6355,13 @@ function startGeofence(){
   },function(){},{ enableHighAccuracy:true, maximumAge:10000, timeout:15000 });
 }
 
+function wlGeoAsk(){ if(document.getElementById('wl-geoask')||!currentHelper) return;
+  var b=document.createElement('div'); b.id='wl-geoask'; b.style.cssText='margin:0 0 10px;padding:12px 14px;border-radius:14px;background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46;font-size:14px;font-weight:700';
+  b.innerHTML='📍 '+wl3('You are at the depot. Clock in now?','Você está no depósito. Bater entrada agora?','Estás en el depósito. ¿Marcar entrada ahora?')+
+    '<div style="display:flex;gap:8px;margin-top:9px"><button type="button" style="flex:1;border:none;border-radius:11px;background:#1a6b2a;color:#fff;padding:11px;font-weight:800;font-size:14px" onclick="var x=document.getElementById(\'wl-geoask\'); if(x) x.remove(); if(currentHelper&&!getOpen(currentHelper.id)) toggleClock();">'+wl3('Clock In','Bater entrada','Marcar entrada')+'</button>'+
+    '<button type="button" style="border:1px solid #6ee7b7;border-radius:11px;background:#fff;color:#065f46;padding:11px 14px;font-weight:700;font-size:13px" onclick="var x=document.getElementById(\'wl-geoask\'); if(x) x.remove();">'+wl3('Not now','Agora não','Ahora no')+'</button></div>';
+  var card=document.querySelector('#screen-helper .clock-card'); if(card&&card.parentNode) card.parentNode.insertBefore(b,card); else document.body.appendChild(b); try{ b.scrollIntoView({block:'nearest'}); }catch(e){} }
+window.wlGeoAsk=wlGeoAsk;
 function showClockOutReminder(){
   // Show a prominent reminder banner
   var existing=document.getElementById('clockout-reminder');
