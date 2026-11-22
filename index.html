@@ -23,7 +23,7 @@
   if(ios&&hid){ var l=document.querySelector('link[rel="manifest"]'); if(l&&l.parentNode) l.parentNode.removeChild(l); }
 }catch(e){} })();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -1048,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261121-2300</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1100</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1980,16 +1980,21 @@ function wlInstCard(){
   var pt=wlLang()==='pt', ua=navigator.userAgent||'', ios=/iP(hone|ad|od)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   function lb(l,t){ var on=(wlLang()===l); return '<button type="button" onclick="wlSetLang(\''+l+'\')" style="background:'+(on?'#1d4ed8':'transparent')+';color:'+(on?'#fff':'#1e3a8a')+';border:1px solid #93c5fd;border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700;margin-left:4px">'+t+'</button>'; }
   var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px"><b>📲 '+(pt?'Coloque o WorkLog na tela inicial':'Put WorkLog on your home screen')+'</b><span style="white-space:nowrap">'+lb('pt','PT')+lb('en','EN')+'</span></div>';
+  var SH='<svg viewBox="0 0 24 24" width="15" height="15" style="vertical-align:-2px" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+  var ol=function(a){ return '<ol style="margin:6px 0 0 18px;padding:0">'+a.map(function(x){ return '<li style="margin:3px 0">'+x+'</li>'; }).join('')+'</ol>'; };
+  var inApp=/FBAN|FBAV|Instagram|Line\/|GSA\/|; wv\)|WhatsApp/.test(ua);
   if(ios){
-    if(/FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\//.test(ua)||!/Safari/.test(ua)) h+=pt?'1. Abra esta página no <b>Safari</b> (toque em ⋯ ou na bússola e escolha "Abrir no Safari").<br>2. Toque no botão Compartilhar <b>⬆</b> → <b>Adicionar à Tela de Início</b>.':'1. Open this page in <b>Safari</b> (tap ⋯ or the compass and choose "Open in Safari").<br>2. Tap the Share button <b>⬆</b> → <b>Add to Home Screen</b>.';
-    else h+=pt?'1. Toque no botão Compartilhar <b>⬆</b>.<br>2. Escolha <b>Adicionar à Tela de Início</b> → Adicionar.<br>3. Daqui em diante abra o WorkLog pelo ícone.':'1. Tap the Share button <b>⬆</b>.<br>2. Choose <b>Add to Home Screen</b> → Add.<br>3. From now on open WorkLog by the icon.';
+    if(inApp||!/Safari/.test(ua)) h+=ol(pt?['Toque na <b>bússola 🧭</b> ou em <b>⋯</b> e escolha <b>Abrir no Safari</b>.','No Safari, toque em <b>'+SH+' Compartilhar</b> (no iPhone novo fica no menu <b>⋯</b>).','Escolha <b>Adicionar à Tela de Início</b> → <b>Adicionar</b>.']:['Tap the <b>compass 🧭</b> or <b>⋯</b> and choose <b>Open in Safari</b>.','In Safari tap <b>'+SH+' Share</b> (on newer iPhones it is in the <b>⋯</b> menu).','Choose <b>Add to Home Screen</b> → <b>Add</b>.']);
+    else h+=ol(pt?['Toque em <b>'+SH+' Compartilhar</b> (no iPhone novo fica no menu <b>⋯</b>).','Role e escolha <b>Adicionar à Tela de Início</b>.','Deixe <b>Abrir como App Web</b> ligado → <b>Adicionar</b>.']:['Tap <b>'+SH+' Share</b> (on newer iPhones it is in the <b>⋯</b> menu).','Scroll and choose <b>Add to Home Screen</b>.','Keep <b>Open as Web App</b> on → <b>Add</b>.']);
+    if(!(inApp||!/Safari/.test(ua))) h+='<div style="margin-top:6px;font-size:12px">'+(pt?'Não aparece "Adicionar à Tela de Início"? Você está dentro do WhatsApp: abra no Safari primeiro (passo da bússola 🧭).':'No "Add to Home Screen"? You are inside WhatsApp: open it in Safari first (compass 🧭).')+'</div>';
   } else {
-    if(window.deferredPrompt) h+=pt?'Toque em <b>Instalar</b> abaixo.':'Tap <b>Install</b> below.';
-    else h+=pt?'Toque no menu <b>⋮</b> do navegador → <b>Adicionar à tela inicial</b> (ou Instalar app).':'Tap the menu <b>⋮</b> of the browser → <b>Add to Home screen</b> (or Install app).';
-    h+='<br>'+(pt?'Daqui em diante abra o WorkLog pelo ícone.':'From now on open WorkLog by the icon.');
-    if(window.deferredPrompt) h+='<br><button type="button" onclick="wlInstGo()" style="margin-top:8px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:13px">'+(pt?'Instalar':'Install')+'</button>';
+    if(window.deferredPrompt) h+='<button type="button" onclick="wlInstGo()" style="margin-top:8px;width:100%;background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:12px 16px;font-weight:800;font-size:15px">📲 '+(pt?'Instalar o WorkLog':'Install WorkLog')+'</button>';
+    else if(/SamsungBrowser/.test(ua)) h+=ol(pt?['Toque no menu <b>≡</b> (embaixo, à direita).','<b>Adicionar página a</b> → <b>Tela inicial</b>.']:['Tap the <b>≡</b> menu (bottom right).','<b>Add page to</b> → <b>Home screen</b>.']);
+    else if(inApp) h+=ol(pt?['Toque no menu <b>⋮</b> e escolha <b>Abrir no Chrome</b>.','No Chrome: menu <b>⋮</b> → <b>Adicionar à tela inicial</b> → <b>Instalar</b>.']:['Tap the <b>⋮</b> menu and choose <b>Open in Chrome</b>.','In Chrome: <b>⋮</b> menu → <b>Add to Home screen</b> → <b>Install</b>.']);
+    else h+=ol(pt?['Toque no menu <b>⋮</b> do Chrome (em cima, à direita).','<b>Adicionar à tela inicial</b> → <b>Instalar</b>.','Se só aparecer "Abrir no Chrome", toque nele primeiro.']:['Tap the Chrome <b>⋮</b> menu (top right).','<b>Add to Home screen</b> → <b>Install</b>.','If you only see "Open in Chrome", tap it first.']);
   }
-  h+='<br><button type="button" onclick="wlLsSet(\'wl_inst_ok\',\'1\');wlInstCard()" style="margin-top:8px;background:transparent;border:1px solid #93c5fd;color:#1e3a8a;border-radius:9px;padding:7px 12px;font-size:12px">'+(pt?'Já fiz':'Already done')+'</button>';
+  h+='<div style="margin-top:6px;font-weight:700">'+(pt?'Depois, abra o WorkLog sempre pelo ícone 🌱 — ele já abre no seu nome.':'Then always open WorkLog by the 🌱 icon — it opens in your name.')+'</div>';
+  h+='<button type="button" onclick="wlLsSet(\'wl_inst_ok\',\'1\');wlInstCard()" style="margin-top:8px;background:transparent;border:1px solid #93c5fd;color:#1e3a8a;border-radius:9px;padding:7px 12px;font-size:12px">'+(pt?'Já fiz':'Already done')+'</button>';
   el.innerHTML=h; el.style.display='block';
 }
 function wlInstGo(){ try{ var d=window.deferredPrompt; if(!d) return; d.prompt(); d.userChoice.then(function(){ window.deferredPrompt=null; wlInstCard(); }); }catch(e){} }
@@ -2348,7 +2353,7 @@ function wlMgNewHSave(){ if(_wlMg.perms.helpers!==true) return;
   ref.set({name:nm,rate:Math.round(rate*100)/100,createdAt:new Date().toISOString(),addedBy:_wlMg.name||_wlMg.email})
     .then(function(){ showToast(nm+mT(' added ✓',' adicionado ✓')); wlMgHLink(ref.id,nm); })
     .catch(function(e){ if(bt){ bt.disabled=false; bt.textContent=mT('Add','Adicionar'); } showToast(mT('Not saved: ','Não salvo: ')+((e&&e.code)||e),'err'); }); }
-function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h), msg=mT('Hi ','Oi ')+(h.name||'')+'! WorkLog: '+link; try{ navigator.clipboard.writeText(link).catch(function(){}); }catch(e){}
+function wlMgHLink(hid,nm){ var h=hById(hid)||{id:hid,name:nm||''}, link=hLink(h), msg=wlLinkMsg(h.name,link); try{ navigator.clipboard.writeText(link).catch(function(){}); }catch(e){}
   var x='<div class="modal-title">🔗 '+mT('Link for ','Link de ')+wlMgEsc(h.name||'')+'</div>';
   x+='<div style="font-size:12.5px;color:#4b5563;line-height:1.45;margin-bottom:10px">'+mT('Send this link to the helper. He opens it on HIS phone to clock in. Do not open it on your phone.','Mande este link para o helper. Ele abre no celular DELE para bater o ponto. Não abra no seu celular.')+'</div>';
   x+='<div style="background:#f3f4f6;border-radius:10px;padding:10px;font-family:var(--font-m);font-size:11.5px;word-break:break-all;margin-bottom:12px">'+wlMgEsc(link)+'</div>';
@@ -2515,7 +2520,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='11.19';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1100';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4195,7 +4200,7 @@ window.wlFoamQ=wlFoamQ; window.wlIgnQ=wlIgnQ;
 function copyLink(link){navigator.clipboard.writeText(link).then(function(){showToast('Link copied!');}).catch(function(){showToast('Copy failed','err');});}
 window.copyLink=copyLink;
 // Send a helper his link: copied at once, then WhatsApp / Message (SMS) / Copy in one tap
-function wlShareLink(hid){ var h=hById(hid); if(!h) return; var link=hLink(h), msg=(h.name||'')+' — WorkLog: '+link, pt=wlLang()==='pt';
+function wlShareLink(hid){ var h=hById(hid); if(!h) return; var link=hLink(h), pt=wlLang()==='pt', msg=wlLinkMsg(h.name,link);
   try{ navigator.clipboard.writeText(link).catch(function(){}); }catch(e){}
   var m=document.getElementById('modal-share'); if(!m){ m=document.createElement('div'); m.id='modal-share'; m.className='modal-overlay'; m.innerHTML='<div class="modal" id="share-box"></div>'; m.addEventListener('click',function(ev){ if(ev.target===m) m.classList.remove('open'); }); document.body.appendChild(m); }
   var B='display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;margin-bottom:8px;font-family:var(--font-d);border:none;cursor:pointer;';
@@ -4208,6 +4213,9 @@ function wlShareLink(hid){ var h=hById(hid); if(!h) return; var link=hLink(h), m
     '<button type="button" class="btn ghost" style="width:100%" onclick="document.getElementById(\'modal-share\').classList.remove(\'open\')">'+(pt?'Fechar':'Close')+'</button>';
   m.classList.add('open'); }
 window.wlShareLink=wlShareLink;
+// The message a helper receives: his link + how to put it on the home screen (iPhone and Android)
+function wlLinkMsg(name,link){ return 'Olá '+(name||'')+'! Seu WorkLog / Your WorkLog:\n'+link+'\n\n📲 iPhone: abra no Safari → Compartilhar ⬆ → Adicionar à Tela de Início.\n📲 Android: abra no Chrome → menu ⋮ → Adicionar à tela inicial.\nDepois abra sempre pelo ícone 🌱'; }
+window.wlLinkMsg=wlLinkMsg;
 
 // ── HELPERS LIST ───────────────────────────────────────
 function addHelper(){
@@ -6928,15 +6936,19 @@ if(!checkRoute()){
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('/Greenideaworklog/sw.js').catch(function(){});
+    navigator.serviceWorker.register('/Greenideaworklog/sw.js',{updateViaCache:'none'}).then(function(reg){
+      document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'){ try{ reg.update(); }catch(e){} } });
+    }).catch(function(){});
   });
 }
 var deferredPrompt;
+window.addEventListener('appinstalled',function(){ try{ wlLsSet('wl_inst_ok','1'); deferredPrompt=null; wlInstCard(); var b=document.getElementById('install-banner'); if(b) b.remove(); }catch(e){} });
 window.addEventListener('beforeinstallprompt',function(e){
-  e.preventDefault(); deferredPrompt=e;
+  e.preventDefault(); deferredPrompt=e; try{ wlInstCard(); }catch(_e){}
   setTimeout(function(){if(deferredPrompt) showInstallBanner();},3000);
 });
 function showInstallBanner(){
+  try{ if(!window._listenersStarted||document.getElementById('install-banner')) return; if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches) return; }catch(e){}
   var banner=document.createElement('div');
   banner.id='install-banner';
   banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid var(--green);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:10px;z-index:9997;font-family:Syne,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:320px;width:90%';
