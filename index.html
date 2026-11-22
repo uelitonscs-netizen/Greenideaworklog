@@ -1049,7 +1049,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1700</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1900</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1505,7 +1505,12 @@ function hById(id){return helpers.find(function(h){return h.id===id;});}
 function wlHOn(h){ return !!h&&h.inactive!==true; }
 function wlHHist(hid){ var n=0, i; for(i=0;i<entries.length;i++) if(entries[i].helperId===hid) n++; for(i=0;i<payments.length;i++) if(payments[i].helperId===hid) n++; for(i=0;i<advances.length;i++) if(advances[i].helperId===hid) n++; return n; }
 function isClocked(hid){return !!getOpen(hid);}
-function getOpen(hid){return entries.find(function(e){return e.helperId===hid&&!e.endTime;})||null;}
+function wlOpens(hid){ return entries.filter(function(e){return e.helperId===hid&&!e.endTime;}).sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); }); }
+function getOpen(hid){ return wlOpens(hid)[0]||null; }   // two open punches (two phones): the first one is the real one
+// Before opening a punch on a helper's phone, ask the server (not this phone's copy) if one is already open.
+// A new icon / new phone starts with an empty copy and could otherwise open a second punch. No answer in 5 s or offline: go on.
+function wlSrvOpen(hid){ return new Promise(function(res){ var done=false; function fin(v){ if(!done){ done=true; res(v); } } setTimeout(function(){ fin(null); },5000);
+  try{ if(navigator.onLine===false){ fin(null); return; } db.collection('entries').where('helperId','==',hid).get({source:'server'}).then(function(s){ var o=null; s.docs.forEach(function(d){ var x=d.data(); if(!x.endTime&&(!o||new Date(x.startTime)<new Date(o.startTime))) o=Object.assign({id:d.id},x); }); fin(o); }).catch(function(){ fin(null); }); }catch(e){ fin(null); } }); }
 function totalMin(hid){return entries.filter(function(e){return e.helperId===hid&&e.endTime;}).reduce(function(s,e){return s+gMin(e);},0);}
 function todayMin(hid){var t=new Date().toDateString(); return entries.filter(function(e){return e.helperId===hid&&e.endTime&&new Date(e.startTime).toDateString()===t;}).reduce(function(s,e){return s+gMin(e);},0);}
 function rangeMin(hid,r){var c=new Date(); if(r==='week') c.setDate(c.getDate()-7); else if(r==='month') c.setDate(c.getDate()-30); else c.setFullYear(2000); return entries.filter(function(e){return e.helperId===hid&&e.endTime&&new Date(e.startTime)>=c;}).reduce(function(s,e){return s+gMin(e);},0);}
@@ -2527,7 +2532,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1700';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1900';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3042,11 +3047,19 @@ function toggleClock(){
     if(!currentHelper||currentHelper.id!==hid){ return; }
     var open=getOpen(hid);
     if(wasOpen){
-      if(open&&open.id===wasOpen.id){ wlPunchUpd(hid,open.id,{endTime:at,clockOutLocation:loc||null}); try{ wlRepAsk(open.projectId); }catch(_e){} showToast((loc?'Clocked out! 📍':'Clocked out! ✅')+wlOffNote()); }
+      if(open&&open.id===wasOpen.id){ wlPunchUpd(hid,open.id,{endTime:at,clockOutLocation:loc||null});
+        wlOpens(hid).forEach(function(x){ if(x.id!==open.id) wlPunchUpd(hid,x.id,{endTime:x.startTime}); });   // a second open punch (same time span) ends with 0 h
+        try{ wlRepAsk(open.projectId); }catch(_e){} showToast((loc?'Clocked out! 📍':'Clocked out! ✅')+wlOffNote()); }
     } else if(open){ showToast('Already clocked in','err'); }
     else {
-      wlPunchIn(hid,{helperId:hid,startTime:at,endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:_pv.projectId,category:_pv.category});
-      showToast((loc?'Clocked in! 📍':'Clocked in! ⏱')+wlOffNote());
+      var _goIn=function(){ wlPunchIn(hid,{helperId:hid,startTime:at,endTime:null,note:'',type:'clock',clockInLocation:loc||null,projectId:_pv.projectId,category:_pv.category});
+        showToast((loc?'Clocked in! 📍':'Clocked in! ⏱')+wlOffNote()); updateHelperStats(); };
+      if(!window._listenersStarted){ _wlClockBusy=true; btn.disabled=true; btn.textContent=wlT('Loading your hours…');
+        wlSrvOpen(hid).then(function(so){ _wlClockBusy=false; btn.disabled=false;
+          if(so){ var f=false; for(var i=0;i<_wlBase.length;i++){ if(_wlBase[i].id===so.id){ _wlBase[i]=so; f=true; } } if(!f) _wlBase.push(so); try{ wlqApply(); }catch(e){} showToast('Already clocked in','err'); updateHelperStats(); return; }
+          if(getOpen(hid)){ showToast('Already clocked in','err'); updateHelperStats(); return; }
+          _goIn(); });
+      } else _goIn();
     }
     updateHelperStats();
   });
@@ -3265,7 +3278,11 @@ function wlRenderOnClock(){
   var box=document.getElementById('wl-onclock'); if(!box) return;
   var open=entries.filter(function(e){return !e.endTime;});
   if(!open.length){ box.innerHTML='<div class="wl-oc wl-oc-empty">Nobody on the clock right now</div>'; return; }
-  var h='<div class="wl-oc"><div class="wl-oc-hd"><span>On the clock now</span><span>'+open.length+' of '+helpers.filter(wlHOn).length+' crew</span></div>';
+  var _who={}, _dup={}; open.forEach(function(e){ _who[e.helperId]=(_who[e.helperId]||0)+1; }); for(var _k in _who){ if(_who[_k]>1) _dup[_k]=_who[_k]; }
+  var h='<div class="wl-oc"><div class="wl-oc-hd"><span>On the clock now</span><span>'+Object.keys(_who).length+' of '+helpers.filter(wlHOn).length+' crew</span></div>';
+  for(var _d in _dup){ var _hp=hById(_d), _first=wlOpens(_d)[0];
+    h+='<div style="margin:6px 0 8px;padding:9px 11px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:12.5px;line-height:1.4"><b>⚠ '+wlEsc(_hp?_hp.name:'?')+': '+_dup[_d]+' punches open at the same time</b> (two phones / icon). The first one ('+new Date(_first.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+') is kept.'+
+       '<button type="button" data-h="'+wlEsc(_d)+'" onclick="event.stopPropagation();wlDupFix(this.dataset.h)" style="display:block;margin-top:7px;border:none;background:#dc2626;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;font-size:12.5px;cursor:pointer">Remove the extra punch'+(_dup[_d]>2?'es':'')+'</button></div>'; }
   for(var i=0;i<open.length;i++){
     var e=open[i], hp=hById(e.helperId), name=hp?hp.name:'?';
     var ini=name.split(/\s+/).filter(function(x){return x;}).slice(0,2).map(function(x){return x.charAt(0).toUpperCase();}).join('');
@@ -3284,7 +3301,11 @@ function wlWeekBarHtml(wm){
   return '<div class="wl-wb"><div class="wl-wb-bar"><div class="wl-wb-reg '+cls+'" style="width:'+pct(reg)+'"></div>'+(ot>0?'<div class="wl-wb-ot" style="left:'+pct(th)+';width:'+pct(ot)+'"></div>':'')+
          '<div class="wl-wb-mk" style="left:'+pct(th)+'"></div></div><div class="wl-wb-lab '+cls+'">'+lab+'</div></div>';
 }
-window.wlRenderOnClock=wlRenderOnClock; window.wlWeekBarHtml=wlWeekBarHtml;
+window.wlRenderOnClock=wlRenderOnClock;
+function wlDupFix(hid){ var L=wlOpens(hid); if(L.length<2) return; var h=hById(hid)||{}, extra=L.slice(1);
+  if(!window.confirm('Remove '+extra.length+' extra open punch'+(extra.length>1?'es':'')+' of '+(h.name||'')+'?\nKept: the one from '+new Date(L[0].startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.')) return;
+  Promise.all(extra.map(function(x){ return db.collection('entries').doc(x.id).delete(); })).then(function(){ showToast('Extra punch removed ✓'); }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); }); }
+window.wlDupFix=wlDupFix; window.wlWeekBarHtml=wlWeekBarHtml;
 // ── QUICK ADD (+) and NEW FIELDBID JOB banner (stage 6) ─────────────
 // Every action opens an EXISTING form (+ Hours modal, project expense form,
 // project photo controls). Nothing here writes data by itself.
