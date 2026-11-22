@@ -1049,7 +1049,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1900</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-2000</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2532,7 +2532,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1900';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-2000';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4642,7 +4642,32 @@ document.addEventListener('DOMContentLoaded', function(){
   if(outEl) outEl.addEventListener('change', updateEditDuration);
   if(saveBtn) saveBtn.addEventListener('click', saveEntryEdit);
 });
-function delEntry(id){db.collection('entries').doc(id).delete(); showToast('Entry deleted');}
+
+// ── SAFE DELETE: every ✕ asks first (shows what goes away) and can be undone for 10 s ──
+function wlDelArr(col){ return col==='entries'?entries:col==='payments'?payments:col==='advances'?advances:col==='absences'?absences:col==='projectExpenses'?projectExpenses:[]; }
+function wlSafeDel(col,id,title,lines,done){
+  var it=null, A=wlDelArr(col); for(var i=0;i<A.length;i++) if(A[i].id===id) it=A[i]; if(!it) return;
+  var m=document.getElementById('modal-safedel'); if(!m){ m=document.createElement('div'); m.id='modal-safedel'; m.className='modal-overlay'; m.innerHTML='<div class="modal" style="max-width:380px" id="safedel-box"></div>'; m.addEventListener('click',function(ev){ if(ev.target===m) m.classList.remove('open'); }); document.body.appendChild(m); }
+  document.getElementById('safedel-box').innerHTML='<div class="modal-title" style="color:#b91c1c">🗑 '+wlEsc(title)+'</div>'+
+    '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.55;margin:4px 0 6px">'+lines.map(function(l){ return '<div>'+l+'</div>'; }).join('')+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">You can undo it for a few seconds after.</div>'+
+    '<div class="modal-actions"><button class="btn ghost" id="safedel-no">Cancel</button><button class="btn red" id="safedel-yes" style="background:#dc2626;color:#fff;border-color:#dc2626">Delete</button></div>';
+  document.getElementById('safedel-no').onclick=function(){ m.classList.remove('open'); };
+  document.getElementById('safedel-yes').onclick=function(){ m.classList.remove('open');
+    var copy=Object.assign({},it); delete copy.id;
+    db.collection(col).doc(id).delete().then(function(){ wlUndoBar(done,function(){ return db.collection(col).doc(id).set(copy); }); })
+      .catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); }); };
+  m.classList.add('open'); }
+function wlUndoBar(msg,undo){ var b=document.getElementById('wl-undo'); if(b) b.remove(); clearTimeout(window._wlUndoT);
+  b=document.createElement('div'); b.id='wl-undo'; b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:10050;background:#1f2937;color:#fff;border-radius:14px;padding:11px 12px 11px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:14px;font-weight:600;max-width:calc(100% - 32px)';
+  b.innerHTML='<span>'+wlEsc(msg)+'</span><button type="button" style="background:#fbbf24;color:#111827;border:none;border-radius:9px;padding:8px 14px;font-weight:900;font-size:14px;cursor:pointer">Undo</button>';
+  b.querySelector('button').onclick=function(){ b.remove(); clearTimeout(window._wlUndoT); undo().then(function(){ showToast('Restored ✓'); }).catch(function(e){ showToast('Not restored: '+((e&&e.code)||e),'err'); }); };
+  document.body.appendChild(b); window._wlUndoT=setTimeout(function(){ if(b.parentNode) b.remove(); },10000); }
+function wlDelWhen(d){ try{ return new Date(d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }catch(e){ return ''; } }
+function wlDelT(d){ try{ return new Date(d).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+window.wlSafeDel=wlSafeDel;
+function delEntry(id){ var e=entries.find(function(x){return x.id===id;}); if(!e) return; var h=hById(e.helperId), p=null; try{ p=wlProjOf(e); }catch(x){}
+  wlSafeDel('entries',id,'Delete these hours?',['<b>'+wlEsc(h?h.name:'?')+'</b>',wlDelWhen(e.startTime)+' · '+wlDelT(e.startTime)+' → '+(e.endTime?wlDelT(e.endTime):'still open'),'<b>'+fmtD(gMin(e))+'</b>'+(p?' · '+wlEsc(p.name):'')],'Hours deleted'); }
 window.delEntry=delEntry;
 
 // ── SUMMARY ────────────────────────────────────────────
@@ -4862,11 +4887,8 @@ function addAdvance(){
 }
 window.addAdvance = addAdvance;
 
-function delAdvance(id){
-  db.collection('advances').doc(id).delete().catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); });
-  showToast('Entry deleted');
-  renderDashboard();
-}
+function delAdvance(id){ var a=advances.find(function(x){return x.id===id;}); if(!a) return; var h=hById(a.helperId);
+  wlSafeDel('advances',id,a.type==='advance'?'Delete this advance?':'Delete this discount?',['<b>'+wlEsc(h?h.name:'?')+'</b>',wlEsc(a.date||'')+(a.note?' · '+wlEsc(a.note):''),'<b>$'+(parseFloat(a.amount)||0).toFixed(2)+'</b>'],a.type==='advance'?'Advance deleted':'Discount deleted'); }
 window.delAdvance = delAdvance;
 
 function getAdvanceBalance(helperId){
@@ -4896,7 +4918,7 @@ function addPayment(){
   showToast('Payment recorded! ✅');
 }
 window.addPayment=addPayment;
-function delPayment(id){db.collection('payments').doc(id).delete().catch(function(e){ showToast('Not deleted: '+((e&&e.code)||e),'err'); }); showToast('Payment deleted');}
+function delPayment(id){ var p=payments.find(function(x){return x.id===id;}); if(!p) return; var h=hById(p.helperId); wlSafeDel('payments',id,'Delete this payment?',['<b>'+wlEsc(h?h.name:'?')+'</b>',wlEsc(p.date||'')+(p.note?' · '+wlEsc(p.note):''),'<b>'+fmtC(p.amount)+'</b>'],'Payment deleted'); }
 window.delPayment=delPayment;
 var _wlPayEd=null;
 function wlPayEdit(id){ var p=null; for(var i=0;i<payments.length;i++) if(payments[i].id===id) p=payments[i]; if(!p) return; _wlPayEd=id; var h=hById(p.helperId);
@@ -4928,7 +4950,7 @@ function addAbsence(){
   showToast('Absence recorded!');
 }
 window.addAbsence=addAbsence;
-function delAbsence(id){db.collection('absences').doc(id).delete(); showToast('Absence deleted');}
+function delAbsence(id){ var a=absences.find(function(x){return x.id===id;}); if(!a) return; var h=hById(a.helperId); wlSafeDel('absences',id,'Delete this absence?',['<b>'+wlEsc(h?h.name:'?')+'</b>',wlEsc(a.date||'')+' · '+wlEsc((typeof absLabels!=='undefined'&&absLabels[a.type])||a.type||'')+(a.note?' · '+wlEsc(a.note):'')],'Absence deleted'); }
 window.delAbsence=delAbsence;
 
 // ── PROJECTS ──────────────────────────────────────────
@@ -5608,7 +5630,7 @@ function saveExpense(pid){
 }
 window.saveExpense=saveExpense;
 
-function delExpense(id){ db.collection('projectExpenses').doc(id).delete().then(function(){ showToast('Expense deleted'); }).catch(function(e){ showToast('Not deleted: '+((e&&(e.code||e.message))||'error'),'err'); }); }
+function delExpense(id){ var x=projectExpenses.find(function(y){return y.id===id;}); if(!x) return; var p=projects.find(function(y){return y.id===x.projectId;}); wlSafeDel('projectExpenses',id,'Delete this expense?',['<b>'+wlEsc(x.desc||x.type||'Expense')+'</b>'+(p?' · '+wlEsc(p.name):''),wlEsc(x.date||''),'<b>'+fmtC(Number(x.amount)||0)+'</b>'],'Expense deleted'); }
 window.delExpense=delExpense;
 
 var editingExpenseId=null;
