@@ -5,7 +5,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>WorkLog</title>
-<link rel="manifest" href="/Greenideaworklog/manifest.json"/>
 <meta name="theme-color" content="#1a6b2a"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -13,15 +12,17 @@
 <link rel="apple-touch-icon" href="icon-192.png"/>
 <script>
 // A helper's phone always carries its own link in the address, so a shortcut / "Add to Home Screen" made from
-// any moment opens that helper. iPhone: the installed icon has its own separate storage and, with a manifest,
-// would open the plain start page (no helper) — without the manifest it saves this exact address instead.
-(function(){ try{
-  var q=location.search, m=q.match(/[?&]helper=([^&]+)/), hid=m?decodeURIComponent(m[1]):'';
+// any moment opens that helper. iPhone / iPad: the installed icon has its own separate storage, and Safari saves the
+// manifest's start page (no helper) if the page EVER had a manifest — so the manifest is never put on a helper's
+// iPhone / iPad page (Safari then saves this exact address, with ?helper=). Everyone else gets it (Android install).
+(function(){ var hid='', ios=false; try{
+  var q=location.search, m=q.match(/[?&]helper=([^&]+)/); hid=m?decodeURIComponent(m[1]):'';
   if(!hid&&!/[?&]action=/.test(q)){ var ss=''; try{ ss=localStorage.getItem('wl_session')||''; hid=(ss==='admin'||ss==='manager')?'':(localStorage.getItem('wl_helper_dev')||''); }catch(e){}
     if(hid&&window.history&&history.replaceState) history.replaceState(null,'',location.pathname+'?helper='+encodeURIComponent(hid)); }
-  var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  if(ios&&hid){ var l=document.querySelector('link[rel="manifest"]'); if(l&&l.parentNode) l.parentNode.removeChild(l); }
-}catch(e){} })();
+  ios=/iP(hone|ad|od)/.test(navigator.userAgent)||((navigator.platform==='MacIntel'||/Macintosh/.test(navigator.userAgent))&&navigator.maxTouchPoints>0);
+}catch(e){}
+  try{ if(!(ios&&hid)){ var l=document.createElement('link'); l.rel='manifest'; l.href='/Greenideaworklog/manifest.json'; document.head.appendChild(l); } }catch(e){}
+})();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
 <style>
@@ -1048,7 +1049,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1300</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261122-1700</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2526,7 +2527,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1300';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261122-1700';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2846,11 +2847,23 @@ window.hTab=hTab;
 function wlIsOffice(){ try{ var u=auth.currentUser; return !!(window._listenersStarted&&u&&!u.isAnonymous); }catch(e){ return false; } }
 function wlNeedLink(){
   var o=document.getElementById('wl-needlink'); if(o&&o.parentNode) o.parentNode.removeChild(o);
-  var _pt=false; try{ _pt=wlLang()==='pt'; }catch(e){}
+  var st=false; try{ st=(navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }catch(e){}
   o=document.createElement('div'); o.id='wl-needlink'; o.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px';
-  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;text-align:center"><div style="font-size:34px">🔗</div><div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">'+(wl3('Open your personal link','Abra o seu link pessoal','Abre tu enlace personal'))+'</div><div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+(wl3('This phone is not linked to a helper yet. Open the link the office sent you (WhatsApp). After that, this button opens your screen.','Este celular ainda não está ligado a um helper. Abra o link que o escritório te mandou (WhatsApp). Depois disso, este botão abre a sua tela.','Este teléfono todavía no está vinculado a un helper. Abre el enlace que te mandó la oficina (WhatsApp). Después, este botón abre tu pantalla.'))+'</div><button type="button" class="btn" style="margin-top:16px;width:100%" onclick="var x=document.getElementById(\'wl-needlink\'); if(x) x.parentNode.removeChild(x);">OK</button></div>';
+  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:22px 20px;max-width:380px;width:100%;text-align:center"><div style="font-size:34px">🔗</div>'+
+    '<div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin:8px 0 6px">'+wl3('Open your personal link','Abra o seu link pessoal','Abre tu enlace personal')+'</div>'+
+    '<div style="font-size:13.5px;color:#4b5563;line-height:1.5">'+(st?wl3('This icon was added without your link. Copy the link the office sent you (WhatsApp) and paste it below — only once.','Este ícone foi instalado sem o seu link. Copie o link que o escritório te mandou (WhatsApp) e cole abaixo — só uma vez.','Este ícono se instaló sin tu enlace. Copia el enlace que te mandó la oficina (WhatsApp) y pégalo abajo — solo una vez.'):wl3('This phone is not linked to a helper yet. Open the link the office sent you (WhatsApp), or paste it below.','Este celular ainda não está ligado a um helper. Abra o link que o escritório te mandou (WhatsApp), ou cole abaixo.','Este teléfono todavía no está vinculado a un helper. Abre el enlace que te mandó la oficina (WhatsApp), o pégalo abajo.'))+'</div>'+
+    '<input id="wl-nl-in" type="url" autocapitalize="none" autocorrect="off" placeholder="'+wl3('Paste your link here','Cole o seu link aqui','Pega tu enlace aquí')+'" style="margin-top:14px;width:100%;padding:12px;border:1.5px solid #cbd5e1;border-radius:11px;font-size:14px"/>'+
+    '<div id="wl-nl-err" style="display:none;color:#dc2626;font-size:12.5px;margin-top:6px">'+wl3('This is not a WorkLog helper link.','Este não é um link de helper do WorkLog.','Este no es un enlace de helper de WorkLog.')+'</div>'+
+    '<button type="button" class="btn" style="margin-top:10px;width:100%" onclick="wlNeedLinkGo()">'+wl3('Open my screen','Abrir minha tela','Abrir mi pantalla')+'</button>'+
+    '<button type="button" class="btn ghost" style="margin-top:8px;width:100%" onclick="var x=document.getElementById(\'wl-needlink\'); if(x) x.parentNode.removeChild(x);">'+wl3('Close','Fechar','Cerrar')+'</button></div>';
   document.body.appendChild(o);
 }
+// The pasted link (or just the id) opens that helper; the address keeps ?helper= from then on, so this icon works
+function wlNeedLinkGo(){ var v=String((document.getElementById('wl-nl-in')||{}).value||'').trim(), m=v.match(/[?&]helper=([A-Za-z0-9_-]{6,})/), id=m?m[1]:(/^[A-Za-z0-9_-]{15,40}$/.test(v)?v:'');
+  var er=document.getElementById('wl-nl-err'); if(!id){ if(er) er.style.display='block'; return; }
+  try{ wlLsSet('wl_helper_dev',id); wlLsSet('wl_session','helper:'+id); }catch(e){}
+  location.replace(location.pathname+'?helper='+encodeURIComponent(id)); }
+window.wlNeedLink=wlNeedLink; window.wlNeedLinkGo=wlNeedLinkGo;
 function showHelperModal(){
   if(!wlIsOffice()){
     // A helper never picks a name: the phone opens only the helper it was linked to by the personal link.
