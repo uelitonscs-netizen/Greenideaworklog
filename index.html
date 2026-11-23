@@ -1051,7 +1051,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261123-1130</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261123-1600</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2561,7 +2561,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261123-1130';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261123-1600';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4428,13 +4428,14 @@ function renderEntriesList(){
     html+='<div data-hid="'+h.id+'" onclick="toggleHelperEntries(this.dataset.hid)" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none">';
     html+='<div style="width:38px;height:38px;border-radius:50%;background:'+avatarColor+';display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:13px;color:#fff;flex-shrink:0">'+initials+'</div>';
     html+='<div style="flex:1"><div style="font-family:var(--font-d);font-weight:800;font-size:14px">'+h.name+'</div>';
-    html+='<div style="font-size:11px;color:var(--muted)">'+hEnts.length+' entr'+(hEnts.length>1?'ies':'y')+' · '+fmtD(totalM)+' · '+fmtC(totalPay)+(totalOT>0?' · <span style="color:#d97706;font-weight:700">⚡ '+fmtD(totalOT)+' OT</span>':'')+'</div></div>';
+    var _days={}; hEnts.forEach(function(e){ _days[localDateStr(new Date(e.startTime))]=1; }); var _nd=Object.keys(_days).length;
+    html+='<div style="font-size:11px;color:var(--muted)">'+_nd+' day'+(_nd!==1?'s':'')+(_nd!==hEnts.length?' · '+hEnts.length+' entries':'')+' · '+fmtD(totalM)+' · '+fmtC(totalPay)+(totalOT>0?' · <span style="color:#d97706;font-weight:700">⚡ '+fmtD(totalOT)+' OT</span>':'')+'</div></div>';
     html+='<span id="hent-arrow-'+h.id+'" style="color:var(--muted);font-size:16px">▼</span>';
     html+='</div>';
 
     // Entries - collapsed by default
     html+='<div id="hent-'+h.id+'" style="display:none;border-top:1px solid var(--border)">';
-    hEnts.forEach(function(e){
+    function wlEntCard(e){
       var proj=e.projectId?projects.find(function(p){return p.id===e.projectId;}):null;
       // Show active projects, but ALSO include this entry's assigned project even
       // if it's completed/paused, so marking a project done doesn't make its
@@ -4469,6 +4470,24 @@ function renderEntriesList(){
       if(hasLoc) html+='<div id="map-'+e.id+'" style="height:160px;border-radius:10px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border)" data-lat-in="'+(e.clockInLocation?e.clockInLocation.lat:'')+'" data-lng-in="'+(e.clockInLocation?e.clockInLocation.lng:'')+'" data-lat-out="'+(e.clockOutLocation?e.clockOutLocation.lat:'')+'" data-lng-out="'+(e.clockOutLocation?e.clockOutLocation.lng:'')+'"></div>';
       html+='<div><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:600;width:100%">'+apOpts+'</select></div>';
       html+='</div>';
+    }
+    // One line per DAY: a day with two or more jobs shows the day total and opens the jobs (each stays its own record for the project's labor)
+    var byDay={}, dayKeys=[];
+    hEnts.forEach(function(e){ var k=localDateStr(new Date(e.startTime)); if(!byDay[k]){ byDay[k]=[]; dayKeys.push(k); } byDay[k].push(e); });
+    dayKeys.sort(function(x,y){ return x<y?1:-1; });
+    dayKeys.forEach(function(k){ var L=byDay[k].sort(function(x,y){ return new Date(x.startTime)-new Date(y.startTime); });
+      if(L.length===1){ wlEntCard(L[0]); return; }
+      var dm=L.reduce(function(t,e){ return t+gMin(e); },0), did='wlday-'+h.id+'-'+k, open=!!(window._wlDayOpen&&window._wlDayOpen[did]);
+      var jobs=[], seen={}; L.forEach(function(e){ var pj=null; try{ pj=wlProjOf(e); }catch(x){} var nm=pj?pj.name:'No project', ad=(pj&&pj.desc)?pj.desc:''; var key=nm+'|'+ad; if(!seen[key]){ seen[key]=1; jobs.push({nm:nm,ad:ad}); } });
+      var t1=new Date(L[0].startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}), t2=new Date(L[L.length-1].endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      html+='<div style="border-bottom:1px solid var(--border)"><div data-d="'+did+'" onclick="wlDayToggle(this.dataset.d)" style="padding:12px 16px;cursor:pointer;user-select:none;background:#fafbf9">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:800">'+new Date(L[0].startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+        '<div style="display:flex;align-items:center;gap:8px"><div class="entry-dur">'+fmtD(dm)+'</div><span id="'+did+'-a" style="color:var(--muted);font-size:13px">'+(open?'▲':'▼')+'</span></div></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+t1+' → '+t2+' · <b style="color:#1d4ed8">'+L.length+' jobs</b></div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'+jobs.map(function(j){ return '<span style="background:#eef2ff;color:#1e3a8a;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700">📁 '+wlEsc(j.nm)+(j.ad?' · '+wlEsc(j.ad):'')+'</span>'; }).join('')+'</div></div>'+
+        '<div id="'+did+'" style="display:'+(open?'block':'none')+';border-left:3px solid #c7d2fe">';
+      L.forEach(function(e){ wlEntCard(e); });
+      html+='</div></div>';
     });
     html+='</div></div>';
   });
@@ -4544,6 +4563,9 @@ function toggleHelperEntries(hid){
   }
 }
 window.toggleHelperEntries=toggleHelperEntries;
+function wlDayToggle(id){ window._wlDayOpen=window._wlDayOpen||{}; var el=document.getElementById(id), ar=document.getElementById(id+'-a'); if(!el) return;
+  var open=el.style.display!=='none'; el.style.display=open?'none':'block'; if(ar) ar.textContent=open?'▼':'▲'; window._wlDayOpen[id]=!open; if(!open) setTimeout(initEntryMaps,300); }
+window.wlDayToggle=wlDayToggle;
 
 // ── EDIT ENTRY ──────────────────────────────────────────────
 var _editEntryId = null;
