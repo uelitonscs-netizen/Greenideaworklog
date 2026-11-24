@@ -561,6 +561,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .wl-fbu-all-row.on{border-color:#1e633466;background:#f3f8f1;}
 .wl-fbu-ck{width:22px;height:22px;flex-shrink:0;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;margin-top:1px;}
 .wl-fbu-all-row.on .wl-fbu-ck{background:var(--green);border-color:var(--green);}
+.wl-fbu-wrap{position:relative;}.wl-fbu-wrap .wl-fbu-all-row{padding-right:92px;}
+.wl-fbu-skip{position:absolute;top:9px;right:9px;border:1px solid #fca5a5;background:#fff;color:#b91c1c;border-radius:9px;padding:6px 9px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;}
+.wl-fbu-skipped{border:1px dashed var(--border2);border-radius:12px;padding:9px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:#fafafa;}
+.wl-fbu-skipped button{border:1px solid var(--green);background:#fff;color:var(--green);border-radius:9px;padding:6px 10px;font-weight:800;font-size:12px;font-family:inherit;cursor:pointer;}
 .wl-fbu-all-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .wl-fbu-all-txt b{font-family:var(--font-d);font-size:14.5px;color:var(--text);}
 .wl-fbu-all-txt span{font-size:12px;color:var(--muted);}
@@ -1051,7 +1055,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1200</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1700</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2578,7 +2582,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1200';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1700';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3601,6 +3605,9 @@ function wlFbuAct(a,id){
   if(a==='close') wlFbuClose(); else if(a==='pick') wlFbuPreview(id); else if(a==='all') wlFbuRenderList(true); else if(a==='list') wlFbuRenderList(false); else if(a==='apply') wlFbuApply();
   else if(a==='tog'){ var r=_wlFbuAll.rows[parseInt(id,10)]; if(r){ r.on=!r.on; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); } }
   else if(a==='allapply') wlFbuAllApply();
+  else if(a==='skip') wlFbuSkip(parseInt(id,10));
+  else if(a==='unskip') wlFbuUnskip(parseInt(id,10));
+  else if(a==='skshow'){ _wlFbuAll.showSkipped=!_wlFbuAll.showSkipped; wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0); }
   else if(a==='ohsplit') wlOhSplit([id]);
   else if(a==='ohhours') wlOhSplitHours(id==='all'?null:[id]);
   else if(a==='ohhteam'){ var _p=String(id).split('|'), _cur=wlOhHoursPlan(_p[0]); var _nv=Math.max(1,Math.min(NUM_TEAMS||1,((_cur&&_cur.teams)||1)+parseInt(_p[1],10))); window._wlOhTeamsOv[_p[0]]=_nv; wlOhReview(); }
@@ -3679,6 +3686,9 @@ window.wlSetJobType=wlSetJobType;
 // preview). Old projects not linked yet get a suggested estimate, unchecked.
 // Same fields as the per-project button; hours, expenses and photos untouched.
 var _wlFbuAll={rows:[]};
+// fingerprint of what a FieldBid summary would apply (a discarded update comes back only when this changes)
+function wlFbStable(o){ if(o===null||typeof o!=='object') return JSON.stringify(o); if(Array.isArray(o)) return '['+o.map(wlFbStable).join(',')+']'; return '{'+Object.keys(o).sort().map(function(k){ return JSON.stringify(k)+':'+wlFbStable(o[k]); }).join(',')+'}'; }
+function wlFbKey(sm){ var t=wlFbStable({b:Number(sm.budget)||0,m:sm.matBudget||null,e:sm.estimate||null}), h=5381; for(var i=0;i<t.length;i++){ h=((h<<5)+h+t.charCodeAt(i))|0; } return 'k'+(h>>>0).toString(36)+'.'+t.length; }
 function wlFbuEstKey(e){ if(!e) return ''; return [e.manHours,e.laborCost,e.ohDays,e.ohCost,e.materialCost,e.totalSqft,e.jobType].join('|'); }
 function wlFbuChanges(p,sm){
   var ch=[];
@@ -3696,38 +3706,57 @@ function wlFbuAllOpen(){
   q.then(function(snap){
     var byId={}, list=[], ds=snap.docs||[];
     for(var k=0;k<ds.length;k++){ var sm=wlFbuParse(ds[k]); if(sm&&sm.matBudget){ byId[sm._id]=sm; list.push(sm); } }
-    var rows=[], upToDate=0, missing=0;
+    var rows=[], upToDate=0, missing=0, skipped=[];
     for(var i=0;i<projects.length;i++){ var p=projects[i];
       if(p.fbProjectId){
         var s=byId[p.fbProjectId]; if(!s){ missing++; continue; }
         var ch=wlFbuChanges(p,s); if(!ch.length){ upToDate++; continue; }
+        if(p.fbSkipKey&&p.fbSkipKey===wlFbKey(s)){ skipped.push({pid:p.id,link:false,label:'update'}); continue; }   // this version was discarded
         rows.push({pid:p.id,sm:s,ch:ch,on:true,link:false});
       } else if(p.source==='fieldbid'){
-        var best=null, bs=0; for(var j=0;j<list.length;j++){ var sc=wlFbuScore(p,list[j]); if(sc>bs){ bs=sc; best=list[j]; } }
+        var no=Array.isArray(p.fbSkipSugg)?p.fbSkipSugg:[], best=null, bs=0; for(var j=0;j<list.length;j++){ if(no.indexOf(list[j]._id)>=0) continue; var sc=wlFbuScore(p,list[j]); if(sc>bs){ bs=sc; best=list[j]; } }
+        if(no.length) skipped.push({pid:p.id,link:true,label:no.length+' suggestion'+(no.length>1?'s':'')});
         if(best) rows.push({pid:p.id,sm:best,ch:['Link to estimate: '+(best.client||best.projName||'')+(best.address?' · '+best.address:'')].concat(wlFbuChanges(p,best)),on:false,link:true});
       }
     }
-    _wlFbuAll={rows:rows};
+    _wlFbuAll={rows:rows,skipped:skipped,showSkipped:false};
     wlFbuAllRender(upToDate,missing);
   }).catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Could not read FieldBid: '+wlEsc(e&&e.message||e)+'</div>'); });
 }
 window.wlFbuAllOpen=wlFbuAllOpen;
 function wlFbuAllRender(upToDate,missing){
   var R=_wlFbuAll.rows, h='', n=0;
-  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'); return; }
+  var SK=_wlFbuAll.skipped||[], skh='';
+  if(SK.length){ skh='<button type="button" class="wl-fbu-more" data-fbu="skshow">'+(_wlFbuAll.showSkipped?'Hide':'Show')+' discarded ('+SK.length+')</button>';
+    if(_wlFbuAll.showSkipped) for(var si=0;si<SK.length;si++){ var sp=projects.filter(function(x){return x.id===SK[si].pid;})[0]||{}; skh+='<div class="wl-fbu-skipped"><span><b style="color:var(--text)">'+wlEsc(sp.name||'')+'</b> · '+(SK[si].link?'discarded '+SK[si].label:'FieldBid update discarded')+'</span><button type="button" data-fbu="unskip" data-id="'+si+'">Restore</button></div>'; } }
+  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'+skh); return; }
   h+='<div class="wl-fbu-sub">'+(upToDate?upToDate+' up to date · ':'')+'Check what to update. Hours, expenses and photos are not touched.</div>';
   var linkHdr=false;
   for(var i=0;i<R.length;i++){ var r=R[i], p=projects.filter(function(x){return x.id===r.pid;})[0]||{}; if(r.on) n++;
     if(r.link&&!linkHdr){ linkHdr=true; h+='<div class="wl-fbu-grp">Not linked yet — check only if the suggestion is right</div>'; }
-    h+='<button type="button" class="wl-fbu-all-row'+(r.on?' on':'')+'" data-fbu="tog" data-id="'+i+'"><span class="wl-fbu-ck">'+(r.on?'✓':'')+'</span><span class="wl-fbu-all-txt"><b>'+wlEsc(p.name||'')+'</b>';
+    h+='<div class="wl-fbu-wrap"><button type="button" class="wl-fbu-all-row'+(r.on?' on':'')+'" data-fbu="tog" data-id="'+i+'"><span class="wl-fbu-ck">'+(r.on?'✓':'')+'</span><span class="wl-fbu-all-txt"><b>'+wlEsc(p.name||'')+'</b>';
     for(var c=0;c<r.ch.length&&c<4;c++) h+='<span>'+wlEsc(r.ch[c])+'</span>';
     if(r.ch.length>4) h+='<span>+'+(r.ch.length-4)+' more change(s)</span>';
-    h+='</span></button>'; }
+    h+='</span></button><button type="button" class="wl-fbu-skip" data-fbu="skip" data-id="'+i+'">✕ Discard</button></div>'; }
   if(missing) h+='<div class="wl-fbu-note">'+missing+' linked estimate(s) not found — open them once in FieldBid.</div>';
   h+='<button type="button" class="wl-fbu-go" data-fbu="allapply"'+(n?'':' disabled')+'>Update '+n+' project'+(n!==1?'s':'')+'</button>';
+  h+=skh;
   wlFbuShow(h);
   _wlFbuAll.upToDate=upToDate; _wlFbuAll.missing=missing;
 }
+// ✕ Discard: an update stays hidden until the estimate changes again in FieldBid; a wrong link suggestion never comes back
+function wlFbuSkip(i){ var r=_wlFbuAll.rows[i]; if(!r) return; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) return;
+  var FV=firebase.firestore.FieldValue, upd=r.link?{fbSkipSugg:FV.arrayUnion(r.sm._id)}:{fbSkipKey:wlFbKey(r.sm)};
+  db.collection('projects').doc(p.id).update(upd).then(function(){
+    _wlFbuAll.rows.splice(i,1); _wlFbuAll.skipped=_wlFbuAll.skipped||[];
+    if(r.link){ var ex=_wlFbuAll.skipped.filter(function(x){ return x.pid===p.id&&x.link; })[0], no=(Array.isArray(p.fbSkipSugg)?p.fbSkipSugg.length:0)+1; if(ex) ex.label=no+' suggestions'; else _wlFbuAll.skipped.push({pid:p.id,link:true,label:'1 suggestion'}); }
+    else _wlFbuAll.skipped.push({pid:p.id,link:false,label:'update'});
+    wlFbuAllRender(_wlFbuAll.upToDate||0,_wlFbuAll.missing||0);
+    showToast(r.link?'Suggestion discarded':'Discarded — it comes back only if the estimate changes in FieldBid'); })
+    .catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+function wlFbuUnskip(i){ var k=(_wlFbuAll.skipped||[])[i]; if(!k) return; var FV=firebase.firestore.FieldValue;
+  db.collection('projects').doc(k.pid).update(k.link?{fbSkipSugg:FV.delete()}:{fbSkipKey:FV.delete()}).then(function(){ showToast('Restored ✓'); setTimeout(wlFbuAllOpen,600); })
+    .catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
 function wlFbuAllApply(){
   var R=_wlFbuAll.rows, batch=db.batch(), n=0, now=new Date().toISOString();
   for(var i=0;i<R.length;i++){ var r=R[i]; if(!r.on) continue; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) continue; var sm=r.sm;
