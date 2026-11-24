@@ -1051,7 +1051,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1200</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1500</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2578,7 +2578,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1200';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1500';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2783,7 +2783,8 @@ function startFullListeners(){
   db.collection('payments').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'payments')) return; payments=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
   db.collection('advances').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'advances')) return; advances=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); if(currentReport==='advances') renderAdvances();},function(){});
   db.collection('absences').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'absences')) return; absences=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView();},function(){});
-  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projects')) return; projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); wlAutoAssign(); try{ wlMgPublish(); }catch(_e){} refreshView(); updateClientSuggestions();},function(){});
+  try{ wlFbAutoStart(); }catch(_e){}
+  db.collection('projects').orderBy('createdAt','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projects')) return; projects=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); try{ if(!_wlFbAuto.on) wlFbAutoStart(); else wlFbAutoLater(); }catch(_e){} wlAutoAssign(); try{ wlMgPublish(); }catch(_e){} refreshView(); updateClientSuggestions();},function(){});
   db.collection('projectExpenses').orderBy('date','desc').onSnapshot(function(s){ if(wlOcSkip(s,'projectExpenses')) return; projectExpenses=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); refreshView(); try{ if(document.getElementById('wl-rp')&&!(document.activeElement&&/^rp[ax]-/.test(document.activeElement.id||''))) wlRpDraw(); }catch(_e){} },function(){});
   db.collection('managers').onSnapshot(function(s){ wlMgList=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); wlMgBanner(); wlMgPublish(); }catch(_e){} },function(){});
   db.collection('hoursLog').orderBy('at','desc').limit(40).onSnapshot(function(s){ wlMgLog=s.docs.map(function(d){return Object.assign({id:d.id},d.data());}).sort(function(a,b){ return String(b.at||'')<String(a.at||'')?-1:1; }).slice(0,40); try{ if(document.getElementById('wl-mgx')&&!(document.activeElement&&/^mgx-new-/.test(document.activeElement.id||''))) wlMgxDraw(); }catch(_e){} },function(){});
@@ -3589,7 +3590,7 @@ function wlFbuPreview(id){
 }
 function wlFbuApply(){
   var p=projects.filter(function(x){return x.id===_wlFbu.pid;})[0], sm=_wlFbu.pick; if(!p||!sm) return;
-  var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:new Date().toISOString()};
+  var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:new Date().toISOString(), fbSyncedKey:wlFbKey(sm)};
   if(sm.estimate) upd.estimate=sm.estimate;
   if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
   if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
@@ -3731,7 +3732,7 @@ function wlFbuAllRender(upToDate,missing){
 function wlFbuAllApply(){
   var R=_wlFbuAll.rows, batch=db.batch(), n=0, now=new Date().toISOString();
   for(var i=0;i<R.length;i++){ var r=R[i]; if(!r.on) continue; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) continue; var sm=r.sm;
-    var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:now};
+    var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbProjectId:sm._id, fbSyncedAt:now, fbSyncedKey:wlFbKey(sm)};
     if(sm.estimate) upd.estimate=sm.estimate;
     if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
     if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
@@ -3741,6 +3742,46 @@ function wlFbuAllApply(){
   batch.commit().then(function(){ wlFbuClose(); showToast(n+' project(s) updated from FieldBid ✅'); })
     .catch(function(e){ wlFbuShow('<div class="wl-fbu-msg bad">Not updated: '+wlEsc(e&&e.message||e)+'. Nothing was changed.</div>'); });
 }
+
+// ── AUTO UPDATE FROM FIELDBID ──────────────────────────────────────
+// While the office app is open it listens to fieldbid/wlsync__* and applies, by itself, the same update as the
+// button to every ACTIVE job linked to an estimate (fbProjectId) when that estimate's CONTENT changed in FieldBid.
+// fbSyncedKey = fingerprint of the FieldBid content last applied: opening an estimate (which only re-saves it) changes
+// nothing, and a material budget edited here is replaced only when the estimate really changes in FieldBid.
+// Same fields as the button: contract, material budget, estimate; phone / email only if empty. Hours, expenses,
+// photos, status are never touched. Finished / paused jobs never change.
+function wlFbStable(o){ if(o===null||typeof o!=='object') return JSON.stringify(o); if(Array.isArray(o)) return '['+o.map(wlFbStable).join(',')+']';
+  return '{'+Object.keys(o).sort().map(function(k){ return JSON.stringify(k)+':'+wlFbStable(o[k]); }).join(',')+'}'; }
+function wlFbKey(sm){ var t=wlFbStable({b:Number(sm.budget)||0,m:sm.matBudget||null,e:sm.estimate||null,ph:sm.clientPhone||'',em:sm.clientEmail||''}), h=5381;
+  for(var i=0;i<t.length;i++){ h=((h<<5)+h+t.charCodeAt(i))|0; } return 'k'+(h>>>0).toString(36)+'.'+t.length; }
+var _wlFbAuto={on:false,byId:{},t:null,busy:false,unsub:null,done:{}};
+function wlFbAutoStart(){ if(_wlFbAuto.on) return; try{ var u=auth.currentUser; if(!u||u.uid!==WL_ADMIN_UID) return; }catch(e){ return; } _wlFbAuto.on=true;
+  try{ var FP=firebase.firestore.FieldPath.documentId();
+    _wlFbAuto.unsub=db.collection('fieldbid').where(FP,'>=','wlsync__').where(FP,'<','wlsync_`').onSnapshot(function(snap){
+      var m={}; (snap.docs||[]).forEach(function(d){ var sm=wlFbuParse(d); if(sm&&sm.matBudget) m[sm._id]=sm; }); _wlFbAuto.byId=m; wlFbAutoLater(); },function(){ _wlFbAuto.on=false; });
+  }catch(e){ _wlFbAuto.on=false; } }
+function wlFbAutoLater(){ clearTimeout(_wlFbAuto.t); _wlFbAuto.t=setTimeout(wlFbAutoRun,2500); }
+function wlFbAutoRun(){
+  if(!_wlFbAuto.on||_wlFbAuto.busy||!window._listenersStarted) return; if(navigator.onLine===false) return;
+  try{ if(_wlOc&&_wlOc.mode) return; }catch(e){}                       // offline copy on screen: never write from it
+  var batch=db.batch(), n=0, names=[], now=new Date().toISOString(), wrote={};
+  for(var i=0;i<projects.length;i++){ var p=projects[i]; if(!p||!p.fbProjectId) continue; if((p.status||'active')!=='active') continue;
+    var sm=_wlFbAuto.byId[p.fbProjectId]; if(!sm) continue; var key=wlFbKey(sm); if(p.fbSyncedKey===key||_wlFbAuto.done[p.id]===key) continue;   // done: written, the server copy not back yet
+    var ch=wlFbuChanges(p,sm), ref=db.collection('projects').doc(p.id);
+    if(!p.fbSyncedKey){   // linked before this version: decide once what is new
+      var fbNewer=!p.fbSyncedAt||(sm._at&&String(sm._at)>String(p.fbSyncedAt)), mb=p.matBudget||{}, manual=!!((mb.cc&&mb.cc.manual)||(mb.oc&&mb.oc.manual));
+      if(!ch.length||!fbNewer||manual){ batch.update(ref,{fbSyncedKey:key}); wrote[p.id]=key; n++; continue; }   // only the fingerprint: the job keeps its numbers
+    } else if(!ch.length){ batch.update(ref,{fbSyncedKey:key}); wrote[p.id]=key; n++; continue; }
+    var upd={budget:Number(sm.budget)||0, fieldbidTotal:Number(sm.budget)||0, matBudget:sm.matBudget, fbSyncedAt:now, fbSyncedKey:key};
+    if(sm.estimate) upd.estimate=sm.estimate;
+    if(!p.clientPhone&&sm.clientPhone) upd.clientPhone=sm.clientPhone;
+    if(!p.clientEmail&&sm.clientEmail) upd.clientEmail=sm.clientEmail;
+    batch.update(ref,upd); wrote[p.id]=key; n++; names.push(p.name||'job'); }
+  if(!n) return;
+  _wlFbAuto.busy=true;
+  batch.commit().then(function(){ _wlFbAuto.busy=false; for(var w in wrote) _wlFbAuto.done[w]=wrote[w]; if(names.length){ showToast('🔄 '+names.length+' job'+(names.length>1?'s':'')+' updated from FieldBid'); window._wlFbAutoLast={at:Date.now(),names:names}; } })
+    .catch(function(){ _wlFbAuto.busy=false; }); }
+window.wlFbAutoStart=wlFbAutoStart; window.wlFbAutoRun=wlFbAutoRun;
 
 // ── ESTIMATE ACCURACY (Reports → Accuracy) ─────────────────────────
 // Groups jobs by type of work and compares FieldBid's estimate with what WorkLog
