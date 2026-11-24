@@ -1051,7 +1051,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1000</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261124-1200</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2578,7 +2578,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1000';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261124-1200';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4472,19 +4472,20 @@ function renderEntriesList(){
       html+='<div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px 12px">';
       html+='<div style="font-size:10px;font-weight:700;color:#666;margin-bottom:2px">CLOCKED IN</div>';
       html+='<div style="font-size:18px;font-weight:800;color:var(--green)">'+new Date(e.startTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</div>';
-      if(e.clockInLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">📍 '+e.clockInLocation.lat.toFixed(4)+', '+e.clockInLocation.lng.toFixed(4)+'</div>';
-      else html+='<div style="font-size:10px;color:#ccc;margin-top:3px">No location</div>';
+      if(e.clockInLocation) html+=wlLocHtml(e.clockInLocation,e);
+      else html+='<div style="font-size:10px;color:#9ca3af;margin-top:3px">No location — GPS off or not allowed</div>';
       html+='</div>';
       html+='<div style="display:flex;align-items:center;color:#ccc;font-size:18px">→</div>';
       html+='<div style="flex:1;background:#fff5f5;border-radius:10px;padding:10px 12px">';
       html+='<div style="font-size:10px;font-weight:700;color:#666;margin-bottom:2px">CLOCKED OUT</div>';
       html+='<div style="font-size:18px;font-weight:800;color:var(--red)">'+new Date(e.endTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</div>';
-      if(e.clockOutLocation) html+='<div style="font-size:10px;color:#666;margin-top:3px">📍 '+e.clockOutLocation.lat.toFixed(4)+', '+e.clockOutLocation.lng.toFixed(4)+'</div>';
-      else html+='<div style="font-size:10px;color:#ccc;margin-top:3px">No location</div>';
+      if(e.clockOutLocation) html+=wlLocHtml(e.clockOutLocation,e);
+      else html+='<div style="font-size:10px;color:#9ca3af;margin-top:3px">No location — GPS off or not allowed</div>';
       html+='</div>';
       html+='</div>';
       html+='<div class="entry-meta" style="margin-bottom:8px"><span style="background:#f0f0f0;padding:1px 7px;border-radius:99px;font-size:10px;margin-right:6px">'+e.type+'</span>'+(e.note?e.note:'')+'</div>';
-      if(hasLoc) html+='<div id="map-'+e.id+'" style="height:160px;border-radius:10px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border)" data-lat-in="'+(e.clockInLocation?e.clockInLocation.lat:'')+'" data-lng-in="'+(e.clockInLocation?e.clockInLocation.lng:'')+'" data-lat-out="'+(e.clockOutLocation?e.clockOutLocation.lat:'')+'" data-lng-out="'+(e.clockOutLocation?e.clockOutLocation.lng:'')+'"></div>';
+      if(hasLoc) html+='<div id="map-'+e.id+'" style="height:160px;border-radius:10px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border)" data-lat-in="'+(e.clockInLocation?e.clockInLocation.lat:'')+'" data-lng-in="'+(e.clockInLocation?e.clockInLocation.lng:'')+'" data-lat-out="'+(e.clockOutLocation?e.clockOutLocation.lat:'')+'" data-lng-out="'+(e.clockOutLocation?e.clockOutLocation.lng:'')+'" data-pid="'+wlEsc(e.projectId||'')+'"></div>'+
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:#6b7280;margin:-4px 0 8px"><span><b style="color:#16a34a">●</b> Clock in</span><span><b style="color:#dc2626">●</b> Clock out</span>'+(e.projectId?'<span><b style="color:#2563eb">◆</b> Job address</span>':'')+'</div>';
       html+='<div><select data-eid="'+e.id+'" onchange="assignEntryProj(this.dataset.eid,this.value)" style="background:#fff;border:1px solid #ccc;border-radius:6px;color:#1a1a1a;padding:4px 8px;font-size:11px;font-family:var(--font-d);font-weight:600;width:100%">'+apOpts+'</select></div>';
       html+='</div>';
     }
@@ -4510,9 +4511,44 @@ function renderEntriesList(){
   });
 
   el.innerHTML=html||'<div style="color:var(--muted);text-align:center;padding:40px">No entries in this period.</div>';
-  initEntryMaps();
+  initEntryMaps(); try{ wlGeoPaint(); }catch(_e){}
 }
 
+// ── WHERE was the punch: street address (OpenStreetMap, 1 lookup per second, kept on this phone), distance to the job / depot ──
+var _wlGeo=null, _wlGeoQ=[], _wlGeoBusy=false;
+function wlGeoStore(){ if(_wlGeo) return _wlGeo; try{ _wlGeo=JSON.parse(localStorage.getItem('wl_geo')||'{}')||{}; }catch(e){ _wlGeo={}; } return _wlGeo; }
+function wlGeoSave(){ try{ var k=Object.keys(_wlGeo); if(k.length>600){ k.sort(function(a,b){ return (_wlGeo[a].t||0)-(_wlGeo[b].t||0); }); for(var i=0;i<k.length-500;i++) delete _wlGeo[k[i]]; } localStorage.setItem('wl_geo',JSON.stringify(_wlGeo)); }catch(e){} }
+function wlGeoKeyLL(lat,lng){ return 'r'+(+lat).toFixed(4)+','+(+lng).toFixed(4); }
+function wlGeoKeyA(a){ return 'a'+String(a||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function wlGeoQAsk(key,url,parse){ var G=wlGeoStore(); if(G[key]&&(G[key].v!==undefined)) return; for(var i=0;i<_wlGeoQ.length;i++) if(_wlGeoQ[i].key===key) return; _wlGeoQ.push({key:key,url:url,parse:parse}); wlGeoRun(); }
+function wlGeoRun(){ if(_wlGeoBusy||!_wlGeoQ.length) return; _wlGeoBusy=true; var j=_wlGeoQ.shift();
+  fetch(j.url,{headers:{'Accept':'application/json'}}).then(function(r){ return r.ok?r.json():null; }).then(function(d){ var G=wlGeoStore(); G[j.key]={v:d?j.parse(d):null,t:Date.now()}; wlGeoSave(); wlGeoPaint(); })
+    .catch(function(){}).then(function(){ setTimeout(function(){ _wlGeoBusy=false; wlGeoRun(); },1100); }); }
+function wlGeoAddr(lat,lng){ var k=wlGeoKeyLL(lat,lng), G=wlGeoStore(); if(G[k]) return G[k].v;
+  wlGeoQAsk(k,'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat='+(+lat)+'&lon='+(+lng),function(d){ var a=d.address||{}, st=[a.house_number,a.road||a.pedestrian||a.footway].filter(Boolean).join(' '), town=a.city||a.town||a.village||a.suburb||a.hamlet||a.county||'';
+    return (st||(d.name||''))+(town?(st||d.name?', ':'')+town:'')||String(d.display_name||'').split(',').slice(0,2).join(','); }); return undefined; }
+function wlGeoJob(p){ var ad=p&&(p.desc||p.address); if(!ad) return null; var k=wlGeoKeyA(ad), G=wlGeoStore(); if(G[k]) return G[k].v;
+  wlGeoQAsk(k,'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&q='+encodeURIComponent(ad),function(d){ return (d&&d[0])?{lat:+d[0].lat,lng:+d[0].lon}:null; }); return undefined; }
+function wlMi(m){ var mi=m/1609.34; return mi<0.1?Math.round(m*3.281)+' ft':(mi<10?mi.toFixed(1):Math.round(mi))+' mi'; }
+// the place line under a clock in / clock out time
+function wlLocHtml(loc,e){ var k=wlGeoKeyLL(loc.lat,loc.lng);
+  return '<a href="https://www.google.com/maps?q='+(+loc.lat)+','+(+loc.lng)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:#374151;font-size:11px;margin-top:3px;line-height:1.35">📍 <span class="wl-addr" data-k="'+k+'" data-lat="'+loc.lat+'" data-lng="'+loc.lng+'">'+(+loc.lat).toFixed(4)+', '+(+loc.lng).toFixed(4)+'</span></a>'+
+    '<div class="wl-jd" data-lat="'+loc.lat+'" data-lng="'+loc.lng+'" data-pid="'+wlEsc(e.projectId||'')+'" style="font-size:10.5px;font-weight:800;margin-top:3px"></div>'; }
+function wlGeoPaint(){
+  document.querySelectorAll('.wl-addr').forEach(function(el){ var v=wlGeoAddr(el.getAttribute('data-lat'),el.getAttribute('data-lng')); if(v) el.textContent=v; });
+  document.querySelectorAll('.wl-jd').forEach(function(el){ var lat=+el.getAttribute('data-lat'), lng=+el.getAttribute('data-lng'), pid=el.getAttribute('data-pid'), t='', c='';
+    var dd=calcDistance(lat,lng,DEPOT_LAT,DEPOT_LNG); if(dd<=Math.max(DEPOT_RADIUS*2,150)){ t='🏭 At the depot'; c='#475569'; }
+    else if(pid){ var p=projects.find(function(x){ return x.id===pid; }), j=p?wlGeoJob(p):null;
+      if(j){ var d=calcDistance(lat,lng,j.lat,j.lng); if(d<=250){ t='✓ At the job'; c='#15803d'; } else { t='⚠ '+wlMi(d)+' from the job'; c='#b45309'; } }
+      else if(j===null&&p&&(p.desc||p.address)){ t='Job address not found on the map'; c='#9ca3af'; } }
+    el.textContent=t; el.style.color=c; });
+  document.querySelectorAll('[id^="map-"]').forEach(function(div){ try{ wlGeoJobMarker(div); }catch(e){} }); }
+function wlGeoJobMarker(div){ if(!div._wlMap||div._wlJob) return; var pid=div.getAttribute('data-pid'); if(!pid) return; var p=projects.find(function(x){ return x.id===pid; }), j=p?wlGeoJob(p):null; if(!j) return;
+  div._wlJob=true; var bi=L.divIcon({html:'<div style="width:14px;height:14px;background:#2563eb;border:3px solid #fff;transform:rotate(45deg);box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
+  L.marker([j.lat,j.lng],{icon:bi,zIndexOffset:-1000}).addTo(div._wlMap);   // under the punch pins
+  var pts=[[j.lat,j.lng]], a=+div.dataset.latIn, b=+div.dataset.lngIn, c=+div.dataset.latOut, d=+div.dataset.lngOut; if(!isNaN(a)&&!isNaN(b)&&div.dataset.latIn) pts.push([a,b]); if(!isNaN(c)&&!isNaN(d)&&div.dataset.latOut) pts.push([c,d]);
+  if(pts.length>1) div._wlMap.fitBounds(L.latLngBounds(pts),{padding:[24,24],maxZoom:16}); }
+window.wlGeoPaint=wlGeoPaint;
 function initEntryMaps(){
   if(typeof L === 'undefined') return;
   var mapDivs = document.querySelectorAll('[id^="map-"]');
@@ -4541,6 +4577,7 @@ function initEntryMaps(){
         var ri=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',iconSize:[16,16],iconAnchor:[8,8],className:''});
         L.marker([latOut,lngOut],{icon:ri}).addTo(map);
       }
+      div._wlMap=map; try{ wlGeoJobMarker(div); }catch(_e){}
       if(hasIn && hasOut && Math.abs(latIn-latOut)+Math.abs(lngIn-lngOut) > 0.0001){
         map.fitBounds(L.latLngBounds([[latIn,lngIn],[latOut,lngOut]]),{padding:[24,24]});
       } else {
@@ -4576,7 +4613,7 @@ function toggleHelperEntries(hid){
     var open=el.style.display!=='none';
     el.style.display=open?'none':'block';
     if(arrow) arrow.textContent=open?'▼':'▲';
-    if(!open) setTimeout(initEntryMaps, 300);
+    if(!open){ setTimeout(initEntryMaps, 300); try{ wlGeoPaint(); }catch(_e){} }
   }
 }
 window.toggleHelperEntries=toggleHelperEntries;
