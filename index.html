@@ -1055,7 +1055,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-1400</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-1700</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2588,7 +2588,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-1400';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-1700';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3592,7 +3592,9 @@ function wlFbuShow(inner){
   var o=document.getElementById('wl-fbu');
   if(!o){ o=document.createElement('div'); o.id='wl-fbu'; o.className='wl-fbu-bg'; document.body.appendChild(o);
     o.addEventListener('click',function(e){ if(e.target===o){ wlFbuClose(); return; } var b=e.target.closest?e.target.closest('[data-fbu]'):null; if(b) wlFbuAct(b.getAttribute('data-fbu'),b.getAttribute('data-id')); }); }
+  var _old=o.querySelector('.wl-fbu'), _st=_old?_old.scrollTop:0, _keep=!!arguments[2];
   o.innerHTML='<div class="wl-fbu"><div class="wl-fbu-hd"><span>'+(arguments[1]||'Update from FieldBid')+'</span><button type="button" class="wl-fbu-x" data-fbu="close" aria-label="Close">✕</button></div>'+inner+'</div>';
+  if(_keep&&_st){ var _nw=o.querySelector('.wl-fbu'); if(_nw) _nw.scrollTop=_st; }
 }
 function wlFbuParse(doc){ try{ var d=doc.data()||{}; var sm=JSON.parse(d.data||'{}'); sm._id=String(doc.id).replace('wlsync__',''); sm._at=d.savedAt||''; return sm; }catch(e){ return null; } }
 function wlFbUpdateOpen(pid){
@@ -3767,7 +3769,7 @@ function wlFbuAllOpen(){
       if(p.fbProjectId){
         var s=byId[p.fbProjectId]; if(!s){ missing++; continue; }
         var ch=wlFbuChanges(p,s); if(!ch.length){ upToDate++; continue; }
-        if(p.fbSkipKey&&p.fbSkipKey===wlFbKey(s)){ skipped.push({pid:p.id,link:false,label:'update'}); continue; }   // this version was discarded
+        if(p.fbSkipKey&&(p.fbSkipKey===wlFbSkipKeyOf(p,s)||p.fbSkipKey===wlFbKey(s))){ skipped.push({pid:p.id,link:false,label:'update'}); continue; }   // this version was discarded
         rows.push({pid:p.id,sm:s,ch:ch,on:true,link:false});
       } else if(p.source==='fieldbid'){
         var no=Array.isArray(p.fbSkipSugg)?p.fbSkipSugg:[], best=null, bs=0; for(var j=0;j<list.length;j++){ if(no.indexOf(list[j]._id)>=0) continue; var sc=wlFbuScore(p,list[j]); if(sc>bs){ bs=sc; best=list[j]; } }
@@ -3785,7 +3787,7 @@ function wlFbuAllRender(upToDate,missing){
   var SK=_wlFbuAll.skipped||[], skh='';
   if(SK.length){ skh='<button type="button" class="wl-fbu-more" data-fbu="skshow">'+(_wlFbuAll.showSkipped?'Hide':'Show')+' discarded ('+SK.length+')</button>';
     if(_wlFbuAll.showSkipped) for(var si=0;si<SK.length;si++){ var sp=projects.filter(function(x){return x.id===SK[si].pid;})[0]||{}; skh+='<div class="wl-fbu-skipped"><span><b style="color:var(--text)">'+wlEsc(sp.name||'')+'</b> · '+(SK[si].link?'discarded '+SK[si].label:'FieldBid update discarded')+'</span><button type="button" data-fbu="unskip" data-id="'+si+'">Restore</button></div>'; } }
-  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'+skh); return; }
+  if(!R.length){ wlFbuShow('<div class="wl-fbu-msg">Everything is up to date'+(upToDate?' ('+upToDate+' linked project'+(upToDate>1?'s':'')+')':'')+'.'+(missing?' '+missing+' linked estimate(s) not found — open them once in FieldBid.':'')+'</div>'+skh,undefined,true); return; }
   h+='<div class="wl-fbu-sub">'+(upToDate?upToDate+' up to date · ':'')+'Check what to update. Hours, expenses and photos are not touched.</div>';
   var linkHdr=false;
   for(var i=0;i<R.length;i++){ var r=R[i], p=projects.filter(function(x){return x.id===r.pid;})[0]||{}; if(r.on) n++;
@@ -3797,12 +3799,14 @@ function wlFbuAllRender(upToDate,missing){
   if(missing) h+='<div class="wl-fbu-note">'+missing+' linked estimate(s) not found — open them once in FieldBid.</div>';
   h+='<button type="button" class="wl-fbu-go" data-fbu="allapply"'+(n?'':' disabled')+'>Update '+n+' project'+(n!==1?'s':'')+'</button>';
   h+=skh;
-  wlFbuShow(h);
+  wlFbuShow(h,undefined,true);   // keep the scroll where it was (check / uncheck / discard)
   _wlFbuAll.upToDate=upToDate; _wlFbuAll.missing=missing;
 }
 // ✕ Discard: an update stays hidden until the estimate changes again in FieldBid; a wrong link suggestion never comes back
+// what a discard remembers: the list of changes the office saw (a FieldBid re-save with the same changes stays discarded)
+function wlFbSkipKeyOf(p,sm){ var t=wlFbuChanges(p,sm).join('|'), h=5381; for(var i=0;i<t.length;i++){ h=((h<<5)+h+t.charCodeAt(i))|0; } return 'c'+(h>>>0).toString(36)+'.'+t.length; }
 function wlFbuSkip(i){ var r=_wlFbuAll.rows[i]; if(!r) return; var p=projects.filter(function(x){return x.id===r.pid;})[0]; if(!p) return;
-  var FV=firebase.firestore.FieldValue, upd=r.link?{fbSkipSugg:FV.arrayUnion(r.sm._id)}:{fbSkipKey:wlFbKey(r.sm)};
+  var FV=firebase.firestore.FieldValue, upd=r.link?{fbSkipSugg:FV.arrayUnion(r.sm._id)}:{fbSkipKey:wlFbSkipKeyOf(p,r.sm)};
   db.collection('projects').doc(p.id).update(upd).then(function(){
     _wlFbuAll.rows.splice(i,1); _wlFbuAll.skipped=_wlFbuAll.skipped||[];
     if(r.link){ var ex=_wlFbuAll.skipped.filter(function(x){ return x.pid===p.id&&x.link; })[0], no=(Array.isArray(p.fbSkipSugg)?p.fbSkipSugg.length:0)+1; if(ex) ex.label=no+' suggestions'; else _wlFbuAll.skipped.push({pid:p.id,link:true,label:'1 suggestion'}); }
