@@ -1055,7 +1055,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-1100</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-1400</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2588,7 +2588,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-1100';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-1400';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3250,9 +3250,24 @@ function wlWoRender(){ var box=document.getElementById('wl-wo'); if(!box||!curre
        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:15px">'+wlEsc((it.e?it.e+' ':'')+(it.n||''))+'</div>'+(it.p?'<div style="font-size:12.5px;color:#4b5563;font-weight:600;margin-top:1px">'+wlEsc(it.p)+'</div>':'')+
        '<div style="font-size:13px;font-family:var(--font-m);color:#1f2937;margin-top:3px"><b>'+(Math.round((Number(it.sf)||0)*100)/100).toLocaleString()+' SF</b></div></div></div>'+
        (it.dims?'<div style="margin-top:8px;padding:7px 10px;background:#fff7e6;border:1px solid #f0a02c33;border-radius:8px;font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-line;color:#3a3a3a">'+wlEsc(it.dims)+'</div>':'')+
-       (it.notes?'<div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#78350f;white-space:pre-line">📋 '+wlEsc(it.notes)+'</div>':'')+'</div>'; });
+       (it.notes?'<div style="margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#78350f;white-space:pre-line">📋 '+wlEsc(it.notes)+'</div>':'')+
+       ((it.ph&&it.ph.length)?'<div style="display:flex;gap:8px;overflow-x:auto;margin-top:8px;padding-bottom:2px">'+it.ph.map(function(id){ return '<img data-woph="'+wlEsc(id)+'" alt="" onclick="wlWoPhView(this)" style="flex-shrink:0;width:92px;height:92px;border-radius:10px;object-fit:cover;background:#e5e7eb;border:1px solid var(--border);cursor:pointer"/>'; }).join('')+'</div>':'')+'</div>'; });
   h+='<div style="text-align:center;font-size:11px;color:var(--muted);margin:6px 0 14px">'+wl3('From the FieldBid estimate · no prices','Do orçamento do FieldBid · sem preços','Del presupuesto de FieldBid · sin precios')+'</div>';
-  box.innerHTML=h; }
+  box.innerHTML=h; wlWoPhLoad(); }
+// work order photos: woPhotos/<id> (sent by FieldBid). Fetched once, kept on the phone (IndexedDB) so they open without signal.
+var _wlWoPhMem={}, _wlWoPhAsk={};
+function wlWoPhIdb(fn){ try{ wlOcDb(function(d){ fn(d); }); }catch(e){ fn(null); } }
+function wlWoPhGet(id,cb){ if(_wlWoPhMem[id]){ cb(_wlWoPhMem[id]); return; }
+  wlWoPhIdb(function(d){ var done=false; function fromNet(){ if(done) return; done=true; if(_wlWoPhAsk[id]) return; _wlWoPhAsk[id]=1;
+      db.collection('woPhotos').doc(id).get().then(function(doc){ delete _wlWoPhAsk[id]; var v=doc&&doc.exists?(doc.data()||{}).data:null; if(!v) return; _wlWoPhMem[id]=v; cb(v);
+        if(d){ try{ d.transaction('kv','readwrite').objectStore('kv').put(v,'wop:'+id); }catch(e){} } }).catch(function(){ delete _wlWoPhAsk[id]; }); }
+    if(!d){ fromNet(); return; }
+    try{ var rq=d.transaction('kv','readonly').objectStore('kv').get('wop:'+id); rq.onsuccess=function(){ if(rq.result){ done=true; _wlWoPhMem[id]=rq.result; cb(rq.result); } else fromNet(); }; rq.onerror=fromNet; }catch(e){ fromNet(); } }); }
+function wlWoPhLoad(){ document.querySelectorAll('#wl-wo img[data-woph]').forEach(function(im){ if(im.getAttribute('src')) return; var id=im.getAttribute('data-woph'); wlWoPhGet(id,function(v){ document.querySelectorAll('#wl-wo img[data-woph="'+id+'"]').forEach(function(x){ x.src=v; }); }); }); }
+function wlWoPhView(im){ if(!im||!im.src) return; var o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px';
+  o.innerHTML='<img src="'+im.src+'" style="max-width:100%;max-height:100%;border-radius:8px"/><button type="button" style="position:absolute;top:14px;right:14px;border:none;background:#fff;border-radius:999px;width:40px;height:40px;font-size:18px;font-weight:800">✕</button>';
+  o.onclick=function(){ o.remove(); }; document.body.appendChild(o); }
+window.wlWoPhView=wlWoPhView;
 window.wlWoLink=wlWoLink; window.wlWoOpen=wlWoOpen; window.wlWoRender=wlWoRender;
 function renderHelperJobs(){
   if(!currentHelper) return;
