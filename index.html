@@ -361,6 +361,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .admin-nav{display:none!important;}
 .admin-nav-spacer{height:6px!important;}
 .admin-body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));}
+.leaflet-container{z-index:0;isolation:isolate;}
 .wl-bnav{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(20,32,26,.06);}
 .wl-bnav button{flex:1;min-width:0;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;min-height:54px;border-radius:12px;color:var(--muted);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer;}
 .wl-bnav button svg{width:23px;height:23px;}
@@ -1055,7 +1056,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-1700</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-2030</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2588,7 +2589,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-1700';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-2030';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
