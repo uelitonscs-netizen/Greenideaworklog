@@ -163,6 +163,13 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 .wl-pbx.paid{background:#16a34a;color:#fff;border-color:#16a34a}.wl-pbx.paid i{background:#fff;color:#16a34a;border-color:#fff}
 .wl-pbx.due{border-color:#d97706;background:#d97706}.wl-pbx.due i{color:#d97706}
 .wl-pbw{display:block;font-size:10.5px;font-weight:700;color:#b45309;margin-top:3px;text-transform:none;letter-spacing:0;white-space:normal}
+.wl-wkt{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px}
+.wl-pb{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--font-d);text-align:left}
+.wl-pb.pay{background:var(--green);color:#fff;border:none}
+.wl-pb.paid{background:#dcfce7;color:#166534;border:1px solid #86efac;justify-content:space-between}
+.wl-pb.due{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;justify-content:space-between}
+.wl-pb small{font-weight:600;font-size:11px;opacity:.85;text-align:right;flex-shrink:0}
+.wl-pst{font-size:11.5px;font-weight:800;margin-top:3px}
 .sum-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
 .sum-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:14px;color:#fff;flex-shrink:0;box-shadow:var(--shadow-sm);}
 .sum-name{font-family:var(--font-d);font-weight:800;font-size:14px;}
@@ -1066,7 +1073,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1530</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1700</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2633,7 +2640,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1530';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1700';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4960,10 +4967,10 @@ function wlSumDays(h,range){
     var p=null; try{ p=wlProjOf(e); }catch(x){} var nm=p?p.name:'No project'; if(D.jobs.indexOf(nm)<0) D.jobs.push(nm);
     if(!weeks[wk]){ weeks[wk]={m:0,pay:0,ot:0}; wkeys.push(wk); } weeks[wk].m+=m; weeks[wk].pay+=(reg/60)*rate+(ot/60)*rate*OT_MULTIPLIER; weeks[wk].ot+=ot; });
   var multi=wkeys.length>1, h2='<div style="margin:0 0 4px 56px;padding:0 0 12px;border-bottom:1px solid var(--border)">', lastWk=null;
-  if(!multi&&sumPeriod!=='week'){ var w0=new Date(wkeys[0]), w1=new Date(w0); w1.setDate(w0.getDate()+6); h2+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:6px 0 4px"><span>Week '+w0.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+w1.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>'+wlPayBox(h,wkeys[0])+'</div>'; }
+  if(!multi){ h2+='<div style="margin:8px 0 6px">'+(sumPeriod!=='week'?'<div class="wl-wkt"><span>Week '+wlWkLbl(wkeys[0])+'</span></div>':'')+wlPayBox(h,wkeys[0])+'</div>'; }
   keys.forEach(function(k){ var D=days[k];
     if(multi&&D.wk!==lastWk){ lastWk=D.wk; var ws=new Date(D.wk), we=new Date(ws); we.setDate(ws.getDate()+6); var W=weeks[D.wk];
-      h2+='<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin:10px 0 2px;text-transform:uppercase"><span>Week '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span style="display:flex;align-items:center;gap:8px">'+fmtD(W.m)+' · '+fmtC(W.pay)+wlPayBox(h,D.wk)+'</span></div>'; }
+      h2+='<div style="margin:12px 0 6px"><div class="wl-wkt"><span>Week '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span>'+fmtD(W.m)+' · '+fmtC(W.pay)+'</span></div>'+wlPayBox(h,D.wk)+'</div>'; }
     h2+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border)'+(D.hol?';background:#fffbeb':'')+'">'+
       '<div style="min-width:0"><div style="font-size:13px;font-weight:700">'+D.d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
       '<div style="font-size:11px;color:'+(D.hol?'#92400e':'var(--muted)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+D.jobs.map(wlEsc).join(' · ')+'</div></div>'+
@@ -4985,10 +4992,22 @@ function wlWkPaid(hid,key){ var L=payments.filter(function(p){ return p.helperId
 function wlPayBox(h,ms){ var key=wlWkKey(ms), W=wlWkPay(h.id,ms), P=wlWkPaid(h.id,key);
   if(!P.list.length&&!(W.pay>0)) return '';
   var at=' data-h="'+wlEsc(h.id)+'" data-w="'+ms+'" onclick="event.stopPropagation();wlWkPayOpen(this.dataset.h,+this.dataset.w)"';
-  if(!P.list.length) return '<span class="wl-pbx"'+at+'><i></i>Pay</span>';
-  var diff=Math.round((W.pay-P.gross)*100)/100, d=P.last?parseLocalDate(P.last).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-  return '<span style="display:inline-block;text-align:right"><span class="wl-pbx paid'+(diff>0.009?' due':'')+'"'+at+'><i>✓</i>Paid '+d+'</span>'+
-    (diff>0.009?'<span class="wl-pbw">⚠ hours changed: '+fmtC(diff)+' still to pay</span>':(diff<-0.009?'<span class="wl-pbw">⚠ hours changed: paid '+fmtC(-diff)+' more</span>':''))+'</span>'; }
+  if(!P.list.length) return '<button type="button" class="wl-pb pay"'+at+'>💵 Pay '+fmtC(W.pay)+'</button>';
+  var diff=Math.round((W.pay-P.gross)*100)/100, adv=0; P.list.forEach(function(p){ adv+=Number(p.advDiscount)||0; });
+  var d=P.last?parseLocalDate(P.last).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  if(diff>0.009) return '<button type="button" class="wl-pb due"'+at+'><span>⚠ Paid '+fmtC(P.gross)+' · '+fmtC(diff)+' still to pay</span><b>Pay '+fmtC(diff)+' →</b></button>';
+  return '<button type="button" class="wl-pb paid"'+at+'><span>✓ Paid '+fmtC(P.net)+(adv>0?' + '+fmtC(adv)+' advance':'')+(diff<-0.009?'<br><small style="color:#b45309">⚠ '+fmtC(-diff)+' more than the hours now</small>':'')+'</span><small>'+d+' · tap to see / undo</small></button>'; }
+// the line under the helper's name: what is left to pay for the weeks in this period
+function wlPayStatus(h,range){ var seen={}, todo=0, due=0, paidAny=false, any=false;
+  entries.forEach(function(x){ if(x.helperId!==h.id||!x.endTime) return; var t=new Date(x.startTime); if(t<range.s||t>range.e) return; seen[getWeekBoundaries(x.startTime).start.getTime()]=1; });
+  Object.keys(seen).forEach(function(k){ var ms=+k, W=wlWkPay(h.id,ms), P=wlWkPaid(h.id,wlWkKey(ms)); if(!(W.pay>0)&&!P.list.length) return; any=true;
+    if(!P.list.length){ todo++; due+=W.pay; } else { paidAny=true; var df=W.pay-P.gross; if(df>0.009) due+=df; } });
+  if(!any) return '';
+  due=Math.round(due*100)/100;
+  var ks=Object.keys(seen); if(todo&&ks.length===1) return '<div class="wl-pst" style="color:#c2410c">'+todo+' week to pay · '+fmtC(due)+' <span data-h="'+wlEsc(h.id)+'" data-w="'+ks[0]+'" onclick="event.stopPropagation();wlWkPayOpen(this.dataset.h,+this.dataset.w)" style="display:inline-block;margin-left:4px;background:var(--green);color:#fff;border-radius:7px;padding:2px 8px;cursor:pointer">💵 Pay</span></div>';
+  if(todo) return '<div class="wl-pst" style="color:#c2410c">'+todo+' week'+(todo>1?'s':'')+' to pay · '+fmtC(due)+'</div>';
+  if(due>0) return '<div class="wl-pst" style="color:#c2410c">⚠ '+fmtC(due)+' still to pay (hours changed)</div>';
+  return '<div class="wl-pst" style="color:#15803d">✓ All paid</div>'; }
 var _wlWkp=null;
 function wlWkLbl(ms){ var a=new Date(ms), b=new Date(ms); b.setDate(b.getDate()+6); return a.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+b.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 function wlWkPayOpen(hid,ms){ var h=hById(hid); if(!h) return; var key=wlWkKey(ms), W=wlWkPay(hid,ms), P=wlWkPaid(hid,key), diff=Math.round((W.pay-P.gross)*100)/100;
@@ -5044,14 +5063,13 @@ function renderSummary(){
     var wp=calcPeriodPay(h.id,h.rate,range.s,range.e);
     var _so=!!(window._wlSumOpen&&window._wlSumOpen[h.id]);
     return '<div class="sum-row" data-h="'+wlEsc(h.id)+'" onclick="wlSumToggle(this.dataset.h)" style="cursor:pointer;user-select:none'+(_so?';border-bottom:none':'')+'"><div class="sum-avatar" style="background:'+AVATAR_COLORS[i%AVATAR_COLORS.length]+'">'+getInitials(h.name)+'</div>'+
-      '<div style="flex:1"><div class="sum-name">'+h.name+'</div><div class="sum-rate">$'+h.rate+'/hr</div>'+
+      '<div style="flex:1;min-width:0"><div class="sum-name">'+h.name+'</div><div class="sum-rate">$'+h.rate+'/hr</div>'+wlPayStatus(h,range)+
       (wp.otMins>0?'<div style="font-size:10px;color:#d97706;margin-top:2px">⚡ '+fmtD(wp.otMins)+' OT</div>':'')+
       '</div>'+
       '<div class="sum-right">'+
       '<div class="sum-hrs">'+hrs+'h '+p2(min)+'m</div>'+
       '<div style="font-size:11px;color:var(--muted)">Reg: '+fmtC(wp.regPay)+(wp.otMins>0?' + <span style=\'color:#d97706\'>OT: '+fmtC(wp.otPay)+'</span>':'')+'</div>'+
       '<div class="sum-pay">'+fmtC(wp.totalPay)+'</div>'+
-      (sumPeriod==='week'?'<div style="margin-top:5px">'+wlPayBox(h,getWeekBoundaries(range.s).start.getTime())+'</div>':'')+
       '</div><span style="color:var(--muted);font-size:13px;margin-left:2px">'+(_so?'▲':'▼')+'</span></div>'+
       (_so?wlSumDays(h,range):'');
   }).join('');
