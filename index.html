@@ -1061,7 +1061,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1400</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1415</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2620,7 +2620,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1400';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1415';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3458,7 +3458,8 @@ function wlQaMain(){
   wlQaShow('<div class="wl-qa-hd">Quick add</div>'+
     '<button type="button" class="wl-qa-it" data-qa="hours">'+wlQaSvg('hours','#1e6334')+'Add hours</button>'+
     '<button type="button" class="wl-qa-it" data-qa="exp">'+wlQaSvg('exp','#2453b8')+'Add expense</button>'+
-    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>');
+    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="hol"><span style="width:24px;display:inline-flex;justify-content:center;font-size:19px">🎉</span>Add paid holiday</button>');
 }
 function wlQaPick(kind){
   var h='<button type="button" class="wl-qa-back" data-qa="main">'+wlQaSvg('back')+(kind==='hours'?'Add hours for…':(kind==='exp'?'Add expense to…':'Add photo to…'))+'</button><div class="wl-qa-list">';
@@ -3501,6 +3502,7 @@ document.addEventListener('click',function(ev){
   else if(k==='h'){ var hp=hById(id); wlQaClose(); if(hp) openQuickHours(hp.id,hp.name); }
   else if(k==='exp-go') wlGoProject(id,'mat','exp');
   else if(k==='pho-go') wlGoProject(id,'pho','pho');
+  else if(k==='hol'){ wlQaClose(); wlHolOpen(); }
 });
 // New job from FieldBid: shown until opened or dismissed (remembered on this phone).
 function wlFbSeen(){ try{ return JSON.parse(localStorage.getItem('wl_fb_seen')||'null'); }catch(e){ return null; } }
@@ -4930,6 +4932,32 @@ function setSumPeriod(p,btn){
 }
 window.setSumPeriod=setSumPeriod;
 
+// Summary: the days of one helper in the period (hours and $ per day). Same overtime rule as calcPeriodPay:
+// per week, in time order, holiday hours never count toward overtime — so the days add up to the helper's total.
+function wlSumToggle(hid){ var O=window._wlSumOpen=window._wlSumOpen||{}; O[hid]=!O[hid]; renderSummary(); }
+function wlSumDays(h,range){
+  var rate=Number(h.rate)||0, es=entries.filter(function(x){ return x.helperId===h.id&&x.endTime&&new Date(x.startTime)>=range.s&&new Date(x.startTime)<=range.e; })
+    .sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); });
+  if(!es.length) return '<div style="padding:4px 0 14px 56px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)">No hours in this period.</div>';
+  var used={}, days={}, keys=[], weeks={}, wkeys=[];
+  es.forEach(function(e){ var wk=getWeekBoundaries(e.startTime).start.getTime(), m=Math.max(0,gMin(e)), reg=m, ot=0;
+    if(!wlIsHol(e)){ var u=used[wk]||0; reg=Math.max(0,Math.min(m,OT_THRESHOLD_MINS-u)); ot=m-reg; used[wk]=u+m; }
+    var k=localDateStr(new Date(e.startTime)), D=days[k]; if(!D){ D=days[k]={d:new Date(e.startTime),m:0,ot:0,pay:0,jobs:[],hol:false,wk:wk}; keys.push(k); }
+    D.m+=m; D.ot+=ot; D.pay+=(reg/60)*rate+(ot/60)*rate*OT_MULTIPLIER; if(wlIsHol(e)) D.hol=true;
+    var p=null; try{ p=wlProjOf(e); }catch(x){} var nm=p?p.name:'No project'; if(D.jobs.indexOf(nm)<0) D.jobs.push(nm);
+    if(!weeks[wk]){ weeks[wk]={m:0,pay:0,ot:0}; wkeys.push(wk); } weeks[wk].m+=m; weeks[wk].pay+=(reg/60)*rate+(ot/60)*rate*OT_MULTIPLIER; weeks[wk].ot+=ot; });
+  var multi=wkeys.length>1, h2='<div style="margin:0 0 4px 56px;padding:0 0 12px;border-bottom:1px solid var(--border)">', lastWk=null;
+  keys.forEach(function(k){ var D=days[k];
+    if(multi&&D.wk!==lastWk){ lastWk=D.wk; var ws=new Date(D.wk), we=new Date(ws); we.setDate(ws.getDate()+6); var W=weeks[D.wk];
+      h2+='<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin:10px 0 2px;text-transform:uppercase"><span>Week '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span>'+fmtD(W.m)+' · '+fmtC(W.pay)+'</span></div>'; }
+    h2+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border)'+(D.hol?';background:#fffbeb':'')+'">'+
+      '<div style="min-width:0"><div style="font-size:13px;font-weight:700">'+D.d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+      '<div style="font-size:11px;color:'+(D.hol?'#92400e':'var(--muted)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+D.jobs.map(wlEsc).join(' · ')+'</div></div>'+
+      '<div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:800">'+fmtD(D.m)+(D.ot>0?' <span style="font-size:10px;font-weight:800;color:#d97706;background:#fdf4e3;border-radius:5px;padding:1px 5px">OT '+fmtD(D.ot)+'</span>':'')+'</div>'+
+      '<div style="font-size:12px;font-weight:700;color:var(--green2)">'+fmtC(D.pay)+'</div></div></div>'; });
+  return h2+'</div>';
+}
+window.wlSumToggle=wlSumToggle;
 function renderSummary(){
   var range=getSumRange(sumPeriod);
   var lblEl=document.getElementById('sum-period-lbl'); if(lblEl) lblEl.textContent='📅 '+range.lbl;
@@ -4943,7 +4971,8 @@ function renderSummary(){
     totalM+=m; totalP+=pay;
     var hrs=Math.floor(m/60), min=m%60;
     var wp=calcPeriodPay(h.id,h.rate,range.s,range.e);
-    return '<div class="sum-row"><div class="sum-avatar" style="background:'+AVATAR_COLORS[i%AVATAR_COLORS.length]+'">'+getInitials(h.name)+'</div>'+
+    var _so=!!(window._wlSumOpen&&window._wlSumOpen[h.id]);
+    return '<div class="sum-row" data-h="'+wlEsc(h.id)+'" onclick="wlSumToggle(this.dataset.h)" style="cursor:pointer;user-select:none'+(_so?';border-bottom:none':'')+'"><div class="sum-avatar" style="background:'+AVATAR_COLORS[i%AVATAR_COLORS.length]+'">'+getInitials(h.name)+'</div>'+
       '<div style="flex:1"><div class="sum-name">'+h.name+'</div><div class="sum-rate">$'+h.rate+'/hr</div>'+
       (wp.otMins>0?'<div style="font-size:10px;color:#d97706;margin-top:2px">⚡ '+fmtD(wp.otMins)+' OT</div>':'')+
       '</div>'+
@@ -4951,7 +4980,8 @@ function renderSummary(){
       '<div class="sum-hrs">'+hrs+'h '+p2(min)+'m</div>'+
       '<div style="font-size:11px;color:var(--muted)">Reg: '+fmtC(wp.regPay)+(wp.otMins>0?' + <span style=\'color:#d97706\'>OT: '+fmtC(wp.otPay)+'</span>':'')+'</div>'+
       '<div class="sum-pay">'+fmtC(wp.totalPay)+'</div>'+
-      '</div></div>';
+      '</div><span style="color:var(--muted);font-size:13px;margin-left:2px">'+(_so?'▲':'▼')+'</span></div>'+
+      (_so?wlSumDays(h,range):'');
   }).join('');
   // Overhead hours in the period (not on a client project): maintenance, warehouse, supplies
   try{ var byCat={}, catM=0, dayCat={};   // minutes and labor $ per category; minutes per day per category (for the overhead day)
