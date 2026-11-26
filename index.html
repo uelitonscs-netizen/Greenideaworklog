@@ -1061,7 +1061,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1400</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1500</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2620,7 +2620,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1400';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1500';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3458,7 +3458,8 @@ function wlQaMain(){
   wlQaShow('<div class="wl-qa-hd">Quick add</div>'+
     '<button type="button" class="wl-qa-it" data-qa="hours">'+wlQaSvg('hours','#1e6334')+'Add hours</button>'+
     '<button type="button" class="wl-qa-it" data-qa="exp">'+wlQaSvg('exp','#2453b8')+'Add expense</button>'+
-    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>');
+    '<button type="button" class="wl-qa-it" data-qa="pho">'+wlQaSvg('pho','#9a5b05')+'Add job photo</button>'+
+    '<button type="button" class="wl-qa-it" data-qa="hol"><span style="width:24px;display:inline-flex;justify-content:center;font-size:19px">🎉</span>Add paid holiday</button>');
 }
 function wlQaPick(kind){
   var h='<button type="button" class="wl-qa-back" data-qa="main">'+wlQaSvg('back')+(kind==='hours'?'Add hours for…':(kind==='exp'?'Add expense to…':'Add photo to…'))+'</button><div class="wl-qa-list">';
@@ -3501,6 +3502,7 @@ document.addEventListener('click',function(ev){
   else if(k==='h'){ var hp=hById(id); wlQaClose(); if(hp) openQuickHours(hp.id,hp.name); }
   else if(k==='exp-go') wlGoProject(id,'mat','exp');
   else if(k==='pho-go') wlGoProject(id,'pho','pho');
+  else if(k==='hol'){ wlQaClose(); wlHolOpen(); }
 });
 // New job from FieldBid: shown until opened or dismissed (remembered on this phone).
 function wlFbSeen(){ try{ return JSON.parse(localStorage.getItem('wl_fb_seen')||'null'); }catch(e){ return null; } }
