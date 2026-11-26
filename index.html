@@ -772,7 +772,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
           <div class="form-row">
             <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
             <div class="fg" style="max-width:150px"><label>Type</label>
-              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday (unpaid)</option></select>
             </div>
           </div>
           <div class="form-row">
@@ -780,6 +780,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
             <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
           </div>
           <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        </div>
+        <div class="card" style="margin-bottom:18px;background:#fffbeb;border-color:#f59e0b66">
+          <div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:6px">🎉 PAID HOLIDAY</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Pays the holiday hours at each helper's rate (no overtime, no project). Pick the date and the helpers — several at once.</div>
+          <button id="wl-hol-btn" class="btn" onclick="wlHolOpen()" style="background:#d97706">🎉 Add paid holiday</button>
         </div>
         <div id="absences-list"></div>
       </div>
@@ -803,7 +808,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="rep-entries">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
           <div class="section-title" style="margin:0">All Entries</div>
-          <button id="wl-hol-btn" onclick="wlHolOpen()" style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font-d)">🎉 Paid holiday</button>
           <div class="range-btns" style="margin-left:auto">
             <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
             <button class="range-btn" onclick="setRange('month',this)">Month</button>
@@ -1057,7 +1061,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1200</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1400</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1272,11 +1276,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="modal">
     <div class="modal-title">🎉 Paid holiday</div>
     <div style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Paid at each helper's hourly rate. Does not count toward overtime and is not charged to any project.</div>
+    <div class="fg"><label>Holiday</label><select id="hol-pick" onchange="wlHolPick()"></select></div>
+    <div class="fg" id="hol-note-wrap" style="display:none"><label>Holiday name</label><input type="text" id="hol-note" placeholder="e.g. Christmas Eve" maxlength="60"></div>
+    <div id="hol-hint" style="font-size:12px;color:#92400e;margin:-4px 0 8px"></div>
     <div style="display:flex;gap:10px">
       <div class="fg" style="flex:1"><label>Date</label><input type="date" id="hol-date" onchange="wlHolRender()"></div>
       <div class="fg" style="width:110px"><label>Hours</label><input type="number" id="hol-hrs" min="0.5" max="16" step="0.5" value="8" inputmode="decimal" oninput="wlHolRender()"></div>
     </div>
-    <div class="fg"><label>Holiday name</label><input type="text" id="hol-note" placeholder="e.g. Thanksgiving" maxlength="60"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 6px"><label style="font-size:12px;font-weight:700;color:var(--muted)">Helpers</label>
       <div><button type="button" class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="wlHolAll(true)">All active</button> <button type="button" class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="wlHolAll(false)">None</button></div></div>
     <div id="hol-list" style="max-height:38vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
@@ -2614,7 +2620,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1200';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1400';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -5167,7 +5173,7 @@ function wlPaySave(){ if(!_wlPayEd) return; var a=parseFloat(String(document.get
 window.wlPayEdit=wlPayEdit; window.wlPaySave=wlPaySave;
 
 // ── ABSENCES ───────────────────────────────────────────
-var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
+var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday (unpaid)'};
 function renderAbsences(){
   var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){ if(!wlHOn(h)) return; var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
@@ -6203,10 +6209,36 @@ window.saveQuickHours=saveQuickHours;
 
 // ── PAID HOLIDAY: one entry per helper (type/category 'holiday'), paid at the rate, no overtime, no project ──
 function wlHolHas(hid,date){ return entries.some(function(x){ return x.helperId===hid&&wlIsHol(x)&&x.startTime&&localDateStr(new Date(x.startTime))===date; }); }
+// The holidays paid every year (date for a given year; Sat → Fri, Sun → Mon like the federal 'observed' day)
+var WL_HOLS=[
+  {n:"New Year's Day", d:function(y){ return new Date(y,0,1); }, fix:1},
+  {n:'Memorial Day', d:function(y){ var x=new Date(y,4,31); while(x.getDay()!==1) x.setDate(x.getDate()-1); return x; }},
+  {n:'Independence Day', d:function(y){ return new Date(y,6,4); }, fix:1},
+  {n:'Labor Day', d:function(y){ var x=new Date(y,8,1); while(x.getDay()!==1) x.setDate(x.getDate()+1); return x; }},
+  {n:'Thanksgiving', d:function(y){ var x=new Date(y,10,1); while(x.getDay()!==4) x.setDate(x.getDate()+1); x.setDate(x.getDate()+21); return x; }},
+  {n:'Christmas', d:function(y){ return new Date(y,11,25); }, fix:1}];
+function wlHolObs(x){ var o=new Date(x); if(o.getDay()===6) o.setDate(o.getDate()-1); else if(o.getDay()===0) o.setDate(o.getDate()+1); return o; }
+// this year's date, or next year's once it is more than 3 weeks past (New Year's Day of next year shows from Dec on)
+function wlHolNext(H){ var t=new Date(); t.setHours(0,0,0,0); var lim=t.getTime()-21*86400000, y=t.getFullYear(); var d=H.d(y); if(d.getTime()<lim) d=H.d(y+1); return d; }
+// other holidays already paid before (from the saved holiday entries), so a new one typed once shows up next time
+function wlHolOthers(){ var fx={}, out=[], seen={}; WL_HOLS.forEach(function(H){ fx[H.n.toLowerCase()]=1; });
+  entries.forEach(function(e){ if(!wlIsHol(e)) return; var n=String(e.note||'').trim(), k=n.toLowerCase(); if(!n||k==='paid holiday'||fx[k]||seen[k]) return; seen[k]=1; out.push({n:n,last:e.startTime}); });
+  return out.sort(function(a,b){ return a.n<b.n?-1:1; }); }
+function wlHolPickFill(){ var sel=document.getElementById('hol-pick'), fmt=function(d){ return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }, h='';
+  WL_HOLS.forEach(function(H,i){ var d=wlHolNext(H), o=H.fix?wlHolObs(d):d; h+='<option value="f'+i+'">🎉 '+wlEsc(H.n)+' — '+fmt(o)+'</option>'; });
+  var O=wlHolOthers(); if(O.length){ h+='<optgroup label="Paid before">'; O.forEach(function(x,i){ h+='<option value="o'+i+'">'+wlEsc(x.n)+'</option>'; }); h+='</optgroup>'; }
+  h+='<option value="new">➕ Other holiday (type the name)</option>'; sel.innerHTML=h; window._wlHolO=O; }
+function wlHolPick(){ var v=document.getElementById('hol-pick').value, nw=document.getElementById('hol-note-wrap'), nt=document.getElementById('hol-note'), dt=document.getElementById('hol-date'), hint=document.getElementById('hol-hint');
+  hint.textContent=''; nw.style.display='none';
+  if(v.charAt(0)==='f'){ var H=WL_HOLS[+v.slice(1)], d=wlHolNext(H), o=H.fix?wlHolObs(d):d; nt.value=H.n; dt.value=localDateStr(o);
+    if(o.getTime()!==d.getTime()) hint.textContent=H.n+' is on a '+d.toLocaleDateString('en-US',{weekday:'long'})+' — paid on the observed day, '+o.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+'. You can change the date.'; }
+  else if(v.charAt(0)==='o'){ var X=(window._wlHolO||[])[+v.slice(1)]; nt.value=X.n; var L=new Date(X.last), y=new Date().getFullYear(), c=new Date(y,L.getMonth(),L.getDate()); if(c.getTime()<Date.now()-21*86400000) c=new Date(y+1,L.getMonth(),L.getDate()); dt.value=localDateStr(c); hint.textContent='Same day as last time — check the date.'; }
+  else { nt.value=''; nw.style.display='block'; hint.textContent='Type the name and pick the date. It will be in this list next time.'; }
+  wlHolRender(); }
 function wlHolOpen(){
-  var d=document.getElementById('hol-date'); if(!d.value) d.value=localDateStr(new Date());
+  wlHolPickFill(); var _up=0, _best=1e15; var _t0=new Date(); _t0.setHours(0,0,0,0); WL_HOLS.forEach(function(H,i){ var d=wlHolNext(H).getTime(); if(d<_t0.getTime()) d+=400*86400000; if(d<_best){ _best=d; _up=i; } });   /* the next one coming */ document.getElementById('hol-pick').value='f'+_up;
   window._wlHolSel={}; helpers.forEach(function(h){ if(wlHOn(h)&&!h.salaried) window._wlHolSel[h.id]=1; });
-  wlHolRender(); document.getElementById('modal-hol').classList.add('open');
+  wlHolPick(); document.getElementById('modal-hol').classList.add('open');
 }
 function wlHolRender(){
   var date=document.getElementById('hol-date').value, hrs=parseFloat(document.getElementById('hol-hrs').value)||0, S=window._wlHolSel||{}, n=0, tot=0;
@@ -6220,6 +6252,7 @@ function wlHolAll(on){ var S=window._wlHolSel={}; if(on) helpers.forEach(functio
 function wlHolSave(){
   var date=document.getElementById('hol-date').value, hrs=parseFloat(document.getElementById('hol-hrs').value)||0, note=String(document.getElementById('hol-note').value||'').trim();
   if(!date) return showToast('Pick the date','err');
+  if(!note) return showToast('Type the holiday name','err');
   if(!(hrs>0&&hrs<=16)) return showToast('Hours must be between 0.5 and 16','err');
   var S=window._wlHolSel||{}, ids=helpers.filter(function(h){ return wlHOn(h)&&S[h.id]&&!wlHolHas(h.id,date); }).map(function(h){ return h.id; });
   if(!ids.length) return showToast('Pick at least one helper','err');
@@ -6229,7 +6262,7 @@ function wlHolSave(){
   b.commit().then(function(){ btn.disabled=false; closeModal('modal-hol'); document.getElementById('hol-note').value=''; showToast('🎉 Paid holiday added for '+ids.length+' helper'+(ids.length>1?'s':'')); })
     .catch(function(err){ btn.disabled=false; showToast('Could not save: '+(err&&err.message||err),'err'); });
 }
-window.wlHolOpen=wlHolOpen; window.wlHolRender=wlHolRender; window.wlHolAll=wlHolAll; window.wlHolSave=wlHolSave;
+window.wlHolOpen=wlHolOpen; window.wlHolPick=wlHolPick; window.wlHolRender=wlHolRender; window.wlHolAll=wlHolAll; window.wlHolSave=wlHolSave;
 
 // ── CSV EXPORT ─────────────────────────────────────────
 function showDepotQR(){
