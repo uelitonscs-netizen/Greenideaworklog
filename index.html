@@ -1073,7 +1073,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1800</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1900</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2640,7 +2640,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1800';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1900';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4989,8 +4989,22 @@ function wlWkPay(hid,ms){ var h=hById(hid), rate=h?(Number(h.rate)||0):0, s=new 
 function wlWkPaid(hid,key){ var L=payments.filter(function(p){ return p.helperId===hid&&p.week===key; }), g=0, n=0, last='';
   L.forEach(function(p){ var a=Number(p.amount)||0; n+=a; g+=(p.gross!=null?Number(p.gross)||0:a); if(String(p.date||'')>last) last=p.date||''; });
   return {list:L,gross:Math.round(g*100)/100,net:Math.round(n*100)/100,last:last}; }
+// "Paid through": weeks that start before wl_config/payroll.paidThrough (a Monday) were paid before the Pay button existed.
+// They count as paid; no payment record is made for them (Payments totals stay as they are).
+var _wlPayThru=null, _wlPayThruOn=false;
+try{ _wlPayThru=localStorage.getItem('wl_paythru')||null; }catch(e){}
+function wlPayThruListen(){ if(_wlPayThruOn||typeof db==='undefined') return; _wlPayThruOn=true;
+  try{ db.collection('wl_config').doc('payroll').onSnapshot(function(d){ var v=(d&&d.exists&&d.data().paidThrough)||null; if(v===_wlPayThru) return; _wlPayThru=v; try{ if(v) localStorage.setItem('wl_paythru',v); else localStorage.removeItem('wl_paythru'); }catch(e){} try{ if(currentReport==='summary') renderSummary(); }catch(e){} },function(){}); }catch(e){} }
+function wlWkSettled(ms){ return !!_wlPayThru&&wlWkKey(ms)<_wlPayThru; }
+function wlPayThruSet(v){ var who=getAdminName();
+  if(v&&!confirm('Mark every week before '+parseLocalDate(v).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' as already paid, for all helpers?\n\nNo payment is created — those weeks just stop showing "to pay". You can undo it.')) return;
+  if(!v&&!confirm('Undo? Weeks without a recorded payment will show "to pay" again.')) return;
+  _wlPayThru=v||null; try{ if(v) localStorage.setItem('wl_paythru',v); else localStorage.removeItem('wl_paythru'); }catch(e){} renderSummary();
+  db.collection('wl_config').doc('payroll').set({paidThrough:v||null,by:who,at:new Date().toISOString()}).then(function(){ showToast(v?'✓ Older weeks marked as paid':'Undone'); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); }); }
+window.wlPayThruSet=wlPayThruSet;
 function wlPayBox(h,ms){ var key=wlWkKey(ms), W=wlWkPay(h.id,ms), P=wlWkPaid(h.id,key);
   if(!P.list.length&&!(W.pay>0)) return '';
+  if(!P.list.length&&wlWkSettled(ms)) return '<div class="wl-pb paid" style="cursor:default;background:#f1f5f9;color:#475569;border-color:#cbd5e1"><span>✓ Paid before '+parseLocalDate(_wlPayThru).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><small>marked as paid</small></div>';
   var at=' data-h="'+wlEsc(h.id)+'" data-w="'+ms+'" onclick="event.stopPropagation();wlWkPayOpen(this.dataset.h,+this.dataset.w)"';
   if(!P.list.length) return '<button type="button" class="wl-pb pay"'+at+'>💵 Pay '+fmtC(W.pay)+'</button>';
   var diff=Math.round((W.pay-P.gross)*100)/100, adv=0; P.list.forEach(function(p){ adv+=Number(p.advDiscount)||0; });
@@ -5001,7 +5015,7 @@ function wlPayBox(h,ms){ var key=wlWkKey(ms), W=wlWkPay(h.id,ms), P=wlWkPaid(h.i
 function wlPayStatus(h,range){ var seen={}, todo=0, due=0, paidAny=false, any=false;
   entries.forEach(function(x){ if(x.helperId!==h.id||!x.endTime) return; var t=new Date(x.startTime); if(t<range.s||t>range.e) return; seen[getWeekBoundaries(x.startTime).start.getTime()]=1; });
   Object.keys(seen).forEach(function(k){ var ms=+k, W=wlWkPay(h.id,ms), P=wlWkPaid(h.id,wlWkKey(ms)); if(!(W.pay>0)&&!P.list.length) return; any=true;
-    if(!P.list.length){ todo++; due+=W.pay; } else { paidAny=true; var df=W.pay-P.gross; if(df>0.009) due+=df; } });
+    if(!P.list.length){ if(wlWkSettled(ms)) return; todo++; due+=W.pay; } else { paidAny=true; var df=W.pay-P.gross; if(df>0.009) due+=df; } });
   if(!any) return '';
   due=Math.round(due*100)/100;
   var ks=Object.keys(seen); if(todo&&ks.length===1) return '<div class="wl-pst" style="color:#c2410c">'+todo+' week to pay · '+fmtC(due)+' <span data-h="'+wlEsc(h.id)+'" data-w="'+ks[0]+'" onclick="event.stopPropagation();wlWkPayOpen(this.dataset.h,+this.dataset.w)" style="display:inline-block;margin-left:4px;background:var(--green);color:#fff;border-radius:7px;padding:2px 8px;cursor:pointer">💵 Pay</span></div>';
@@ -5051,6 +5065,10 @@ window.wlWkPayOpen=wlWkPayOpen; window.wlWkPaySave=wlWkPaySave; window.wlWkPayUn
 function renderSummary(){
   var range=getSumRange(sumPeriod);
   var lblEl=document.getElementById('sum-period-lbl'); if(lblEl) lblEl.textContent='📅 '+range.lbl;
+  wlPayThruListen();
+  try{ var _cw=localDateStr(getWeekBoundaries(new Date()).start), _bn=document.getElementById('wl-paythru'); if(!_bn&&lblEl){ _bn=document.createElement('div'); _bn.id='wl-paythru'; lblEl.parentNode.insertBefore(_bn,lblEl.nextSibling); }
+    if(_bn){ if(!_wlPayThru) _bn.innerHTML='<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:12.5px;color:#9a3412"><b>Weeks paid before the Pay button show as "to pay".</b><br>Mark every week before this one ('+parseLocalDate(_cw).toLocaleDateString('en-US',{month:'short',day:'numeric'})+') as already paid, for all helpers:<button type="button" onclick="wlPayThruSet(\''+_cw+'\')" style="display:block;width:100%;margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:9px;padding:9px;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--font-d)">✓ Mark weeks before '+parseLocalDate(_cw).toLocaleDateString('en-US',{month:'short',day:'numeric'})+' as paid</button></div>';
+      else _bn.innerHTML='<div style="font-size:11.5px;color:var(--muted);margin:-6px 0 12px">✓ Weeks before '+parseLocalDate(_wlPayThru).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' marked as paid · <a href="#" onclick="wlPayThruSet(null);return false" style="color:var(--muted)">undo</a></div>'; } }catch(e){}
   var list=document.getElementById('sum-list'); if(!list) return;
   if(!helpers.length){list.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">No helpers yet.</div>'; return;}
   var totalM=0, totalP=0;
