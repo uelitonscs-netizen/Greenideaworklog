@@ -803,6 +803,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="rep-entries">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
           <div class="section-title" style="margin:0">All Entries</div>
+          <button id="wl-hol-btn" onclick="wlHolOpen()" style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font-d)">🎉 Paid holiday</button>
           <div class="range-btns" style="margin-left:auto">
             <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
             <button class="range-btn" onclick="setRange('month',this)">Month</button>
@@ -1056,7 +1057,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261125-2030</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1200</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1264,6 +1265,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div class="fg"><label>Date</label><input id="pe-date" type="date"/></div>
     <div class="fg"><label>Note</label><input id="pe-note" type="text"/></div>
     <div class="modal-actions"><button class="btn" onclick="wlPaySave()">✓ Save</button><button class="btn ghost" onclick="closeModal('modal-pay-edit')">Cancel</button></div>
+  </div>
+</div>
+
+<div id="modal-hol" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">🎉 Paid holiday</div>
+    <div style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Paid at each helper's hourly rate. Does not count toward overtime and is not charged to any project.</div>
+    <div style="display:flex;gap:10px">
+      <div class="fg" style="flex:1"><label>Date</label><input type="date" id="hol-date" onchange="wlHolRender()"></div>
+      <div class="fg" style="width:110px"><label>Hours</label><input type="number" id="hol-hrs" min="0.5" max="16" step="0.5" value="8" inputmode="decimal" oninput="wlHolRender()"></div>
+    </div>
+    <div class="fg"><label>Holiday name</label><input type="text" id="hol-note" placeholder="e.g. Thanksgiving" maxlength="60"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 6px"><label style="font-size:12px;font-weight:700;color:var(--muted)">Helpers</label>
+      <div><button type="button" class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="wlHolAll(true)">All active</button> <button type="button" class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="wlHolAll(false)">None</button></div></div>
+    <div id="hol-list" style="max-height:38vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
+    <div id="hol-sum" style="font-size:12px;font-weight:700;margin-top:8px;color:#92400e"></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal('modal-hol')">Cancel</button><button class="btn" id="hol-save" onclick="wlHolSave()">Add holiday</button></div>
   </div>
 </div>
 
@@ -1544,6 +1562,12 @@ function getWeekBoundaries(date){
 // OT_THRESHOLD_MINS of the week are regular; minutes past it cost rate×OT_MULTIPLIER
 // and belong to whichever entry/project the helper was on when the week went over.
 var _wlLabCache={e:null,h:null,t:null,m:null,map:null};
+// Paid holiday: an entry with type 'holiday' (category 'holiday'). It is paid at the helper's rate,
+// never counts toward the week's overtime and is not charged to any project.
+function wlIsHol(e){ return !!e&&(e.type==='holiday'||e.category==='holiday'); }
+// Regular / overtime minutes for one helper's entries of ONE week (holiday minutes are always regular)
+function wlRegOt(list){ var w=0,hh=0; for(var i=0;i<(list||[]).length;i++){ var e=list[i]; if(!e||!e.endTime) continue; var m=gMin(e); if(m<0) m=0; if(wlIsHol(e)) hh+=m; else w+=m; }
+  var ot=Math.max(0,w-OT_THRESHOLD_MINS); return {mins:w+hh,reg:w-ot+hh,ot:ot,hol:hh}; }
 function wlLaborMap(){
   var c=_wlLabCache;
   if(c.map&&c.e===entries&&c.h===helpers&&c.t===OT_THRESHOLD_MINS&&c.m===OT_MULTIPLIER) return c.map;
@@ -1559,7 +1583,7 @@ function wlLaborMap(){
     for(var j=0;j<list.length;j++){
       var en=list[j], mins=gMin(en); if(mins<0) mins=0;
       var reg=Math.max(0,Math.min(mins,OT_THRESHOLD_MINS-used)), ot=mins-reg;
-      used+=mins;
+      if(wlIsHol(en)){ reg=mins; ot=0; } else used+=mins;
       var h=hById(en.helperId), rate=h?(Number(h.rate)||0):0;
       var cost=(reg/60)*rate+(ot/60)*rate*OT_MULTIPLIER;
       map[en.id]={mins:mins,regMins:reg,otMins:ot,cost:cost};
@@ -1583,9 +1607,9 @@ function calcCurrentWeekPay(hid, rate){
     var st=new Date(e.startTime);
     return e.helperId===hid&&e.endTime&&st>=ws&&st<we;
   });
-  var mins=myEntries.reduce(function(s,e){return s+gMin(e);},0);
-  var regMins=Math.min(mins,OT_THRESHOLD_MINS);
-  var otMins=Math.max(0,mins-OT_THRESHOLD_MINS);
+  var _ro=wlRegOt(myEntries);
+  var regMins=_ro.reg;
+  var otMins=_ro.ot;
   var regPay=(regMins/60)*rate;
   var otPay=(otMins/60)*(rate*OT_MULTIPLIER);
   return {regMins:regMins,otMins:otMins,regPay:regPay,otPay:otPay,totalPay:regPay+otPay};
@@ -1598,13 +1622,13 @@ function calcWeekPay(hid, rate){
   myEntries.forEach(function(e){
     var wb=getWeekBoundaries(e.startTime);
     var key=wb.start.toISOString().slice(0,10);
-    if(!weeks[key]) weeks[key]={start:wb.start,end:wb.end,mins:0};
-    weeks[key].mins+=gMin(e);
+    if(!weeks[key]) weeks[key]={start:wb.start,end:wb.end,mins:0,list:[]};
+    weeks[key].mins+=gMin(e); weeks[key].list.push(e);
   });
   var totalReg=0, totalOT=0;
   Object.values(weeks).forEach(function(w){
-    var regMins=Math.min(w.mins, OT_THRESHOLD_MINS);
-    var otMins=Math.max(0, w.mins - OT_THRESHOLD_MINS);
+    var _ro=wlRegOt(w.list), regMins=_ro.reg;
+    var otMins=_ro.ot;
     totalReg+=regMins;
     totalOT+=otMins;
   });
@@ -1620,13 +1644,13 @@ function calcPeriodPay(hid, rate, startDate, endDate){
   myEntries.forEach(function(e){
     var wb=getWeekBoundaries(e.startTime);
     var key=wb.start.toISOString().slice(0,10);
-    if(!weeks[key]) weeks[key]={mins:0};
-    weeks[key].mins+=gMin(e);
+    if(!weeks[key]) weeks[key]={mins:0,list:[]};
+    weeks[key].mins+=gMin(e); weeks[key].list.push(e);
   });
   var totalReg=0, totalOT=0;
   Object.values(weeks).forEach(function(w){
-    var regMins=Math.min(w.mins,OT_THRESHOLD_MINS);
-    var otMins=Math.max(0,w.mins-OT_THRESHOLD_MINS);
+    var _ro=wlRegOt(w.list), regMins=_ro.reg;
+    var otMins=_ro.ot;
     totalReg+=regMins; totalOT+=otMins;
   });
   var regPay=(totalReg/60)*rate;
@@ -1980,6 +2004,7 @@ function wl3(en,pt,es){ var l=wlHL(); return l==='pt'?pt:(l==='es'&&es!=null?es:
 window.wl3=wl3;
 function wlPt(){ try{ return !wlIsOffice()&&wlLang()==='pt'; }catch(e){ return false; } }
 function wlDict(){ var l=wlHL(); return l==='pt'?_WL_PT:(l==='es'?_WL_ES:null); }
+try{ _WL_PT['🎉 Paid holiday']='🎉 Feriado pago'; _WL_ES['🎉 Paid holiday']='🎉 Feriado pagado'; }catch(e){}
 function wlT(x){ var D=wlDict(); if(!D) return x; var v=D[x]; return v===undefined?x:v; }
 function wlLoc(){ var l=wlHL(); return l==='pt'?'pt-BR':(l==='es'?'es-US':'en-US'); }
 // toasts: exact text, or text + the "saved on this phone" note, or "Not saved: code"
@@ -2339,7 +2364,7 @@ function wlMgDraw(){
   var hs=helpers.filter(function(x){ return wlHOn(x)||wlMgWeekEntries(x.id).length>0; }).sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; }), totM=0, totP=0, cards='';
   for(var i=0;i<hs.length;i++){ var h=hs[i], rate=Number(h.rate)||0, es=wlMgWeekEntries(h.id), mins=0, run=null, k;
     for(k=0;k<es.length;k++){ if(es[k].endTime) mins+=gMin(es[k]); else run=es[k]; }
-    var reg=Math.min(mins,OT_THRESHOLD_MINS), ot=Math.max(0,mins-OT_THRESHOLD_MINS), pay=(reg/60)*rate+(ot/60)*(rate*OT_MULTIPLIER); totM+=mins; totP+=pay;
+    var _ro=wlRegOt(es), reg=_ro.reg, ot=_ro.ot, pay=(reg/60)*rate+(ot/60)*(rate*OT_MULTIPLIER); totM+=mins; totP+=pay;
     var open=!!_wlMg.open[h.id];
     cards+='<div class="wl-rp-card" style="padding:0;overflow:hidden"><div data-h="'+h.id+'" onclick="wlMgToggle(this.dataset.h)" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer"><div><div style="font-family:var(--font-d);font-weight:800;font-size:15px">'+wlMgEsc(h.name||'')+(run?' <span style="font-size:10px;font-weight:800;color:#16a34a">● '+mT('WORKING','TRABALHANDO')+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--muted)">'+es.length+' '+mT(es.length===1?'entry':'entries',es.length===1?'registro':'registros')+' · '+fmtC(rate)+'/h'+(ot>0?' · <span style="color:#d97706;font-weight:700">'+fmtD(ot)+' '+mT('OT','extra')+'</span>':'')+'</div></div><div style="text-align:right"><div style="font-family:var(--font-d);font-weight:800;font-size:16px;color:var(--green)">'+fmtD(mins)+'</div><div style="font-size:12px;color:var(--muted)">'+fmtC(pay)+' '+(open?'▴':'▾')+'</div></div></div>';
     if(open){
@@ -2589,7 +2614,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261125-2030';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1200';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3173,8 +3198,8 @@ function renderHelperHistory(){
   list.innerHTML = weeks.map(function(ws){
     var wEnts = weekMap[ws].sort(function(a,b){ return new Date(a.startTime)-new Date(b.startTime); });
     var totalMins = wEnts.reduce(function(s,e){ return s+gMin(e); }, 0);
-    var regMins = Math.min(totalMins, OT_THRESHOLD_MINS);
-    var otMins = Math.max(0, totalMins - OT_THRESHOLD_MINS);
+    var _ro = wlRegOt(wEnts), regMins = _ro.reg;
+    var otMins = _ro.ot;
     var regPay = (regMins/60)*rate;
     var otPay = (otMins/60)*(rate*OT_MULTIPLIER);
     var totalPay = regPay + otPay;
@@ -4553,6 +4578,13 @@ function renderEntriesList(){
         apList=apList.concat([proj]);
       }
       var apOpts='<option value="">No project</option>'+apList.map(function(p){var lbl=p.name+(p.desc?' · '+p.desc:'')+(p.status&&p.status!=='active'?' ('+(p.status==='completed'?'done':p.status)+')':'');return '<option value="'+p.id+'"'+(e.projectId===p.id?' selected':'')+'>'+lbl+'</option>';}).join('')+wlCatOpts(e.category||'');
+      if(wlIsHol(e)){ var _hh=hById(e.helperId), _hr=_hh?(Number(_hh.rate)||0):0;
+        html+='<div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#fffbeb">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:12px;font-weight:700">'+new Date(e.startTime).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px"><div class="entry-dur">'+fmtD(gMin(e))+'</div><button data-eid="'+e.id+'" onclick="delEntry(this.dataset.eid)" style="background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px" title="Delete">✕</button></div></div>'+
+          '<div style="margin-top:6px;font-size:14px;font-weight:800;color:#92400e">🎉 Paid holiday'+(e.note?' · '+wlEsc(e.note):'')+'</div>'+
+          '<div style="font-size:12px;color:#78350f;margin-top:3px">'+fmtD(gMin(e))+' × $'+_hr+'/hr = <b>'+fmtC(wlEntryLabor(e).cost)+'</b> · no overtime · not charged to a project</div></div>';
+        return; }
       var hasLoc=e.clockInLocation||e.clockOutLocation;
       html+='<div style="padding:10px 16px;border-bottom:1px solid var(--border)">';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
@@ -4919,6 +4951,7 @@ function renderSummary(){
   try{ var byCat={}, catM=0, dayCat={};   // minutes and labor $ per category; minutes per day per category (for the overhead day)
     for(var ci=0;ci<entries.length;ci++){ var ce=entries[ci]; if(!ce.category||!ce.endTime) continue; var ct=new Date(ce.startTime).getTime(); if(ct<range.s||ct>range.e) continue;
       var cm=gMin(ce), cc=0; try{ cc=wlEntryLabor(ce).cost||0; }catch(x){} var B=byCat[ce.category]||(byCat[ce.category]={m:0,labor:0,oh:0,ohDays:0}); B.m+=cm; B.labor+=cc; catM+=cm;
+      if(wlIsHol(ce)) continue;   // a paid holiday is labor only: no overhead day
       var dk=wlOhDate(ce.startTime); var DD=dayCat[dk]||(dayCat[dk]={}); DD[ce.category]=(DD[ce.category]||0)+cm; }
     var skipped=0;
     for(var dk2 in dayCat){ var oth=null; try{ oth=wlOhOthers(dk2,null); }catch(x){ oth={units:0}; }
@@ -4926,10 +4959,10 @@ function renderSummary(){
       var dm=0; for(var c2 in dayCat[dk2]) dm+=dayCat[dk2][c2]; var rate=(typeof DAILY_OVERHEAD!=='undefined')?Number(DAILY_OVERHEAD)||0:0;
       for(var c3 in dayCat[dk2]){ var sh=dm>0?dayCat[dk2][c3]/dm:0; byCat[c3].oh+=rate*sh; byCat[c3].ohDays+=sh; } }
     if(catM>0){ var ch='', tl=0, to=0;
-      for(var ck in byCat){ var Bc=byCat[ck]; tl+=Bc.labor; to+=Bc.oh;
+      for(var ck in byCat){ var Bc=byCat[ck]; tl+=Bc.labor; to+=Bc.oh; if(ck==='holiday'){ ch+='<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px"><div style="font-weight:700">'+wlCatLabel(ck)+' <span style="color:var(--muted);font-weight:600">'+Math.floor(Bc.m/60)+'h '+p2(Bc.m%60)+'m</span></div><div style="text-align:right;color:var(--muted)">paid, no overtime = <b style="color:var(--text)">'+fmtC(Bc.labor)+'</b></div></div>'; continue; }
         ch+='<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px"><div style="font-weight:700">'+wlCatLabel(ck)+' <span style="color:var(--muted);font-weight:600">'+Math.floor(Bc.m/60)+'h '+p2(Bc.m%60)+'m</span></div>'+
            '<div style="text-align:right;color:var(--muted)">'+fmtC(Bc.labor)+' labor'+(Bc.oh>0?' + '+fmtC(Bc.oh)+' overhead ('+(Math.round(Bc.ohDays*10)/10)+' day'+(Bc.ohDays!==1?'s':'')+')':'')+' = <b style="color:var(--text)">'+fmtC(Bc.labor+Bc.oh)+'</b></div></div>'; }
-      list.innerHTML+='<div class="sum-row" style="display:block;border-top:2px dashed var(--border)"><div class="sum-name" style="margin-bottom:2px">🧰 Overhead work · not on a project</div>'+ch+
+      list.innerHTML+='<div class="sum-row" style="display:block;border-top:2px dashed var(--border)"><div class="sum-name" style="margin-bottom:2px">🧰 Not on a project · overhead work and paid holidays</div>'+ch+
         '<div style="display:flex;justify-content:space-between;padding-top:6px;font-size:12.5px;font-weight:800"><span>Total</span><span>'+fmtC(tl+to)+'</span></div>'+
         '<div style="font-size:11px;color:var(--muted);margin-top:4px">Overhead day = the daily overhead rate on days with no project charged'+(skipped?' · '+skipped+' day'+(skipped!==1?'s':'')+' already charged to a project (not counted twice)':'')+'</div></div>'; } }catch(e){}
   var th=document.getElementById('sum-total-hrs'), tp=document.getElementById('sum-total-pay');
@@ -4972,7 +5005,7 @@ function wlHrsPdf(hid){
       W.list.forEach(function(e,i){ var d=new Date(e.startTime), day=d.toLocaleDateString('en-US',{weekday:'short',month:'2-digit',day:'2-digit'}), p=null; try{ p=wlProjOf(e); }catch(x){}
         var note=(e.note&&e.note!=='Added by admin')?e.note:'';
         rows+='<tr'+(i%2?' class="alt"':'')+'><td>'+(day!==lastDay?'<b>'+day+'</b>':'')+'</td><td>'+wlEsc(p?p.name:'—')+(note?'<div class="c">'+wlEsc(note)+'</div>':'')+(e.addedByAdmin||e.type==='manual'?'<div class="c">✎ added manually</div>':'')+'</td><td class="r">'+tm(e.startTime)+'</td><td class="r">'+tm(e.endTime)+'</td><td class="r">'+hm(gMin(e))+'</td><td class="r">'+dec(gMin(e))+'</td></tr>'; lastDay=day; });
-      var wot=Math.max(0,W.m-OT_THRESHOLD_MINS);
+      var wot=wlRegOt(W.list).ot;
       rows+='<tr class="ws"><td colspan="4">Week total'+(wot>0?' · <span class="ot">'+hm(wot)+' overtime</span>':'')+'</td><td class="r">'+hm(W.m)+'</td><td class="r">'+dec(W.m)+'</td></tr>'; });
     var m=wp.regMins+wp.otMins;
     G.m+=m; G.reg+=wp.regMins; G.ot+=wp.otMins; G.regPay+=wp.regPay; G.otPay+=wp.otPay; G.pay+=wp.totalPay;
@@ -6136,7 +6169,7 @@ tpSyncAll();
 // ── Work categories: hours that are not on a client project (maintenance, warehouse, supplies)
 var WL_CATS=[{id:'maintenance',label:'🔧 Maintenance · equipment / rig',short:'🔧 Maintenance'},{id:'shop',label:'🧹 Warehouse · cleaning / organizing',short:'🧹 Warehouse'},{id:'supplies',label:'🚚 Supplies run / pickup',short:'🚚 Supplies'}];
 function wlCatOpts(selId){ var h=''; for(var i=0;i<WL_CATS.length;i++) h+='<option value="__cat:'+WL_CATS[i].id+'"'+(selId===WL_CATS[i].id?' selected':'')+'>'+WL_CATS[i].label+'</option>'; return h; }
-function wlCatLabel(id){ for(var i=0;i<WL_CATS.length;i++) if(WL_CATS[i].id===id) return WL_CATS[i].short; return id?String(id):''; }
+function wlCatLabel(id){ if(id==='holiday') return wlT('🎉 Paid holiday'); for(var i=0;i<WL_CATS.length;i++) if(WL_CATS[i].id===id) return WL_CATS[i].short; return id?String(id):''; }
 function wlProjOf(e){ if(!e) return null; if(e.projectId){ var p=projects.find(function(x){return x.id===e.projectId;}); if(p) return p; } if(e.category) return {name:wlCatLabel(e.category),isCat:true,id:'__cat:'+e.category}; return null; }
 function wlPickVal(v){ v=String(v||''); if(v.indexOf('__cat:')===0) return {projectId:null,category:v.substring(6)}; return {projectId:v||null,category:null}; }
 function qhFillProjects(){
@@ -6167,6 +6200,36 @@ function saveQuickHours(){
   showToast(_qhP?('Hours added to '+_qhP.name+'! ✅'):'Hours added! ✅');
 }
 window.saveQuickHours=saveQuickHours;
+
+// ── PAID HOLIDAY: one entry per helper (type/category 'holiday'), paid at the rate, no overtime, no project ──
+function wlHolHas(hid,date){ return entries.some(function(x){ return x.helperId===hid&&wlIsHol(x)&&x.startTime&&localDateStr(new Date(x.startTime))===date; }); }
+function wlHolOpen(){
+  var d=document.getElementById('hol-date'); if(!d.value) d.value=localDateStr(new Date());
+  window._wlHolSel={}; helpers.forEach(function(h){ if(wlHOn(h)&&!h.salaried) window._wlHolSel[h.id]=1; });
+  wlHolRender(); document.getElementById('modal-hol').classList.add('open');
+}
+function wlHolRender(){
+  var date=document.getElementById('hol-date').value, hrs=parseFloat(document.getElementById('hol-hrs').value)||0, S=window._wlHolSel||{}, n=0, tot=0;
+  var hs=helpers.filter(wlHOn).slice().sort(function(a,b){ return String(a.name||'')<String(b.name||'')?-1:1; });
+  document.getElementById('hol-list').innerHTML=hs.length?hs.map(function(h){ var has=date&&wlHolHas(h.id,date), on=!!S[h.id]&&!has, r=Number(h.rate)||0; if(on){ n++; tot+=hrs*r; }
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer'+(has?';opacity:.55':'')+'"><input type="checkbox" data-h="'+wlEsc(h.id)+'"'+(on?' checked':'')+(has?' disabled':'')+' onchange="window._wlHolSel[this.dataset.h]=this.checked?1:0;wlHolRender()" style="width:18px;height:18px">'+
+      '<span style="flex:1;font-weight:700;font-size:13px">'+wlEsc(h.name)+'</span><span style="font-size:12px;color:var(--muted)">'+(has?'already has this holiday':(h.salaried?'salaried':'$'+r+'/hr'))+'</span></label>'; }).join(''):'<div style="padding:16px;color:var(--muted);text-align:center">No active helpers.</div>';
+  document.getElementById('hol-sum').textContent=n?(n+' helper'+(n>1?'s':'')+' · '+hrs+'h each · total '+fmtC(tot)):'Pick at least one helper.';
+}
+function wlHolAll(on){ var S=window._wlHolSel={}; if(on) helpers.forEach(function(h){ if(wlHOn(h)&&!h.salaried) S[h.id]=1; }); wlHolRender(); }
+function wlHolSave(){
+  var date=document.getElementById('hol-date').value, hrs=parseFloat(document.getElementById('hol-hrs').value)||0, note=String(document.getElementById('hol-note').value||'').trim();
+  if(!date) return showToast('Pick the date','err');
+  if(!(hrs>0&&hrs<=16)) return showToast('Hours must be between 0.5 and 16','err');
+  var S=window._wlHolSel||{}, ids=helpers.filter(function(h){ return wlHOn(h)&&S[h.id]&&!wlHolHas(h.id,date); }).map(function(h){ return h.id; });
+  if(!ids.length) return showToast('Pick at least one helper','err');
+  var dp=date.split('-'), s=new Date(+dp[0],+dp[1]-1,+dp[2],8,0), e=new Date(s.getTime()+Math.round(hrs*60)*60000), now=new Date().toISOString();
+  var b=db.batch(); ids.forEach(function(hid){ b.set(db.collection('entries').doc(),{helperId:hid,startTime:s.toISOString(),endTime:e.toISOString(),type:'holiday',category:'holiday',note:note||'Paid holiday',addedByAdmin:true,addedBy:'admin',createdAt:now}); });
+  var btn=document.getElementById('hol-save'); btn.disabled=true;
+  b.commit().then(function(){ btn.disabled=false; closeModal('modal-hol'); document.getElementById('hol-note').value=''; showToast('🎉 Paid holiday added for '+ids.length+' helper'+(ids.length>1?'s':'')); })
+    .catch(function(err){ btn.disabled=false; showToast('Could not save: '+(err&&err.message||err),'err'); });
+}
+window.wlHolOpen=wlHolOpen; window.wlHolRender=wlHolRender; window.wlHolAll=wlHolAll; window.wlHolSave=wlHolSave;
 
 // ── CSV EXPORT ─────────────────────────────────────────
 function showDepotQR(){
