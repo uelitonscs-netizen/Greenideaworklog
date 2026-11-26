@@ -1073,7 +1073,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1700</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1800</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2640,7 +2640,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1700';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1800';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -2943,7 +2943,7 @@ window.wlBnSync=wlBnSync;
 function renderAdminTab(n){
   if(n==='dashboard') renderDashboard();
   else if(n==='helpers'){ renderHelpersList(); renderAbsences(); }
-  else if(n==='reports'){ renderEntriesList(); }
+  else if(n==='reports'){ renderEntriesList(); try{ if(currentReport==='summary') renderSummary(); else if(currentReport==='payments') renderPayments(); else if(currentReport==='advances') renderAdvances(); }catch(e){} }   // the open sub-tab follows new data too (a payment made from Summary shows at once)
   else if(n==='projects') renderProjects();
   else if(n==='analytics') renderAnalytics();
   else if(n==='settings') renderSettings();
@@ -5040,12 +5040,12 @@ function wlWkPaySave(){ var K=_wlWkp; if(!K) return; var h=hById(K.hid); if(!h) 
   var lbl='Week '+wlWkLbl(K.ms), now=new Date().toISOString(), bt=db.batch(), pr=db.collection('payments').doc(), pay={helperId:K.hid,amount:net,gross:gross,date:date,note:lbl,week:K.key,via:'summary',createdAt:now};
   if(d>0){ var ar=db.collection('advances').doc(); pay.advDiscount=d; pay.advId=ar.id; bt.set(ar,{helperId:K.hid,type:'discount',amount:d,date:date,note:'Taken from pay · '+lbl,payId:pr.id,createdAt:now}); }
   bt.set(pr,pay);
-  bt.commit().then(function(){ showToast('💵 '+h.name+' paid '+fmtC(net)+(d>0?' ('+fmtC(d)+' from advance)':'')+' ✅'); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
+  bt.commit().then(function(){ showToast('💵 '+h.name+' paid '+fmtC(net)+(d>0?' ('+fmtC(d)+' from advance)':'')+' ✅'); try{ renderSummary(); }catch(e){} }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
   _wlWkp=null; closeModal('modal-wkpay'); }
 function wlWkPayUndo(){ var K=_wlWkp; if(!K) return; var P=wlWkPaid(K.hid,K.key), h=hById(K.hid);
   if(!confirm('Remove '+P.list.length+' payment'+(P.list.length>1?'s':'')+' of '+(h?h.name:'?')+' for week '+wlWkLbl(K.ms)+' ('+fmtC(P.net)+')? Advance discounts taken from it are removed too.')) return;
   var bt=db.batch(); P.list.forEach(function(p){ bt.delete(db.collection('payments').doc(p.id)); if(p.advId) bt.delete(db.collection('advances').doc(p.advId)); });
-  bt.commit().then(function(){ showToast('Payment removed'); }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); });
+  bt.commit().then(function(){ showToast('Payment removed'); try{ renderSummary(); }catch(e){} }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); });
   _wlWkp=null; closeModal('modal-wkpay'); }
 window.wlWkPayOpen=wlWkPayOpen; window.wlWkPaySave=wlWkPaySave; window.wlWkPayUndo=wlWkPayUndo; window.wlWkPayCalc=wlWkPayCalc;
 function renderSummary(){
