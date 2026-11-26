@@ -772,7 +772,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
           <div class="form-row">
             <div class="fg"><label>Helper</label><select id="abs-helper"><option value="">-- Select --</option></select></div>
             <div class="fg" style="max-width:150px"><label>Type</label>
-              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday</option></select>
+              <select id="abs-type"><option value="absent">🚫 Absent</option><option value="dayoff">🌴 Day Off</option><option value="sick">🤒 Sick</option><option value="holiday">🎉 Holiday (unpaid)</option></select>
             </div>
           </div>
           <div class="form-row">
@@ -780,6 +780,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
             <div class="fg"><label>Note (optional)</label><input id="abs-note" placeholder="Optional note"/></div>
           </div>
           <button class="btn" onclick="addAbsence()">+ Add Absence</button>
+        </div>
+        <div class="card" style="margin-bottom:18px;background:#fffbeb;border-color:#f59e0b66">
+          <div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:6px">🎉 PAID HOLIDAY</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Pays the holiday hours at each helper's rate (no overtime, no project). Pick the date and the helpers — several at once.</div>
+          <button id="wl-hol-btn" class="btn" onclick="wlHolOpen()" style="background:#d97706">🎉 Add paid holiday</button>
         </div>
         <div id="absences-list"></div>
       </div>
@@ -803,7 +808,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="rep-entries">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
           <div class="section-title" style="margin:0">All Entries</div>
-          <button id="wl-hol-btn" onclick="wlHolOpen()" style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--font-d)">🎉 Paid holiday</button>
           <div class="range-btns" style="margin-left:auto">
             <button class="range-btn active" onclick="setRange('current-week',this)">This Week</button>
             <button class="range-btn" onclick="setRange('month',this)">Month</button>
@@ -1057,7 +1061,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1200</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261126-1300</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2614,7 +2618,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1200';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261126-1300';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -5167,7 +5171,7 @@ function wlPaySave(){ if(!_wlPayEd) return; var a=parseFloat(String(document.get
 window.wlPayEdit=wlPayEdit; window.wlPaySave=wlPaySave;
 
 // ── ABSENCES ───────────────────────────────────────────
-var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday'};
+var absLabels={absent:'🚫 Absent',dayoff:'🌴 Day Off',sick:'🤒 Sick',holiday:'🎉 Holiday (unpaid)'};
 function renderAbsences(){
   var sel=document.getElementById('abs-helper'); if(sel){sel.innerHTML='<option value="">-- Select --</option>'; helpers.forEach(function(h){ if(!wlHOn(h)) return; var o=document.createElement('option'); o.value=h.id; o.textContent=h.name; sel.appendChild(o);});}
   var ad=document.getElementById('abs-date'); if(ad&&!ad.value) ad.value=localDateStr();
