@@ -158,6 +158,11 @@ label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bot
 #rep-tabbar{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;max-width:100%;min-width:0;}#rep-tabbar::-webkit-scrollbar{display:none;}#rep-tabbar>button{flex:1 0 auto !important;white-space:nowrap;}
 .speriod-btn{background:#eef0f2;color:var(--muted);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:var(--font-d);font-weight:700;cursor:pointer;transition:background .15s,color .15s;}
 .speriod-btn.active{background:var(--green);color:#fff;box-shadow:var(--shadow-sm);}
+.wl-pbx{display:inline-flex;align-items:center;gap:6px;border:2px solid #16a34a;border-radius:9px;padding:4px 9px;font-size:12px;font-weight:800;color:#16a34a;background:#fff;cursor:pointer;font-family:var(--font-d);text-transform:none;letter-spacing:0;white-space:nowrap}
+.wl-pbx i{width:14px;height:14px;border:2px solid currentColor;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;line-height:1}
+.wl-pbx.paid{background:#16a34a;color:#fff;border-color:#16a34a}.wl-pbx.paid i{background:#fff;color:#16a34a;border-color:#fff}
+.wl-pbx.due{border-color:#d97706;background:#d97706}.wl-pbx.due i{color:#d97706}
+.wl-pbw{display:block;font-size:10.5px;font-weight:700;color:#b45309;margin-top:3px;text-transform:none;letter-spacing:0;white-space:normal}
 .sum-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
 .sum-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:14px;color:#fff;flex-shrink:0;box-shadow:var(--shadow-sm);}
 .sum-name{font-family:var(--font-d);font-weight:800;font-size:14px;}
@@ -1061,7 +1066,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1415</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1530</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1269,6 +1274,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div class="fg"><label>Date</label><input id="pe-date" type="date"/></div>
     <div class="fg"><label>Note</label><input id="pe-note" type="text"/></div>
     <div class="modal-actions"><button class="btn" onclick="wlPaySave()">✓ Save</button><button class="btn ghost" onclick="closeModal('modal-pay-edit')">Cancel</button></div>
+  </div>
+</div>
+
+<div id="modal-wkpay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="wkp-title">💵 Pay week</div>
+    <div id="wkp-body"></div>
+    <div class="modal-actions" id="wkp-act"></div>
   </div>
 </div>
 
@@ -2620,7 +2633,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1415';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1530';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -4947,9 +4960,10 @@ function wlSumDays(h,range){
     var p=null; try{ p=wlProjOf(e); }catch(x){} var nm=p?p.name:'No project'; if(D.jobs.indexOf(nm)<0) D.jobs.push(nm);
     if(!weeks[wk]){ weeks[wk]={m:0,pay:0,ot:0}; wkeys.push(wk); } weeks[wk].m+=m; weeks[wk].pay+=(reg/60)*rate+(ot/60)*rate*OT_MULTIPLIER; weeks[wk].ot+=ot; });
   var multi=wkeys.length>1, h2='<div style="margin:0 0 4px 56px;padding:0 0 12px;border-bottom:1px solid var(--border)">', lastWk=null;
+  if(!multi&&sumPeriod!=='week'){ var w0=new Date(wkeys[0]), w1=new Date(w0); w1.setDate(w0.getDate()+6); h2+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:6px 0 4px"><span>Week '+w0.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+w1.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>'+wlPayBox(h,wkeys[0])+'</div>'; }
   keys.forEach(function(k){ var D=days[k];
     if(multi&&D.wk!==lastWk){ lastWk=D.wk; var ws=new Date(D.wk), we=new Date(ws); we.setDate(ws.getDate()+6); var W=weeks[D.wk];
-      h2+='<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin:10px 0 2px;text-transform:uppercase"><span>Week '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span>'+fmtD(W.m)+' · '+fmtC(W.pay)+'</span></div>'; }
+      h2+='<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin:10px 0 2px;text-transform:uppercase"><span>Week '+ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span><span style="display:flex;align-items:center;gap:8px">'+fmtD(W.m)+' · '+fmtC(W.pay)+wlPayBox(h,D.wk)+'</span></div>'; }
     h2+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border)'+(D.hol?';background:#fffbeb':'')+'">'+
       '<div style="min-width:0"><div style="font-size:13px;font-weight:700">'+D.d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</div>'+
       '<div style="font-size:11px;color:'+(D.hol?'#92400e':'var(--muted)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+D.jobs.map(wlEsc).join(' · ')+'</div></div>'+
@@ -4958,6 +4972,63 @@ function wlSumDays(h,range){
   return h2+'</div>';
 }
 window.wlSumToggle=wlSumToggle;
+
+// ── PAY A WEEK FROM SUMMARY: one box per helper per week (Mon–Sun). The payment keeps the week (payments.week = Monday),
+// the gross pay of the week and the advance discount taken from it (also written to Advances, linked by advId). ──
+function wlWkKey(ms){ return localDateStr(new Date(ms)); }
+function wlWkPay(hid,ms){ var h=hById(hid), rate=h?(Number(h.rate)||0):0, s=new Date(ms), e=new Date(ms); e.setDate(e.getDate()+7);
+  var L=entries.filter(function(x){ var t=new Date(x.startTime); return x.helperId===hid&&t>=s&&t<e; }), open=L.some(function(x){ return !x.endTime; });
+  var ro=wlRegOt(L); return {mins:ro.mins,reg:ro.reg,ot:ro.ot,pay:Math.round(((ro.reg/60)*rate+(ro.ot/60)*rate*OT_MULTIPLIER)*100)/100,open:open,rate:rate}; }
+function wlWkPaid(hid,key){ var L=payments.filter(function(p){ return p.helperId===hid&&p.week===key; }), g=0, n=0, last='';
+  L.forEach(function(p){ var a=Number(p.amount)||0; n+=a; g+=(p.gross!=null?Number(p.gross)||0:a); if(String(p.date||'')>last) last=p.date||''; });
+  return {list:L,gross:Math.round(g*100)/100,net:Math.round(n*100)/100,last:last}; }
+function wlPayBox(h,ms){ var key=wlWkKey(ms), W=wlWkPay(h.id,ms), P=wlWkPaid(h.id,key);
+  if(!P.list.length&&!(W.pay>0)) return '';
+  var at=' data-h="'+wlEsc(h.id)+'" data-w="'+ms+'" onclick="event.stopPropagation();wlWkPayOpen(this.dataset.h,+this.dataset.w)"';
+  if(!P.list.length) return '<span class="wl-pbx"'+at+'><i></i>Pay</span>';
+  var diff=Math.round((W.pay-P.gross)*100)/100, d=P.last?parseLocalDate(P.last).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  return '<span style="display:inline-block;text-align:right"><span class="wl-pbx paid'+(diff>0.009?' due':'')+'"'+at+'><i>✓</i>Paid '+d+'</span>'+
+    (diff>0.009?'<span class="wl-pbw">⚠ hours changed: '+fmtC(diff)+' still to pay</span>':(diff<-0.009?'<span class="wl-pbw">⚠ hours changed: paid '+fmtC(-diff)+' more</span>':''))+'</span>'; }
+var _wlWkp=null;
+function wlWkLbl(ms){ var a=new Date(ms), b=new Date(ms); b.setDate(b.getDate()+6); return a.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+b.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function wlWkPayOpen(hid,ms){ var h=hById(hid); if(!h) return; var key=wlWkKey(ms), W=wlWkPay(hid,ms), P=wlWkPaid(hid,key), diff=Math.round((W.pay-P.gross)*100)/100;
+  _wlWkp={hid:hid,ms:ms,key:key};
+  document.getElementById('wkp-title').textContent='💵 '+h.name+' · week '+wlWkLbl(ms);
+  var b='<div style="font-size:13px;line-height:1.7;margin-bottom:10px">Hours: <b>'+fmtD(W.mins)+'</b>'+(W.ot>0?' <span style="color:#d97706">(OT '+fmtD(W.ot)+')</span>':'')+'<br>Week pay: <b>'+fmtC(W.pay)+'</b></div>';
+  if(W.open) b+='<div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:10px;padding:8px 10px;font-size:12px;margin-bottom:10px">⏱ '+wlEsc(h.name)+' is clocked in now — the open punch is not in this amount.</div>';
+  var act='<button class="btn ghost" onclick="closeModal(\'modal-wkpay\')">Cancel</button>';
+  if(P.list.length){
+    b+='<div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px">ALREADY PAID</div>'+P.list.map(function(p){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-top:1px solid var(--border)"><span>'+parseLocalDate(p.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+(p.advDiscount>0?' <span style="color:var(--muted);font-size:11px">(−'+fmtC(p.advDiscount)+' advance)</span>':'')+'</span><b>'+fmtC(p.amount)+'</b></div>'; }).join('');
+    b+='<div style="font-size:13px;margin:8px 0 4px">'+(diff>0.009?'<b style="color:#b45309">Still to pay: '+fmtC(diff)+'</b>':(diff<-0.009?'<b style="color:#b45309">Paid '+fmtC(-diff)+' more than the hours now</b>':'<b style="color:#16a34a">✓ Fully paid</b>'))+'</div>';
+    if(diff>0.009){ _wlWkp.gross=diff; b+=wlWkPayForm(hid,diff); act+='<button class="btn" onclick="wlWkPaySave()">Pay '+fmtC(diff)+'</button>'; }
+    act='<button class="btn ghost" style="color:var(--red);border-color:var(--red)" onclick="wlWkPayUndo()">Undo payment</button>'+act;
+  } else { _wlWkp.gross=W.pay; b+=wlWkPayForm(hid,W.pay); act+='<button class="btn" id="wkp-go" onclick="wlWkPaySave()">Record payment</button>'; }
+  document.getElementById('wkp-body').innerHTML=b; document.getElementById('wkp-act').innerHTML=act;
+  try{ wlWkPayCalc(); }catch(e){}
+  document.getElementById('modal-wkpay').classList.add('open'); }
+function wlWkPayForm(hid,gross){ var bal=Math.max(0,Math.round(getAdvanceBalance(hid)*100)/100), mx=Math.min(bal,gross);
+  var f='<div style="display:flex;gap:10px;margin-top:6px"><div class="fg" style="flex:1"><label>Payment date</label><input type="date" id="wkp-date" value="'+localDateStr(new Date())+'"></div></div>';
+  if(bal>0) f+='<div style="background:#fff5f5;border:1px solid var(--red);border-radius:10px;padding:10px 12px;margin:2px 0 10px"><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">Advance balance: '+fmtC(bal)+'</div>'+
+    '<div class="fg" style="margin:0"><label>Discount from advance (0 – '+fmtC(mx)+')</label><input type="number" id="wkp-disc" min="0" max="'+mx+'" step="0.01" value="0" inputmode="decimal" oninput="wlWkPayCalc()"></div></div>';
+  f+='<div style="display:flex;justify-content:space-between;align-items:center;background:#f0fdf4;border-radius:10px;padding:10px 12px;font-size:14px"><span>Pay now</span><b id="wkp-net" style="font-size:18px;color:var(--green2)">'+fmtC(gross)+'</b></div>';
+  _wlWkp&&(_wlWkp.max=mx); return f; }
+function wlWkPayCalc(){ if(!_wlWkp) return; var el=document.getElementById('wkp-disc'), d=el?parseFloat(String(el.value||'0').replace(',','.'))||0:0; d=Math.max(0,Math.min(d,_wlWkp.max||0)); var n=document.getElementById('wkp-net'); if(n) n.textContent=fmtC(Math.round((_wlWkp.gross-d)*100)/100); return d; }
+function wlWkPaySave(){ var K=_wlWkp; if(!K) return; var h=hById(K.hid); if(!h) return;
+  var el=document.getElementById('wkp-disc'), raw=el?parseFloat(String(el.value||'0').replace(',','.'))||0:0;
+  if(raw<0||raw>(K.max||0)+0.001) return showToast('Discount must be between $0 and '+fmtC(K.max||0),'err');
+  var d=Math.round(raw*100)/100, gross=Math.round(K.gross*100)/100, net=Math.round((gross-d)*100)/100, date=document.getElementById('wkp-date').value;
+  if(!date) return showToast('Select a date','err'); if(!(gross>0)) return showToast('Nothing to pay','err');
+  var lbl='Week '+wlWkLbl(K.ms), now=new Date().toISOString(), bt=db.batch(), pr=db.collection('payments').doc(), pay={helperId:K.hid,amount:net,gross:gross,date:date,note:lbl,week:K.key,via:'summary',createdAt:now};
+  if(d>0){ var ar=db.collection('advances').doc(); pay.advDiscount=d; pay.advId=ar.id; bt.set(ar,{helperId:K.hid,type:'discount',amount:d,date:date,note:'Taken from pay · '+lbl,payId:pr.id,createdAt:now}); }
+  bt.set(pr,pay);
+  bt.commit().then(function(){ showToast('💵 '+h.name+' paid '+fmtC(net)+(d>0?' ('+fmtC(d)+' from advance)':'')+' ✅'); }).catch(function(e){ showToast('Not saved: '+((e&&e.code)||e),'err'); });
+  _wlWkp=null; closeModal('modal-wkpay'); }
+function wlWkPayUndo(){ var K=_wlWkp; if(!K) return; var P=wlWkPaid(K.hid,K.key), h=hById(K.hid);
+  if(!confirm('Remove '+P.list.length+' payment'+(P.list.length>1?'s':'')+' of '+(h?h.name:'?')+' for week '+wlWkLbl(K.ms)+' ('+fmtC(P.net)+')? Advance discounts taken from it are removed too.')) return;
+  var bt=db.batch(); P.list.forEach(function(p){ bt.delete(db.collection('payments').doc(p.id)); if(p.advId) bt.delete(db.collection('advances').doc(p.advId)); });
+  bt.commit().then(function(){ showToast('Payment removed'); }).catch(function(e){ showToast('Not removed: '+((e&&e.code)||e),'err'); });
+  _wlWkp=null; closeModal('modal-wkpay'); }
+window.wlWkPayOpen=wlWkPayOpen; window.wlWkPaySave=wlWkPaySave; window.wlWkPayUndo=wlWkPayUndo; window.wlWkPayCalc=wlWkPayCalc;
 function renderSummary(){
   var range=getSumRange(sumPeriod);
   var lblEl=document.getElementById('sum-period-lbl'); if(lblEl) lblEl.textContent='📅 '+range.lbl;
@@ -4980,6 +5051,7 @@ function renderSummary(){
       '<div class="sum-hrs">'+hrs+'h '+p2(min)+'m</div>'+
       '<div style="font-size:11px;color:var(--muted)">Reg: '+fmtC(wp.regPay)+(wp.otMins>0?' + <span style=\'color:#d97706\'>OT: '+fmtC(wp.otPay)+'</span>':'')+'</div>'+
       '<div class="sum-pay">'+fmtC(wp.totalPay)+'</div>'+
+      (sumPeriod==='week'?'<div style="margin-top:5px">'+wlPayBox(h,getWeekBoundaries(range.s).start.getTime())+'</div>':'')+
       '</div><span style="color:var(--muted);font-size:13px;margin-left:2px">'+(_so?'▲':'▼')+'</span></div>'+
       (_so?wlSumDays(h,range):'');
   }).join('');
