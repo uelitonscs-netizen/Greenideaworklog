@@ -1073,7 +1073,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261127-1900</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261128-0900</div>
     </div>
 
     <!-- PROJECTS -->
@@ -1240,6 +1240,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="wl-rep-form"></div>
       <div id="wl-rep-list"></div>
     </div>
+    <div style="text-align:center;margin:22px 0 8px"><button type="button" id="wl-priv-link" onclick="wlPrivShow()" style="background:transparent;border:1px solid var(--border);border-radius:99px;color:var(--muted);font-size:12.5px;font-weight:700;padding:7px 14px;cursor:pointer;font-family:inherit" data-t="🔒 Privacy">🔒 Privacy</button></div>
 
     <!-- MY PAY -->
     <div id="hpanel-mypay" class="hpanel">
@@ -1281,6 +1282,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div class="fg"><label>Date</label><input id="pe-date" type="date"/></div>
     <div class="fg"><label>Note</label><input id="pe-note" type="text"/></div>
     <div class="modal-actions"><button class="btn" onclick="wlPaySave()">✓ Save</button><button class="btn ghost" onclick="closeModal('modal-pay-edit')">Cancel</button></div>
+  </div>
+</div>
+
+<div id="modal-priv" class="modal-overlay" style="z-index:9995">
+  <div class="modal" style="max-height:86vh;overflow-y:auto">
+    <div id="priv-body"></div>
+    <div class="modal-actions"><button class="btn" id="priv-ok" style="flex:1" onclick="wlPrivOk()">OK</button></div>
   </div>
 </div>
 
@@ -1686,7 +1694,29 @@ function calcPeriodPay(hid, rate, startDate, endDate){
 function totalPaid(hid){return payments.filter(function(p){return p.helperId===hid;}).reduce(function(s,p){return s+p.amount;},0);}
 function hLink(h){return location.origin+'/Greenideaworklog/index.html?helper='+h.id;}
 function showToast(msg,type){try{ msg=wlTmsg(msg); }catch(_e){} var el=document.getElementById('toast-el'); el.textContent=msg; el.className='toast '+(type||'ok'); el.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(function(){el.style.display='none';},2500);}
-function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active'); if(id==='login'){ try{ wlI18n(); }catch(e){} }}
+// ── PRIVACY NOTICE for helpers: shown once on each phone (next time the helper screen opens), then under the 🔒 Privacy button ──
+var WL_PRIV_V='1';
+function wlPrivHtml(){ function sec(t,items){ return '<div style="font-weight:800;font-size:14px;margin:14px 0 6px">'+t+'</div><ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.5">'+items.map(function(x){ return '<li style="margin-bottom:5px">'+x+'</li>'; }).join('')+'</ul>'; }
+  return '<div style="font-family:var(--font-d);font-weight:800;font-size:17px;margin-bottom:4px">🔒 '+wl3('WorkLog App Privacy Notice','Aviso sobre privacidade no app WorkLog','Aviso sobre privacidad en la app WorkLog')+'</div>'+
+  '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Green Idea Insulation</div>'+
+  '<div style="font-size:13.5px;line-height:1.5">'+wl3('WorkLog is only used to record work hours. Here is what it does and what it does <b>not</b> do on your phone:','O WorkLog serve só para registrar as horas de trabalho. Veja o que ele faz e o que ele <b>não</b> faz no seu celular:','WorkLog sirve solo para registrar las horas de trabajo. Esto es lo que hace y lo que <b>no</b> hace en tu teléfono:')+'</div>'+
+  sec('📷 '+wl3('Photos','Fotos','Fotos'),[
+    wl3('The app <b>cannot access your photo gallery</b>. It is a web page, and your phone does not let any website see your photos.','O app <b>não tem acesso à sua galeria</b>. Ele é uma página de internet, e o celular não deixa nenhum site ver as suas fotos.','La app <b>no tiene acceso a tu galería</b>. Es una página de internet, y el teléfono no deja que ningún sitio vea tus fotos.'),
+    wl3('When you attach a photo, your phone opens the picker. Only the photo <b>you</b> choose is sent. The app cannot see any other photos.','Quando você anexa uma foto, é o seu celular que abre a escolha. Só a foto que <b>você</b> escolher é enviada. O app não vê as outras.','Cuando adjuntas una foto, es tu teléfono el que abre la selección. Solo se envía la foto que <b>tú</b> eliges. La app no ve las demás.')])+
+  sec('📍 '+wl3('Location','Localização','Ubicación'),[
+    wl3('The app records your location <b>only when you clock in and clock out</b>. It takes one reading each time, to confirm the work location.','O app registra sua localização <b>só no momento em que você bate a entrada e a saída</b>. É uma leitura de cada vez, para confirmar o local de trabalho.','La app registra tu ubicación <b>solo cuando marcas la entrada y la salida</b>. Es una lectura cada vez, para confirmar el lugar de trabajo.'),
+    wl3('While the app is open on the screen, your phone checks whether you are near the depot, only to remind you to clock in or out. This information is <b>not saved or sent</b> to the company.','Enquanto o app está aberto na tela, o celular confere se você está perto do depósito, só para lembrar de bater o ponto. Essa informação <b>não é salva nem enviada</b> para a empresa.','Mientras la app está abierta en la pantalla, el teléfono revisa si estás cerca del depósito, solo para recordarte marcar. Esa información <b>no se guarda ni se envía</b> a la empresa.'),
+    wl3('When the app is closed or the screen is locked, <b>the app does not take your location</b>.','Com o app fechado ou a tela bloqueada, <b>o app não pega sua localização</b>.','Con la app cerrada o la pantalla bloqueada, <b>la app no toma tu ubicación</b>.'),
+    wl3('The company <b>cannot see where you go</b> during the day or outside work hours.','A empresa <b>não vê por onde você anda</b> durante o dia, nem fora do horário de trabalho.','La empresa <b>no ve por dónde andas</b> durante el día ni fuera del horario de trabajo.'),
+    wl3('If you do not allow location, the clock still works. The punch is saved without an address.','Se você não permitir a localização, o ponto funciona normalmente. A marcação fica sem endereço.','Si no permites la ubicación, el reloj funciona normal. La marca queda sin dirección.')])+
+  '<div style="font-size:13.5px;line-height:1.5;margin-top:14px"><b>'+wl3('The app does not access:','O app não acessa:','La app no accede a:')+'</b> '+wl3('contacts, messages, calls, microphone, camera (except when you open it yourself to take a photo), or other apps.','contatos, mensagens, ligações, microfone, câmera (a não ser quando você mesmo abre para tirar uma foto) nem outros apps.','contactos, mensajes, llamadas, micrófono, cámara (salvo cuando tú la abres para tomar una foto) ni otras apps.')+'</div>'+
+  '<div style="font-size:13px;color:var(--muted);margin-top:12px">'+wl3('Questions: talk to Ueliton.','Dúvidas: fale com Ueliton.','Preguntas: habla con Ueliton.')+'</div>'+
+  '<div style="font-size:12px;color:var(--muted);margin-top:10px">'+wl3('You can read this again anytime: 🔒 Privacy, at the bottom of your screen.','Você pode ler de novo quando quiser: 🔒 Privacidade, no fim da sua tela.','Puedes leerlo de nuevo cuando quieras: 🔒 Privacidad, al final de tu pantalla.')+'</div>'; }
+function wlPrivShow(){ document.getElementById('priv-body').innerHTML=wlPrivHtml(); document.getElementById('priv-ok').textContent=wl3('OK, I understand','OK, entendi','OK, entiendo'); document.getElementById('modal-priv').classList.add('open'); }
+function wlPrivOk(){ wlLsSet('wl_priv_seen',WL_PRIV_V); closeModal('modal-priv'); }
+function wlPrivAuto(){ try{ var s=String(wlLsGet('wl_session')||''); if(s.indexOf('helper:')!==0) return; if(wlLsGet('wl_priv_seen')===WL_PRIV_V) return; if(document.getElementById('modal-priv').classList.contains('open')) return; wlPrivShow(); }catch(e){} }
+window.wlPrivShow=wlPrivShow; window.wlPrivOk=wlPrivOk;
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById('screen-'+id).classList.add('active'); if(id==='login'){ try{ wlI18n(); }catch(e){} } if(id==='helper') setTimeout(wlPrivAuto,700); }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function setSyncStatus(ok){
   var d=document.getElementById('sync-dot'),l=document.getElementById('sync-lbl');
@@ -2030,7 +2060,7 @@ function wl3(en,pt,es){ var l=wlHL(); return l==='pt'?pt:(l==='es'&&es!=null?es:
 window.wl3=wl3;
 function wlPt(){ try{ return !wlIsOffice()&&wlLang()==='pt'; }catch(e){ return false; } }
 function wlDict(){ var l=wlHL(); return l==='pt'?_WL_PT:(l==='es'?_WL_ES:null); }
-try{ _WL_PT['🎉 Paid holiday']='🎉 Feriado pago'; _WL_ES['🎉 Paid holiday']='🎉 Feriado pagado'; }catch(e){}
+try{ _WL_PT['🎉 Paid holiday']='🎉 Feriado pago'; _WL_ES['🎉 Paid holiday']='🎉 Feriado pagado'; _WL_PT['🔒 Privacy']='🔒 Privacidade'; _WL_ES['🔒 Privacy']='🔒 Privacidad'; }catch(e){}
 function wlT(x){ var D=wlDict(); if(!D) return x; var v=D[x]; return v===undefined?x:v; }
 function wlLoc(){ var l=wlHL(); return l==='pt'?'pt-BR':(l==='es'?'es-US':'en-US'); }
 // toasts: exact text, or text + the "saved on this phone" note, or "Not saved: code"
@@ -2640,7 +2670,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261127-1900';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261128-0900';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
