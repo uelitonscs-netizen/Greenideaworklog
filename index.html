@@ -1073,7 +1073,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
       <!-- Save button -->
       <button onclick="saveSettings()" class="btn" style="width:100%;padding:14px;font-size:15px;margin-bottom:20px">✓ Save Settings</button>
-      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261128-0900</div>
+      <div id="wl-build" style="text-align:center;font-size:11px;color:var(--muted);font-family:var(--font-m);margin:-8px 0 20px">build v20261128-1000</div>
     </div>
 
     <!-- PROJECTS -->
@@ -2670,7 +2670,7 @@ window.wlHelperListen=wlHelperListen;
 // Every helper sees every ACTIVE job. A helper only loads the jobs where he is on the list, and there was
 // no screen to put him there — so the helper's job picker was empty. The office app now keeps the list complete
 // (new jobs, jobs sent by FieldBid, new helpers). Finished/paused jobs are left as they are.
-var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261128-0900';
+var _wlAaT=null, _wlAaDone={}, WL_BUILD='20261128-1000';
 function wlAaMissing(){ var out=[], ids=[], i, j; for(i=0;i<helpers.length;i++) if(wlHOn(helpers[i])) ids.push(helpers[i].id);
   for(i=0;i<projects.length;i++){ var p=projects[i]; if((p.status||'active')!=='active') continue;
     var cur=Array.isArray(p.helpers)?p.helpers:[], add=[]; for(j=0;j<ids.length;j++){ if(cur.indexOf(ids[j])<0) add.push(ids[j]); }
@@ -3531,9 +3531,9 @@ function wlGoProject(pid,tab,action){
   var st=p.status||'active';
   if(_projStatusFilter!=='all'&&_projStatusFilter!==st) setProjFilter(st,null);
   var q=document.getElementById('proj-search'); if(q&&q.value){ q.value=''; }
-  _wlPT[pid]=tab; window._wlOpenPid=pid; renderProjects();
+  if(tab) _wlPT[pid]=tab; window._wlOpenPid=pid; renderProjects();
   setTimeout(function(){
-    var a=document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
+    var a=action==='card'?document.querySelector('#projects-list .proj-card[data-pid="'+pid+'"]'):document.getElementById(action==='exp'?'expf-'+pid:'phcat-'+pid); if(!a) return;
     if(action==='exp'){ if(a.style.display==='none') toggleExpForm(pid); }
     var card=a.closest('.proj-card');
     try{ if(action==='exp'||action==='pho') a.scrollIntoView({block:'center'}); else if(card){ card.scrollIntoView({block:'start'}); window.scrollBy(0,-70); } }catch(e){} if(card){ card.classList.add('wl-flash'); setTimeout(function(){card.classList.remove('wl-flash');},1600); }
@@ -7140,9 +7140,9 @@ function renderAnalytics(){
     var marginColor = margin>=20?'#16a34a':margin>=10?'#d97706':margin>=0?'#f59e0b':'#dc2626';
     var projRows = c.projects.sort(function(a,b){ return parseLocalDate(b.start)-parseLocalDate(a.start); }).map(function(p){
       var mc = p.budget>0?(p.profit/p.budget)*100:0;
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px">'+
-        '<div>'+
-          '<div style="font-weight:600">'+p.name+'</div>'+
+      return '<div data-pid="'+wlEsc(p.id)+'" onclick="wlGoProject(this.dataset.pid,null,\'card\')" title="Open project" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;cursor:pointer">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-weight:600;color:#1d4ed8">'+p.name+' ›</div>'+
           '<div style="color:var(--muted);font-size:11px;margin-top:1px">'+parseLocalDate(p.start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>'+(p.checks&&p.checks.length?'<div style="color:#b45309;font-size:11px;margin-top:3px;font-weight:600">⚠ '+p.checks.join(' · ')+'</div>':'')+
         '</div>'+
         '<div style="text-align:right">'+
